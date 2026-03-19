@@ -163,36 +163,77 @@ func UninstallUTM() error {
 }
 
 // downloadFile downloads a file from URL to local path
+// downloadFile downloads url to destPath with resume support and automatic retries.
+// Uses HTTP Range requests to resume partial downloads (handles CDN disconnects).
 func downloadFile(url, destPath string) error {
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
+	const maxRetries = 15
+	const retryDelay = 3
 
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("HTTP %d: %s", resp.StatusCode, resp.Status)
+	client := &http.Client{}
+
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		// Check existing partial file size for resume
+		var offset int64
+		if fi, err := os.Stat(destPath); err == nil {
+			offset = fi.Size()
+		}
+
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return err
+		}
+		if offset > 0 {
+			req.Header.Set("Range", fmt.Sprintf("bytes=%d-", offset))
+		}
+
+		resp, err := client.Do(req)
+		if err != nil {
+			if attempt < maxRetries {
+				fmt.Printf("  retry %d/%d after error: %v\n", attempt, maxRetries, err)
+				continue
+			}
+			return err
+		}
+
+		// 416 = Range Not Satisfiable → file already complete
+		if resp.StatusCode == http.StatusRequestedRangeNotSatisfiable {
+			resp.Body.Close()
+			return nil
+		}
+		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusPartialContent {
+			resp.Body.Close()
+			return fmt.Errorf("HTTP %d: %s", resp.StatusCode, resp.Status)
+		}
+
+		// Open file for append (or create)
+		flag := os.O_CREATE | os.O_WRONLY
+		if resp.StatusCode == http.StatusPartialContent {
+			flag |= os.O_APPEND
+		} else {
+			flag |= os.O_TRUNC // server ignored Range, restart
+		}
+		out, err := os.OpenFile(destPath, flag, 0644)
+		if err != nil {
+			resp.Body.Close()
+			return err
+		}
+
+		_, copyErr := io.Copy(out, resp.Body)
+		resp.Body.Close()
+		out.Close()
+
+		if copyErr != nil {
+			if attempt < maxRetries {
+				fmt.Printf("  retry %d/%d after disconnect\n", attempt, maxRetries)
+				continue
+			}
+			return fmt.Errorf("download failed after %d attempts: %w", maxRetries, copyErr)
+		}
+
+		return nil
 	}
 
-	out, err := os.Create(destPath)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	written, err := io.Copy(out, resp.Body)
-	if err != nil {
-		os.Remove(destPath)
-		return fmt.Errorf("download interrupted after %d bytes: %w", written, err)
-	}
-
-	// Verify size matches Content-Length if provided
-	if resp.ContentLength > 0 && written != resp.ContentLength {
-		os.Remove(destPath)
-		return fmt.Errorf("incomplete download: got %d bytes, expected %d", written, resp.ContentLength)
-	}
-
-	return nil
+	return fmt.Errorf("download failed after %d attempts", maxRetries)
 }
 
 // mountDMG mounts a DMG file
