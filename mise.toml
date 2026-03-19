@@ -45,3 +45,28 @@ run = "go run . self release ${1:-minor}"
 [tasks.clean]
 description = "Remove build artifacts"
 run = "rm -rf .bin .dist"
+
+# ── Docs ──────────────────────────────────────────────────────────────────────
+# utm-dev docs live here in docs/ (CLI reference auto-generated from cobra).
+# Web docs (VitePress) live in plat-trunk — sync them here when they change.
+# PLAT_TRUNK env var must point to your plat-trunk checkout.
+# Example: PLAT_TRUNK=~/workspace/go/src/github.com/joeblew999/plat-trunk
+
+[tasks."docs:gen"]
+description = "Regenerate CLI reference docs from cobra commands"
+run = "go run . docs docs/cli"
+
+[tasks."docs:sync"]
+description = "Copy VitePress built site from plat-trunk into docs/web/ (incremental)"
+sources  = ["${PLAT_TRUNK:-../plat-trunk}/systems/docs/website/docs/**/*.md"]
+outputs  = ["docs/web/**/*.md"]
+run = """
+TRUNK=${PLAT_TRUNK:-../plat-trunk}
+if [ ! -d "$TRUNK/systems/docs/website/docs" ]; then
+  echo "PLAT_TRUNK not found at $TRUNK — set PLAT_TRUNK env var"
+  exit 1
+fi
+mkdir -p docs/web
+cp -r "$TRUNK/systems/docs/website/docs/." docs/web/
+echo "✓ docs:sync complete from $TRUNK"
+"""
