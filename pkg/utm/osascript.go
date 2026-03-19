@@ -21,7 +21,6 @@ var osascripts embed.FS
 
 // ControllerEnumMap maps human-readable controller names to UTM enum codes
 var ControllerEnumMap = map[string]string{
-	"none":   "QdIn",
 	"ide":    "QdIi",
 	"scsi":   "QdIs",
 	"sd":     "QdId",
@@ -192,10 +191,7 @@ const (
 
 // GetBackendForOS returns the appropriate backend for the given OS/arch
 func GetBackendForOS(osType, arch string) VMBackend {
-	// Apple Virtualization framework only works for native ARM arch
-	// and has limited OS support (Linux only, no Windows)
-	// For now, always use QEMU for better compatibility and features
-	// Users can switch to Apple backend manually in UTM if needed
+	// Use QEMU for all VMs — Apple VZ has ISO sandbox access issues in UTM 5
 	return BackendQEMU
 }
 

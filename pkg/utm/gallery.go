@@ -52,14 +52,23 @@ type VMEntry struct {
 	// OS type (windows, linux, macos)
 	OS string `json:"os"`
 
-	// ISO download configuration
+	// ISO download configuration (set for ISO-based installs)
 	ISO ISOConfig `json:"iso,omitempty"`
+
+	// Box download configuration (set for pre-built .utm box installs)
+	// When Box is set, ISO-based create is skipped — box is imported directly.
+	Box *BoxConfig `json:"box,omitempty"`
 
 	// UTM template configuration
 	Template TemplateConfig `json:"template"`
 
 	// Tags for filtering
 	Tags []string `json:"tags,omitempty"`
+}
+
+// IsBoxBased returns true when this VM uses a pre-built box instead of ISO install
+func (v *VMEntry) IsBoxBased() bool {
+	return v.Box != nil && v.Box.Name != ""
 }
 
 // ISOConfig contains ISO download information
@@ -74,6 +83,22 @@ type ISOConfig struct {
 	Filename string `json:"filename"`
 
 	// Size in bytes (for display)
+	Size int64 `json:"size,omitempty"`
+}
+
+// BoxConfig contains a pre-built .utm box download (HCP Vagrant registry format)
+// The box is a tar archive containing a .utm bundle — no OS install needed.
+type BoxConfig struct {
+	// HCP Vagrant registry namespace/name e.g. "utm/windows-11"
+	Name string `json:"name"`
+
+	// Architecture e.g. "arm64"
+	Arch string `json:"arch,omitempty"`
+
+	// Expected SHA256 checksum of the .box file (empty = skip verify)
+	Checksum string `json:"checksum,omitempty"`
+
+	// Approximate size in bytes (for display)
 	Size int64 `json:"size,omitempty"`
 }
 

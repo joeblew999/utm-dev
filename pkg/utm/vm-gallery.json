@@ -8,27 +8,28 @@
       "share": ".data/utm/share"
     },
     "utmApp": {
-      "version": "5.0.1",
-      "url": "https://github.com/utmapp/UTM/releases/download/v5.0.1/UTM.dmg",
+      "version": "5.0.2",
+      "url": "https://github.com/utmapp/UTM/releases/download/v5.0.2/UTM.dmg",
       "checksum": "sha256:to_be_added",
       "minMacOS": "11.0"
     }
   },
   "vms": {
     "windows-11-arm": {
-      "name": "Windows 11",
-      "description": "Windows 11 ARM64 for Apple Silicon",
+      "name": "Windows 11 ARM",
+      "description": "Windows 11 ARM64 for Apple Silicon — pre-built box by naveenrajm7, TPM bypassed via LabConfig, guest tools + WinRM pre-installed",
       "arch": "arm64",
       "os": "windows",
-      "iso": {
-        "url": "https://archive.org/download/windows-11-24h2-arm64-iso/Win11_24H2_English_Arm64.iso",
-        "filename": "Windows11_ARM64.iso",
-        "size": 5500000000
+      "box": {
+        "name": "utm/windows-11",
+        "arch": "arm64",
+        "checksum": "",
+        "size": 6004500000
       },
       "template": {
         "type": "windows-arm64",
         "ram": 4096,
-        "disk": 65536,
+        "disk": 40960,
         "cpu": 2,
         "gpu": true,
         "sharedDir": true
@@ -51,7 +52,8 @@
         "disk": 65536,
         "cpu": 2,
         "gpu": false,
-        "sharedDir": true
+        "sharedDir": true,
+        "tpm": true
       },
       "tags": ["windows", "amd64", "emulated"]
     },

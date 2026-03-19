@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 )
 
 // InstallStatus represents the current UTM installation status
@@ -84,16 +85,22 @@ func InstallUTM(force bool) error {
 		return nil
 	}
 
-	// Check if already installed (but not in cache - add to cache)
+	// Check if already installed (but not in cache)
 	utmctlPath := filepath.Join(appPath, "Contents/MacOS/utmctl")
 	if !force {
 		if _, err := os.Stat(utmctlPath); err == nil {
-			fmt.Printf("UTM is already installed at %s\n", appPath)
-			// Add to cache for future idempotency
-			if err := AddUTMAppToCache(utmApp.Version, utmApp.Checksum); err != nil {
-				fmt.Printf("Warning: failed to update cache: %v\n", err)
+			// Compare installed version to gallery version
+			installedVersion, verErr := getInstalledVersion(utmctlPath)
+			if verErr == nil && strings.TrimSpace(installedVersion) == utmApp.Version {
+				fmt.Printf("UTM v%s is already installed at %s\n", utmApp.Version, appPath)
+				if err := AddUTMAppToCache(utmApp.Version, utmApp.Checksum); err != nil {
+					fmt.Printf("Warning: failed to update cache: %v\n", err)
+				}
+				return nil
 			}
-			return nil
+			// Version mismatch — fall through to reinstall
+			fmt.Printf("UTM update available: installed=%s gallery=%s\n",
+				strings.TrimSpace(installedVersion), utmApp.Version)
 		}
 	}
 

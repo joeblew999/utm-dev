@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/joeblew999/utm-dev/pkg/utm"
 	"github.com/spf13/cobra"
@@ -135,31 +136,47 @@ var utmPathsCmd = &cobra.Command{
 
 var utmInstallCmd = &cobra.Command{
 	Use:   "install [vm-key]",
-	Short: "Install UTM app or download VM ISO",
-	Long: `Install the UTM application or download a VM ISO from the gallery.
+	Short: "Install UTM app or provision a VM from the gallery",
+	Long: `Install the UTM application or provision a VM from the gallery.
 
 Without arguments, installs the UTM application.
-With a VM key, downloads the ISO for that VM.
+With a VM key, provisions the VM — box-based VMs (e.g. Windows 11) are
+downloaded as a pre-built .utm bundle and imported directly into UTM;
+ISO-based VMs (e.g. Ubuntu) download the ISO for manual/automated install.
 
 Examples:
   # Install UTM app
   utm-dev utm install
 
-  # Download Windows 11 ISO
+  # Provision Windows 11 ARM (downloads pre-built box, imports into UTM)
   utm-dev utm install windows-11-arm
 
-  # Force reinstall UTM
-  utm-dev utm install --force`,
+  # Download Ubuntu ISO
+  utm-dev utm install ubuntu-24-arm
+
+  # Force re-provision
+  utm-dev utm install windows-11-arm --force`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		force, _ := cmd.Flags().GetBool("force")
 
 		if len(args) == 0 {
-			// Install UTM app
 			return utm.InstallUTM(force)
 		}
 
-		// Download ISO for specified VM
-		return utm.DownloadISO(args[0], force)
+		vmKey := args[0]
+		gallery, err := utm.LoadGallery()
+		if err != nil {
+			return err
+		}
+		vm, ok := gallery.GetVM(vmKey)
+		if !ok {
+			return fmt.Errorf("VM '%s' not found in gallery. Run 'utm-dev utm gallery' to see available VMs", vmKey)
+		}
+
+		if vm.IsBoxBased() {
+			return utm.InstallBox(vmKey, force)
+		}
+		return utm.DownloadISO(vmKey, force)
 	},
 }
 
@@ -790,6 +807,129 @@ Examples:
 	},
 }
 
+var utmFixNetworkCmd = &cobra.Command{
+	Use:   "fix-network <vm-name>",
+	Short: "Fix Windows VM network: shared + emulated VLAN with RDP/WinRM port forwards",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		vmName := args[0]
+		fmt.Printf("Fixing network for '%s'...\n", vmName)
+		if err := utm.SetupWindowsPortForwards(vmName); err != nil {
+			return err
+		}
+		fmt.Println("Done. RDP: localhost:3389  WinRM: localhost:5985")
+		return nil
+	},
+}
+
+var utmUpCmd = &cobra.Command{
+	Use:   "up <vm-key>",
+	Short: "Bring up a VM (install if needed, start, wait until ready)",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		vmKey := args[0]
+		wait, _ := cmd.Flags().GetBool("wait")
+
+		gallery, err := utm.LoadGallery()
+		if err != nil {
+			return err
+		}
+		vm, ok := gallery.GetVM(vmKey)
+		if !ok {
+			return fmt.Errorf("VM '%s' not found in gallery", vmKey)
+		}
+
+		// Ensure UTM is installed
+		if !utm.IsUTMInstalled() {
+			fmt.Println("UTM not found — installing...")
+			if err := utm.InstallUTM(false); err != nil {
+				return fmt.Errorf("failed to install UTM: %w", err)
+			}
+		}
+
+		// Ensure VM is imported
+		if !utm.VMExistsInUTM(vm.Name) {
+			fmt.Printf("VM '%s' not found in UTM — provisioning...\n", vm.Name)
+			if vm.IsBoxBased() {
+				if err := utm.InstallBox(vmKey, false); err != nil {
+					return err
+				}
+			} else {
+				if err := utm.DownloadISO(vmKey, false); err != nil {
+					return err
+				}
+				if err := utm.CreateVM(vmKey, utm.CreateVMOptions{}); err != nil {
+					return err
+				}
+			}
+		}
+
+		// Start VM if not running
+		status, _ := utm.GetVMStatus(vm.Name)
+		if !strings.Contains(strings.ToLower(status), "started") {
+			fmt.Printf("Starting '%s'...\n", vm.Name)
+			if err := utm.StartVM(vm.Name); err != nil {
+				return fmt.Errorf("failed to start VM: %w", err)
+			}
+		} else {
+			fmt.Printf("'%s' is already running\n", vm.Name)
+		}
+
+		// For Windows: optionally wait until WinRM is up
+		if wait && vm.OS == "windows" {
+			fmt.Println("Waiting for Windows to be ready (WinRM port 5985)...")
+			if err := utm.WaitForWindows("127.0.0.1", 5*time.Minute); err != nil {
+				return err
+			}
+			fmt.Println("Windows is ready.")
+			fmt.Println("  RDP:   localhost:3389")
+			fmt.Println("  WinRM: localhost:5985")
+			fmt.Println("  Credentials: vagrant / vagrant")
+		}
+
+		return nil
+	},
+}
+
+var utmDownCmd = &cobra.Command{
+	Use:   "down <vm-name>",
+	Short: "Stop a running VM",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		vmName := args[0]
+		status, _ := utm.GetVMStatus(vmName)
+		if strings.Contains(strings.ToLower(status), "stopped") {
+			fmt.Printf("'%s' is already stopped\n", vmName)
+			return nil
+		}
+		fmt.Printf("Stopping '%s'...\n", vmName)
+		return utm.StopVM(vmName)
+	},
+}
+
+var utmDestroyCmd = &cobra.Command{
+	Use:   "destroy <vm-name>",
+	Short: "Stop and permanently delete a VM from UTM",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		vmName := args[0]
+
+		// Stop if running
+		status, _ := utm.GetVMStatus(vmName)
+		if !strings.Contains(strings.ToLower(status), "stopped") {
+			fmt.Printf("Stopping '%s'...\n", vmName)
+			_ = utm.StopVM(vmName)
+		}
+
+		fmt.Printf("Deleting '%s'...\n", vmName)
+		if err := utm.DeleteVMFromUTM(vmName); err != nil {
+			return fmt.Errorf("failed to delete VM: %w", err)
+		}
+		fmt.Printf("'%s' destroyed\n", vmName)
+		return nil
+	},
+}
+
 func init() {
 	// Command group for help organization
 	utmCmd.GroupID = "vm"
@@ -817,6 +957,13 @@ func init() {
 	utmCmd.AddCommand(utmScreenshotCmd)
 	utmCmd.AddCommand(utmRunCmd)
 	utmCmd.AddCommand(utmBuildCmd)
+	utmCmd.AddCommand(utmFixNetworkCmd)
+	utmCmd.AddCommand(utmUpCmd)
+	utmCmd.AddCommand(utmDownCmd)
+	utmCmd.AddCommand(utmDestroyCmd)
+
+	// Up flags
+	utmUpCmd.Flags().Bool("wait", true, "Wait until Windows is ready (WinRM port 5985)")
 
 	// Build flags
 	utmBuildCmd.Flags().Bool("pull", false, "Pull built binary back to host after building")

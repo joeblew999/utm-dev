@@ -14,6 +14,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // ProtocolEnumMap maps protocol names to UTM enum codes
@@ -206,6 +207,49 @@ func GetGuestToolsISOPath() (string, error) {
 	}
 
 	return guestToolsPath, nil
+}
+
+// SetupWindowsPortForwards configures shared + emulated VLAN network with RDP/WinRM
+// port forwards on a Windows VM. Retries to handle the delay after import.
+func SetupWindowsPortForwards(vmName string) error {
+	// Retry — utmctl list may not see a freshly imported VM immediately
+	var vmID string
+	var err error
+	for i := 0; i < 6; i++ {
+		vmID, err = GetVMUUID(vmName)
+		if err == nil {
+			break
+		}
+		time.Sleep(3 * time.Second)
+	}
+	if err != nil {
+		return fmt.Errorf("VM '%s' not found after import: %w", vmName, err)
+	}
+
+	// Clear existing interfaces
+	if _, err := ExecuteOsaScript("clear_network_interfaces.applescript", vmID); err != nil {
+		return fmt.Errorf("failed to clear network interfaces: %w", err)
+	}
+	// Add shared (internet)
+	sharedCode, _ := GetNetworkModeEnumCode("shared")
+	if _, err := ExecuteOsaScript("add_network_interface.applescript", vmID, sharedCode); err != nil {
+		return fmt.Errorf("failed to add shared network: %w", err)
+	}
+	// Add emulated VLAN (port forwards)
+	emulatedCode, _ := GetNetworkModeEnumCode("emulated")
+	if _, err := ExecuteOsaScript("add_network_interface.applescript", vmID, emulatedCode); err != nil {
+		return fmt.Errorf("failed to add emulated network: %w", err)
+	}
+	// Add RDP + WinRM port forwards on the emulated interface (index 1)
+	for _, fwd := range []PortForward{
+		{Protocol: "tcp", GuestPort: 3389, HostAddress: "127.0.0.1", HostPort: 3389},
+		{Protocol: "tcp", GuestPort: 5985, HostAddress: "127.0.0.1", HostPort: 5985},
+	} {
+		if err := AddPortForward(vmName, 1, fwd); err != nil {
+			return fmt.Errorf("failed to add port forward %d: %w", fwd.GuestPort, err)
+		}
+	}
+	return nil
 }
 
 // SetupEmulatedNetwork adds an emulated VLAN network interface for port forwarding

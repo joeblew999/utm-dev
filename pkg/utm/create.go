@@ -133,16 +133,19 @@ func createVMAutomated(vmKey string, vm *VMEntry, isoPath, shareDir string, disk
 	// Step 2: Customize VM (CPU, RAM, UEFI)
 	fmt.Printf("Configuring hardware (CPU=%d, RAM=%dMB)...\n", vm.Template.CPU, vm.Template.RAM)
 
-	// Determine if UEFI boot is needed (Linux typically needs it)
-	uefiBoot := vm.OS == "linux" || vm.OS == "windows"
-
 	customizeCmd := []string{
 		"customize_vm.applescript", vmID,
 		"--cpus", strconv.Itoa(vm.Template.CPU),
 		"--memory", strconv.Itoa(vm.Template.RAM),
 		"--name", vmName,
-		"--uefi-boot", strconv.FormatBool(uefiBoot),
-		"--use-hypervisor", strconv.FormatBool(backend == BackendApple),
+	}
+	// QEMU-only options
+	if backend == BackendQEMU {
+		uefiBoot := vm.OS == "linux" || vm.OS == "windows"
+		customizeCmd = append(customizeCmd, "--uefi-boot", strconv.FormatBool(uefiBoot))
+		// Enable hypervisor (HVF) for ARM64 guests on Apple Silicon — near-native speed
+		useHypervisor := vm.Arch == "arm64" || vm.Arch == "aarch64"
+		customizeCmd = append(customizeCmd, "--use-hypervisor", strconv.FormatBool(useHypervisor))
 	}
 
 	if opts.Verbose {
@@ -158,7 +161,12 @@ func createVMAutomated(vmKey string, vm *VMEntry, isoPath, shareDir string, disk
 	// Step 3: Add disk drive
 	fmt.Printf("Adding disk (%d GB)...\n", diskSizeMB/1024)
 
-	controllerCode, _ := GetControllerEnumCode("virtio")
+	// Windows needs nvme — no virtio-blk driver in the Windows installer
+	diskInterface := "virtio"
+	if vm.OS == "windows" {
+		diskInterface = "nvme"
+	}
+	controllerCode, _ := GetControllerEnumCode(diskInterface)
 	addDriveCmd := []string{
 		"add_drive.applescript", vmID,
 		"--interface", controllerCode,
@@ -217,7 +225,11 @@ func createVMAutomated(vmKey string, vm *VMEntry, isoPath, shareDir string, disk
 	fmt.Printf("  2. Complete OS installation in the VM window\n")
 	fmt.Printf("  3. After installation, eject the ISO from UTM settings\n")
 	fmt.Printf("\nShared folder: %s\n", shareDir)
-	fmt.Printf("  Mount in guest: sudo mount -t virtiofs share /mnt/share\n")
+	if vm.OS == "windows" {
+		fmt.Printf("  Access in guest: \\\\mac\\share (auto-mounted via SPICE WebDAV)\n")
+	} else {
+		fmt.Printf("  Mount in guest: sudo mount -t virtiofs share /mnt/share\n")
+	}
 
 	return nil
 }
@@ -249,20 +261,35 @@ func showManualInstructions(vmKey string, vm *VMEntry, isoPath, shareDir string,
 	fmt.Printf("Create VM in UTM:\n")
 	fmt.Printf("══════════════════════════════════════════════════════════\n")
 	fmt.Printf("1. Click + (Create New Virtual Machine)\n")
-	fmt.Printf("2. Select: Virtualize → Linux\n")
-	fmt.Printf("3. Boot ISO: Browse to:\n")
-	fmt.Printf("   %s\n", isoPath)
-	fmt.Printf("4. Hardware: RAM=%d MB, CPU=%d cores\n", vm.Template.RAM, vm.Template.CPU)
-	fmt.Printf("5. Storage: %d GB\n", diskSizeMB/1024)
-	fmt.Printf("6. Shared Directory: Enable and set to:\n")
-	fmt.Printf("   %s\n", shareDir)
-	fmt.Printf("7. Name: %s\n", vm.Name)
-	fmt.Printf("8. Save and Start\n")
-	fmt.Println()
-
-	fmt.Printf("After OS installation, access shared files at:\n")
-	fmt.Printf("  Host:  %s\n", shareDir)
-	fmt.Printf("  Guest: /mnt/share (mount with: sudo mount -t virtiofs share /mnt/share)\n")
+	if vm.OS == "windows" {
+		fmt.Printf("2. Select: Virtualize → Windows\n")
+		fmt.Printf("3. Boot ISO: Browse to:\n")
+		fmt.Printf("   %s\n", isoPath)
+		fmt.Printf("4. Hardware: RAM=%d MB, CPU=%d cores\n", vm.Template.RAM, vm.Template.CPU)
+		fmt.Printf("5. Storage: %d GB\n", diskSizeMB/1024)
+		fmt.Printf("6. Shared Directory: Enable and set to:\n")
+		fmt.Printf("   %s\n", shareDir)
+		fmt.Printf("7. Name: %s\n", vm.Name)
+		fmt.Printf("8. Save and Start\n")
+		fmt.Println()
+		fmt.Printf("After OS installation, access shared files at:\n")
+		fmt.Printf("  Host:  %s\n", shareDir)
+		fmt.Printf("  Guest: \\\\mac\\share (auto-mounted via SPICE WebDAV)\n")
+	} else {
+		fmt.Printf("2. Select: Virtualize → Linux\n")
+		fmt.Printf("3. Boot ISO: Browse to:\n")
+		fmt.Printf("   %s\n", isoPath)
+		fmt.Printf("4. Hardware: RAM=%d MB, CPU=%d cores\n", vm.Template.RAM, vm.Template.CPU)
+		fmt.Printf("5. Storage: %d GB\n", diskSizeMB/1024)
+		fmt.Printf("6. Shared Directory: Enable and set to:\n")
+		fmt.Printf("   %s\n", shareDir)
+		fmt.Printf("7. Name: %s\n", vm.Name)
+		fmt.Printf("8. Save and Start\n")
+		fmt.Println()
+		fmt.Printf("After OS installation, access shared files at:\n")
+		fmt.Printf("  Host:  %s\n", shareDir)
+		fmt.Printf("  Guest: /mnt/share (mount with: sudo mount -t virtiofs share /mnt/share)\n")
+	}
 
 	_ = paths // unused but kept for consistency
 	return nil
