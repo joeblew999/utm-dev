@@ -6,9 +6,9 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/joeblew999/goup-util/pkg/installer"
-	"github.com/joeblew999/goup-util/pkg/self/output"
-	"github.com/joeblew999/goup-util/pkg/utils"
+	"github.com/joeblew999/utm-dev/pkg/installer"
+	"github.com/joeblew999/utm-dev/pkg/self/output"
+	"github.com/joeblew999/utm-dev/pkg/utils"
 )
 
 // BuildOptions contains options for the Build function.
@@ -17,7 +17,7 @@ type BuildOptions struct {
 	Obfuscate bool // If true, use garble to obfuscate the binary
 }
 
-// Build cross-compiles goup-util for all supported architectures.
+// Build cross-compiles utm-dev for all supported architectures.
 // Generates binaries in the current directory and bootstrap scripts in scripts/.
 func Build(opts BuildOptions) error {
 	result := output.BuildResult{
@@ -28,7 +28,7 @@ func Build(opts BuildOptions) error {
 		GarbleInstalled:  false,
 	}
 
-	// Get current directory (where goup-util source is)
+	// Get current directory (where utm-dev source is)
 	currentDir, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get current directory: %w", err)
@@ -58,7 +58,7 @@ func Build(opts BuildOptions) error {
 
 	// Build for all supported architectures
 	for _, arch := range SupportedArchitectures() {
-		outputPath := filepath.Join(currentDir, fmt.Sprintf("goup-util-%s", arch.Suffix))
+		outputPath := filepath.Join(currentDir, fmt.Sprintf("utm-dev-%s", arch.Suffix))
 
 		var buildCmd *exec.Cmd
 		if opts.Obfuscate {
@@ -84,10 +84,10 @@ func Build(opts BuildOptions) error {
 		buildCmd.Stderr = os.Stderr
 
 		if err := buildCmd.Run(); err != nil {
-			return fmt.Errorf("failed to build goup-util for %s/%s: %w", arch.GOOS, arch.GOARCH, err)
+			return fmt.Errorf("failed to build utm-dev for %s/%s: %w", arch.GOOS, arch.GOARCH, err)
 		}
 
-		result.Binaries = append(result.Binaries, fmt.Sprintf("goup-util-%s", arch.Suffix))
+		result.Binaries = append(result.Binaries, fmt.Sprintf("utm-dev-%s", arch.Suffix))
 	}
 
 	// Generate bootstrap scripts with correct binary names

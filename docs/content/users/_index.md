@@ -7,11 +7,11 @@ weight: 1
 
 # User Guides
 
-Everything you need to build, package, and distribute Gio applications with goup-util.
+Everything you need to build, package, and distribute Gio applications with utm-dev.
 
 ## Getting Started
 
-1. **[Quick Start](/users/quickstart/)** -- Install goup-util and build your first app in 5 minutes
+1. **[Quick Start](/users/quickstart/)** -- Install utm-dev and build your first app in 5 minutes
 2. **[Platform Support](/users/platforms/)** -- What works on each platform, requirements, and known limitations
 
 ## Building and Distributing
@@ -23,28 +23,28 @@ Everything you need to build, package, and distribute Gio applications with goup
 
 ```bash
 # Build for a platform
-goup-util build <platform> <app-directory>
+utm-dev build <platform> <app-directory>
 
 # Build and run immediately
-goup-util run <platform> <app-directory>
+utm-dev run <platform> <app-directory>
 
 # Create signed bundle for distribution
-goup-util bundle <platform> <app-directory>
+utm-dev bundle <platform> <app-directory>
 
 # Package into archive (tar.gz / zip)
-goup-util package <platform> <app-directory>
+utm-dev package <platform> <app-directory>
 
 # Generate platform icons from source image
-goup-util icons <app-directory>
+utm-dev icons <app-directory>
 
 # Install platform SDKs
-goup-util install <sdk-name>
+utm-dev install <sdk-name>
 
 # List available SDKs
-goup-util list
+utm-dev list
 
 # Full help
-goup-util --help
+utm-dev --help
 ```
 
 **Supported platforms:** `macos`, `ios`, `ios-simulator`, `android`, `windows`

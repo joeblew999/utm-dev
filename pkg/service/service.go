@@ -3,12 +3,12 @@ package service
 import (
 	"fmt"
 
-	"github.com/joeblew999/goup-util/pkg/config"
-	"github.com/joeblew999/goup-util/pkg/constants"
-	"github.com/joeblew999/goup-util/pkg/gitignore"
-	"github.com/joeblew999/goup-util/pkg/icons"
-	"github.com/joeblew999/goup-util/pkg/project"
-	"github.com/joeblew999/goup-util/pkg/workspace"
+	"github.com/joeblew999/utm-dev/pkg/config"
+	"github.com/joeblew999/utm-dev/pkg/constants"
+	"github.com/joeblew999/utm-dev/pkg/gitignore"
+	"github.com/joeblew999/utm-dev/pkg/icons"
+	"github.com/joeblew999/utm-dev/pkg/project"
+	"github.com/joeblew999/utm-dev/pkg/workspace"
 )
 
 // ServiceConfig configures service behavior
@@ -164,7 +164,7 @@ func (s *GioService) CreateExample(req CreateExampleRequest) (*ProjectResponse, 
 	// TODO: Create basic main.go
 
 	// Calculate relative path for workspace
-	workspacePath := fmt.Sprintf("./modules/goup-util/examples/%s", req.ExampleName)
+	workspacePath := fmt.Sprintf("./modules/utm-dev/examples/%s", req.ExampleName)
 
 	// Find and update workspace if requested
 	if req.UpdateWorkspace {

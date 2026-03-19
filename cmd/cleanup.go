@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/joeblew999/goup-util/pkg/config"
+	"github.com/joeblew999/utm-dev/pkg/config"
 	"github.com/spf13/cobra"
 )
 
 var cleanupCmd = &cobra.Command{
 	Use:   "cleanup",
-	Short: "Clean up goup-util data",
-	Long:  `Clean up various goup-util data directories`,
+	Short: "Clean up utm-dev data",
+	Long:  `Clean up various utm-dev data directories`,
 }
 
 var cleanupAllCmd = &cobra.Command{
@@ -110,7 +110,7 @@ func init() {
 		Deprecated: "Use 'cleanup all' instead",
 		Hidden:     true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println("⚠️  WARNING: This command is deprecated. Use 'goup-util cleanup all' instead.")
+			fmt.Println("⚠️  WARNING: This command is deprecated. Use 'utm-dev cleanup all' instead.")
 			return cleanupAllCmd.RunE(cmd, args)
 		},
 	}

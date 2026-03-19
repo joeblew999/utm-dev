@@ -1,15 +1,15 @@
-// Package utm provides UTM virtual machine management for goup-util.
+// Package utm provides UTM virtual machine management for utm-dev.
 //
 // Architecture:
 //   - This package handles VM configuration, paths, and gallery management
 //   - cmd/utm.go provides the CLI interface using this package
 //
 // Paths:
-//   Global (shared across projects - ~/goup-util-sdks/utm/):
-//   - ~/goup-util-sdks/utm/UTM.app  - UTM application
-//   - ~/goup-util-sdks/utm/iso/     - ISO images for VM creation
-//   - ~/goup-util-sdks/utm/vms/     - Virtual machine files (.utm)
-//   - ~/goup-util-sdks/utm/share/   - Shared folder for host<->VM file transfer
+//   Global (shared across projects - ~/utm-dev-sdks/utm/):
+//   - ~/utm-dev-sdks/utm/UTM.app  - UTM application
+//   - ~/utm-dev-sdks/utm/iso/     - ISO images for VM creation
+//   - ~/utm-dev-sdks/utm/vms/     - Virtual machine files (.utm)
+//   - ~/utm-dev-sdks/utm/share/   - Shared folder for host<->VM file transfer
 package utm
 
 import (
@@ -17,7 +17,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/joeblew999/goup-util/pkg/config"
+	"github.com/joeblew999/utm-dev/pkg/config"
 )
 
 // Paths holds all UTM-related paths
@@ -41,7 +41,7 @@ type Paths struct {
 // DefaultPaths returns the default UTM paths
 // All paths are global (shared across projects)
 func DefaultPaths() Paths {
-	sdkDir := config.GetSDKDir() // ~/goup-util-sdks
+	sdkDir := config.GetSDKDir() // ~/utm-dev-sdks
 
 	return Paths{
 		// Global paths (shared across projects)
@@ -131,10 +131,10 @@ func EnsureDirectories() error {
 	paths := GetPaths()
 
 	dirs := []string{
-		paths.Root,  // ~/goup-util-sdks/utm
-		paths.ISO,   // ~/goup-util-sdks/utm/iso
-		paths.VMs,   // ~/goup-util-sdks/utm/vms
-		paths.Share, // ~/goup-util-sdks/utm/share
+		paths.Root,  // ~/utm-dev-sdks/utm
+		paths.ISO,   // ~/utm-dev-sdks/utm/iso
+		paths.VMs,   // ~/utm-dev-sdks/utm/vms
+		paths.Share, // ~/utm-dev-sdks/utm/share
 	}
 
 	for _, dir := range dirs {
@@ -151,10 +151,10 @@ func EnsureGlobalDirectories() error {
 	paths := GetPaths()
 
 	dirs := []string{
-		paths.Root,  // ~/goup-util-sdks/utm
-		paths.ISO,   // ~/goup-util-sdks/utm/iso
-		paths.VMs,   // ~/goup-util-sdks/utm/vms
-		paths.Share, // ~/goup-util-sdks/utm/share
+		paths.Root,  // ~/utm-dev-sdks/utm
+		paths.ISO,   // ~/utm-dev-sdks/utm/iso
+		paths.VMs,   // ~/utm-dev-sdks/utm/vms
+		paths.Share, // ~/utm-dev-sdks/utm/share
 	}
 
 	for _, dir := range dirs {

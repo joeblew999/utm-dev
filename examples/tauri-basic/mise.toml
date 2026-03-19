@@ -34,7 +34,7 @@ run = "cargo tauri ios build"
 
 [tasks.windows]
 description = "Build and run desktop app in Windows UTM VM"
-run = "goup-util utm run 'Windows 11' ."
+run = "utm-dev utm run 'Windows 11' ."
 
 [tasks.icons]
 description = "Regenerate all platform icons from src-tauri/icons/icon-source.png"

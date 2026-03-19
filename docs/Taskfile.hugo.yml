@@ -6,7 +6,7 @@ vars:
   HUGO_PORT: '1313'
   HUGO_THEME: hugo-book
   HUGO_THEME_REPO: 'https://github.com/alex-shpak/hugo-book.git'
-  HUGO_BASE_URL: 'https://joeblew999.github.io/goup-util/'
+  HUGO_BASE_URL: 'https://joeblew999.github.io/utm-dev/'
 
 tasks:
   src:clone:

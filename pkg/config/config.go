@@ -124,52 +124,52 @@ func GetIOSMinOS() string {
 	return defaults.MinOS
 }
 
-// GetCacheDir returns the OS-appropriate cache directory for goup-util
+// GetCacheDir returns the OS-appropriate cache directory for utm-dev
 func GetCacheDir() string {
 	switch runtime.GOOS {
 	case "darwin": // macOS
 		if home, err := os.UserHomeDir(); err == nil {
-			return filepath.Join(home, "goup-util-cache")
+			return filepath.Join(home, "utm-dev-cache")
 		}
 	case "linux":
 		if cacheHome := os.Getenv("XDG_CACHE_HOME"); cacheHome != "" {
-			return filepath.Join(cacheHome, "goup-util")
+			return filepath.Join(cacheHome, "utm-dev")
 		}
 		if home, err := os.UserHomeDir(); err == nil {
-			return filepath.Join(home, ".cache", "goup-util")
+			return filepath.Join(home, ".cache", "utm-dev")
 		}
 	case "windows":
 		if localAppData := os.Getenv("LOCALAPPDATA"); localAppData != "" {
-			return filepath.Join(localAppData, "goup-util")
+			return filepath.Join(localAppData, "utm-dev")
 		}
 	}
 
 	// Fallback to the old behavior if we can't determine OS-specific path
 	if home, err := os.UserHomeDir(); err == nil {
-		return filepath.Join(home, ".goup-util")
+		return filepath.Join(home, ".utm-dev")
 	}
 
 	// Last resort fallback
-	return ".goup-util"
+	return ".utm-dev"
 }
 
-// GetSDKDir returns the OS-appropriate SDK storage directory for goup-util
+// GetSDKDir returns the OS-appropriate SDK storage directory for utm-dev
 func GetSDKDir() string {
 	switch runtime.GOOS {
 	case "darwin": // macOS
 		if home, err := os.UserHomeDir(); err == nil {
-			return filepath.Join(home, "goup-util-sdks")
+			return filepath.Join(home, "utm-dev-sdks")
 		}
 	case "linux":
 		if dataHome := os.Getenv("XDG_DATA_HOME"); dataHome != "" {
-			return filepath.Join(dataHome, "goup-util", "sdks")
+			return filepath.Join(dataHome, "utm-dev", "sdks")
 		}
 		if home, err := os.UserHomeDir(); err == nil {
-			return filepath.Join(home, ".local", "share", "goup-util", "sdks")
+			return filepath.Join(home, ".local", "share", "utm-dev", "sdks")
 		}
 	case "windows":
 		if appData := os.Getenv("APPDATA"); appData != "" {
-			return filepath.Join(appData, "goup-util", "sdks")
+			return filepath.Join(appData, "utm-dev", "sdks")
 		}
 	}
 
@@ -182,7 +182,7 @@ func GetCachePath() string {
 	return filepath.Join(GetCacheDir(), "cache.json")
 }
 
-// DirectoryInfo contains information about goup-util directories
+// DirectoryInfo contains information about utm-dev directories
 type DirectoryInfo struct {
 	CacheDir    string `json:"cache_dir"`
 	SDKDir      string `json:"sdk_dir"`

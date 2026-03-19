@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/joeblew999/goup-util/pkg/self/output"
+	"github.com/joeblew999/utm-dev/pkg/self/output"
 )
 
 // Doctor validates the installation and all dependencies
@@ -19,12 +19,12 @@ func Doctor() error {
 		Suggestions:   []string{},
 	}
 
-	// Check goup-util itself - look for ALL installations
+	// Check utm-dev itself - look for ALL installations
 	installations := findAllInstallations()
 
 	if len(installations) == 0 {
-		result.Issues = append(result.Issues, "goup-util not found in PATH")
-		result.Suggestions = append(result.Suggestions, "Run: curl -sSL https://github.com/joeblew999/goup-util/releases/latest/download/macos-bootstrap.sh | bash")
+		result.Issues = append(result.Issues, "utm-dev not found in PATH")
+		result.Suggestions = append(result.Suggestions, "Run: curl -sSL https://github.com/joeblew999/utm-dev/releases/latest/download/macos-bootstrap.sh | bash")
 	} else {
 		for i, path := range installations {
 			info := output.InstallationInfo{
@@ -36,7 +36,7 @@ func Doctor() error {
 		}
 
 		if len(installations) > 1 {
-			result.Issues = append(result.Issues, "Multiple goup-util installations found")
+			result.Issues = append(result.Issues, "Multiple utm-dev installations found")
 			for i, path := range installations {
 				if i > 0 {
 					result.Suggestions = append(result.Suggestions, "Remove: "+path)
@@ -102,7 +102,7 @@ func checkDep(name, command string, args ...string) output.DependencyInfo {
 	return dep
 }
 
-// findAllInstallations finds all goup-util binaries in PATH
+// findAllInstallations finds all utm-dev binaries in PATH
 func findAllInstallations() []string {
 	var installations []string
 

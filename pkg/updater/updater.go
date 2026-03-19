@@ -1,6 +1,6 @@
 // Package updater provides self-update from GitHub releases.
 // This is the reusable core extracted from pkg/self/install.go.
-// Any binary (goup-util, webviewer shell, hybrid-dashboard) can use this
+// Any binary (utm-dev, webviewer shell, hybrid-dashboard) can use this
 // to update itself from GitHub release assets.
 //
 // For standalone examples (separate go.mod), the same logic is inlined
@@ -20,7 +20,7 @@ import (
 
 // Config tells the updater where to find releases.
 type Config struct {
-	Repo  string // GitHub owner/repo (e.g. "joeblew999/goup-util")
+	Repo  string // GitHub owner/repo (e.g. "joeblew999/utm-dev")
 	Asset string // Asset name prefix (e.g. "webviewer-shell")
 }
 

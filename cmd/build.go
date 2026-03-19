@@ -6,13 +6,13 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/joeblew999/goup-util/pkg/buildcache"
-	"github.com/joeblew999/goup-util/pkg/config"
-	"github.com/joeblew999/goup-util/pkg/constants"
-	"github.com/joeblew999/goup-util/pkg/icons"
-	"github.com/joeblew999/goup-util/pkg/installer"
-	"github.com/joeblew999/goup-util/pkg/project"
-	"github.com/joeblew999/goup-util/pkg/utils"
+	"github.com/joeblew999/utm-dev/pkg/buildcache"
+	"github.com/joeblew999/utm-dev/pkg/config"
+	"github.com/joeblew999/utm-dev/pkg/constants"
+	"github.com/joeblew999/utm-dev/pkg/icons"
+	"github.com/joeblew999/utm-dev/pkg/installer"
+	"github.com/joeblew999/utm-dev/pkg/project"
+	"github.com/joeblew999/utm-dev/pkg/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -56,10 +56,10 @@ New gogio features (Dec 2025):
   --signkey    Signing: keystore (Android), Keychain key (macOS), or provisioning profile (iOS/macOS)
 
 Examples:
-  goup-util build macos ./myapp
-  goup-util build android ./myapp --schemes "myapp://,https://example.com"
-  goup-util build android ./myapp --queries "com.google.android.apps.maps"
-  goup-util build ios ./myapp --signkey /path/to/profile.mobileprovision`,
+  utm-dev build macos ./myapp
+  utm-dev build android ./myapp --schemes "myapp://,https://example.com"
+  utm-dev build android ./myapp --queries "com.google.android.apps.maps"
+  utm-dev build ios ./myapp --signkey /path/to/profile.mobileprovision`,
 	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		platform := args[0]

@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/joeblew999/goup-util/pkg/constants"
-	"github.com/joeblew999/goup-util/pkg/gitignore"
+	"github.com/joeblew999/utm-dev/pkg/constants"
+	"github.com/joeblew999/utm-dev/pkg/gitignore"
 	"github.com/spf13/cobra"
 )
 
@@ -38,9 +38,9 @@ var gitignoreCmd = &cobra.Command{
 		if gi.Exists {
 			fmt.Printf("✅ .gitignore exists with %d lines\n", info["lines"])
 			if managedSection, ok := info["managed_section"].(bool); ok && managedSection {
-				fmt.Printf("🔧 Has goup-util managed section\n")
+				fmt.Printf("🔧 Has utm-dev managed section\n")
 			} else {
-				fmt.Printf("⚠️  No goup-util managed section\n")
+				fmt.Printf("⚠️  No utm-dev managed section\n")
 			}
 		} else {
 			fmt.Printf("❌ No .gitignore file found\n")

@@ -20,7 +20,7 @@ import (
 	"gioui.org/font"
 	"github.com/gioui-plugins/gio-plugins/plugin/gioplugins"
 	"github.com/gioui-plugins/gio-plugins/webviewer/giowebview"
-	"github.com/joeblew999/goup-util/pkg/logging"
+	"github.com/joeblew999/utm-dev/pkg/logging"
 
 	"golang.org/x/exp/shiny/materialdesign/icons"
 
@@ -65,7 +65,7 @@ type appConfig struct {
 
 // updateConfig tells the shell where to find updates on GitHub.
 type updateConfig struct {
-	Repo  string `json:"repo"`  // GitHub owner/repo (e.g. "joeblew999/goup-util")
+	Repo  string `json:"repo"`  // GitHub owner/repo (e.g. "joeblew999/utm-dev")
 	Asset string `json:"asset"` // Asset name prefix (e.g. "webviewer-shell")
 }
 

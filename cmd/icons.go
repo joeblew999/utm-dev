@@ -1,10 +1,10 @@
 package cmd
 
 import (
-	"github.com/joeblew999/goup-util/pkg/utils"
+	"github.com/joeblew999/utm-dev/pkg/utils"
 	"fmt"
 
-	"github.com/joeblew999/goup-util/pkg/service"
+	"github.com/joeblew999/utm-dev/pkg/service"
 	"github.com/spf13/cobra"
 )
 
@@ -16,10 +16,10 @@ var iconsCmd = &cobra.Command{
 This command automatically manages source icons and output directories based on the project structure.
 
 Examples:
-  goup-util icons android ./my-gio-app
-  goup-util icons ios ./my-gio-app
-  goup-util icons windows ./my-gio-app
-  goup-util icons macos ./my-gio-app`,
+  utm-dev icons android ./my-gio-app
+  utm-dev icons ios ./my-gio-app
+  utm-dev icons windows ./my-gio-app
+  utm-dev icons macos ./my-gio-app`,
 	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		platform := args[0]

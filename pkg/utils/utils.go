@@ -6,12 +6,12 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/joeblew999/goup-util/pkg/config"
-	"github.com/joeblew999/goup-util/pkg/installer"
+	"github.com/joeblew999/utm-dev/pkg/config"
+	"github.com/joeblew999/utm-dev/pkg/installer"
 )
 
 // utils.go provides centralized utility functions to reduce code duplication
-// and maintain DRY principles across the goup-util codebase.
+// and maintain DRY principles across the utm-dev codebase.
 
 // Platform definitions - centralized list of supported platforms
 var (

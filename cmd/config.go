@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/joeblew999/goup-util/pkg/config"
+	"github.com/joeblew999/utm-dev/pkg/config"
 	"github.com/spf13/cobra"
 )
 
@@ -22,7 +22,7 @@ func init() {
 func runConfig(cmd *cobra.Command, args []string) {
 	info := config.GetDirectoryInfo()
 
-	fmt.Println("=== goup-util Configuration ===")
+	fmt.Println("=== utm-dev Configuration ===")
 	fmt.Println()
 	
 	fmt.Println("📁 Directory Locations:")

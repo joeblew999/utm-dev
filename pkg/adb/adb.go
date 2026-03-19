@@ -1,5 +1,5 @@
 // Package adb provides a Go wrapper around Android Debug Bridge (adb) and emulator commands.
-// It resolves tool paths from goup-util's managed SDK directory, so callers don't need
+// It resolves tool paths from utm-dev's managed SDK directory, so callers don't need
 // to worry about PATH configuration.
 package adb
 
@@ -12,7 +12,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/joeblew999/goup-util/pkg/config"
+	"github.com/joeblew999/utm-dev/pkg/config"
 )
 
 // Client wraps adb and emulator operations.
@@ -20,7 +20,7 @@ type Client struct {
 	sdkDir string
 }
 
-// New creates a new ADB client using goup-util's SDK directory.
+// New creates a new ADB client using utm-dev's SDK directory.
 func New() *Client {
 	return &Client{sdkDir: config.GetSDKDir()}
 }

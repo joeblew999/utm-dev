@@ -17,7 +17,7 @@ RobotGo is a Go library for desktop automation including:
 - **Bitmap operations** - Find images on screen
 - **Event hooks** - Listen for global keyboard/mouse events
 
-**For goup-util**: We use **screenshots only** (via build tags)
+**For utm-dev**: We use **screenshots only** (via build tags)
 
 ---
 
@@ -131,7 +131,7 @@ robotgo.Save(img, "output.png")
 
 ---
 
-## Integration in goup-util
+## Integration in utm-dev
 
 ### Build Tag Approach
 
@@ -221,10 +221,10 @@ go build .
 go build -tags screenshot .
 
 # For users
-goup-util screenshot --output screenshot.png  # Uses CLI tools
+utm-dev screenshot --output screenshot.png  # Uses CLI tools
 
 # Or with robotgo (if built with -tags screenshot)
-goup-util screenshot --output screenshot.png  # Uses robotgo
+utm-dev screenshot --output screenshot.png  # Uses robotgo
 ```
 
 ---
@@ -408,7 +408,7 @@ go build
 
 1. Start with CLI tools (no CGO, fast implementation)
 2. Add robotgo as **optional** via build tags
-3. Document both approaches in `goup-util screenshot --help`
+3. Document both approaches in `utm-dev screenshot --help`
 4. Test on actual macOS, Windows, Linux before releasing
 5. Check `.src/robotgo/examples/screen/main.go` for reference implementation
 6. Remember: robotgo needs Screen Recording permission on macOS

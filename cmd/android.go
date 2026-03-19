@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/joeblew999/goup-util/pkg/adb"
+	"github.com/joeblew999/utm-dev/pkg/adb"
 	"github.com/spf13/cobra"
 )
 
 func newADBClient() (*adb.Client, error) {
 	client := adb.New()
 	if !client.Available() {
-		return nil, fmt.Errorf("adb not found at %s\nInstall with: goup-util install platform-tools", client.ADBPath())
+		return nil, fmt.Errorf("adb not found at %s\nInstall with: utm-dev install platform-tools", client.ADBPath())
 	}
 	return client, nil
 }
@@ -19,7 +19,7 @@ func newADBClient() (*adb.Client, error) {
 var androidCmd = &cobra.Command{
 	Use:   "android",
 	Short: "Android device and emulator management",
-	Long:  `Manage Android devices, emulators, and apps using goup-util's managed SDK.`,
+	Long:  `Manage Android devices, emulators, and apps using utm-dev's managed SDK.`,
 }
 
 var androidDevicesCmd = &cobra.Command{
@@ -36,7 +36,7 @@ var androidDevicesCmd = &cobra.Command{
 		}
 		if len(devices) == 0 {
 			fmt.Println("No devices connected.")
-			fmt.Println("Start an emulator with: goup-util android emulator start <avd-name>")
+			fmt.Println("Start an emulator with: utm-dev android emulator start <avd-name>")
 			return nil
 		}
 		for _, d := range devices {
@@ -176,7 +176,7 @@ var androidEmulatorListCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client := adb.New()
 		if !client.EmulatorAvailable() {
-			return fmt.Errorf("emulator not found at %s\nInstall with: goup-util install emulator", client.EmulatorPath())
+			return fmt.Errorf("emulator not found at %s\nInstall with: utm-dev install emulator", client.EmulatorPath())
 		}
 		avds, err := client.EmulatorList()
 		if err != nil {
@@ -202,7 +202,7 @@ var androidEmulatorStartCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client := adb.New()
 		if !client.EmulatorAvailable() {
-			return fmt.Errorf("emulator not found at %s\nInstall with: goup-util install emulator", client.EmulatorPath())
+			return fmt.Errorf("emulator not found at %s\nInstall with: utm-dev install emulator", client.EmulatorPath())
 		}
 		avdName := args[0]
 		fmt.Printf("Starting emulator %s...\n", avdName)

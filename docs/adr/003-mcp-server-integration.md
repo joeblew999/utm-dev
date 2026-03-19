@@ -2,13 +2,13 @@
 
 ## Status
 
-**Proposed** - Transform goup-util into an MCP server for AI assistant integration.
+**Proposed** - Transform utm-dev into an MCP server for AI assistant integration.
 
 ## Context
 
 The Model Context Protocol (MCP) is an open protocol that standardizes how applications provide context to LLMs. The [official Go SDK](https://github.com/modelcontextprotocol/go-sdk) provides **full schema support** using Go struct tags and the `github.com/google/jsonschema-go` package.
 
-By implementing MCP, goup-util can be directly controlled by AI assistants like Claude.
+By implementing MCP, utm-dev can be directly controlled by AI assistants like Claude.
 
 ## Go SDK Schema Support
 
@@ -44,7 +44,7 @@ mcp.AddTool(server, &mcp.Tool{Name: "build"}, HandleBuild)
 Add MCP server mode using the official Go SDK with struct-based schemas:
 
 ```bash
-goup-util mcp serve --stdio
+utm-dev mcp serve --stdio
 ```
 
 ## Implementation Plan
@@ -155,8 +155,8 @@ package mcp
 import (
     "context"
 
-    "github.com/joeblew999/goup-util/pkg/builder"
-    "github.com/joeblew999/goup-util/pkg/utm"
+    "github.com/joeblew999/utm-dev/pkg/builder"
+    "github.com/joeblew999/utm-dev/pkg/utm"
 )
 
 // HandleBuild executes the build command
@@ -234,10 +234,10 @@ import (
     "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// NewServer creates an MCP server with all goup-util tools
+// NewServer creates an MCP server with all utm-dev tools
 func NewServer() *mcp.Server {
     server := mcp.NewServer(&mcp.Implementation{
-        Name:    "goup-util",
+        Name:    "utm-dev",
         Version: "1.0.0",
     }, nil)
 
@@ -289,14 +289,14 @@ func ServeStdio(server *mcp.Server) error {
 package cmd
 
 import (
-    "github.com/joeblew999/goup-util/pkg/mcp"
+    "github.com/joeblew999/utm-dev/pkg/mcp"
     "github.com/spf13/cobra"
 )
 
 var mcpCmd = &cobra.Command{
     Use:   "mcp",
-    Short: "Run goup-util as an MCP server",
-    Long: `Start goup-util as a Model Context Protocol server.
+    Short: "Run utm-dev as an MCP server",
+    Long: `Start utm-dev as a Model Context Protocol server.
 
 Tools are defined with full JSON Schema support via Go struct tags.
 The SDK automatically validates inputs and generates documentation.`,
@@ -306,10 +306,10 @@ var mcpServeCmd = &cobra.Command{
     Use:   "serve",
     Short: "Start the MCP server",
     Example: `  # Start MCP server on stdio (for Claude Desktop)
-  goup-util mcp serve --stdio
+  utm-dev mcp serve --stdio
 
   # With authentication
-  goup-util mcp serve --stdio --auth`,
+  utm-dev mcp serve --stdio --auth`,
     RunE: func(cmd *cobra.Command, args []string) error {
         server := mcp.NewServer()
         return mcp.ServeStdio(server)
@@ -331,8 +331,8 @@ func init() {
 ```json
 {
   "mcpServers": {
-    "goup-util": {
-      "command": "goup-util",
+    "utm-dev": {
+      "command": "utm-dev",
       "args": ["mcp", "serve", "--stdio"]
     }
   }

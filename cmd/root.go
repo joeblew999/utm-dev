@@ -3,29 +3,29 @@ package cmd
 import (
 	"os"
 
-	"github.com/joeblew999/goup-util/pkg/schema"
+	"github.com/joeblew999/utm-dev/pkg/schema"
 	"github.com/spf13/cobra"
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "goup-util",
+	Use:   "utm-dev",
 	Short: "Build cross-platform hybrid apps with Go",
-	Long: `goup-util - Build cross-platform hybrid applications using Go and Gio UI.
+	Long: `utm-dev - Build cross-platform hybrid applications using Go and Gio UI.
 
 Write HTML/CSS once → Deploy everywhere: Web, iOS, Android, Desktop
 
 QUICK START:
-  goup-util build macos examples/hybrid-dashboard   Build for macOS
-  goup-util run macos examples/hybrid-dashboard     Build and run
-  goup-util icons examples/hybrid-dashboard         Generate icons
+  utm-dev build macos examples/hybrid-dashboard   Build for macOS
+  utm-dev run macos examples/hybrid-dashboard     Build and run
+  utm-dev icons examples/hybrid-dashboard         Generate icons
 
 SDK MANAGEMENT:
-  goup-util install ndk-bundle                      Install Android NDK
-  goup-util list                                    List available SDKs
+  utm-dev install ndk-bundle                      Install Android NDK
+  utm-dev list                                    List available SDKs
 
 DOCUMENTATION:
-  goup-util docs                                    Generate CLI docs
-  https://github.com/joeblew999/goup-util`,
+  utm-dev docs                                    Generate CLI docs
+  https://github.com/joeblew999/utm-dev`,
 }
 
 func Execute() {

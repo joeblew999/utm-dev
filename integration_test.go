@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/joeblew999/goup-util/pkg/config"
+	"github.com/joeblew999/utm-dev/pkg/config"
 )
 
 // TestCleanupCommands tests the cleanup command logic without running the actual CLI

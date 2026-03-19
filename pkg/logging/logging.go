@@ -1,4 +1,4 @@
-// Package logging provides structured runtime logging for goup-util apps.
+// Package logging provides structured runtime logging for utm-dev apps.
 //
 // It wraps log/slog to provide:
 //   - Structured JSON log files (append-only, immutable — DuckDB-friendly)
@@ -10,7 +10,7 @@
 //
 //	logger := logging.New(logging.Config{
 //	    AppName: "my-app",
-//	    LogDir:  "/path/to/logs",  // empty = os.TempDir()/goup-util-logs
+//	    LogDir:  "/path/to/logs",  // empty = os.TempDir()/utm-dev-logs
 //	})
 //	defer logger.Close()
 //
@@ -29,7 +29,7 @@ import (
 	"time"
 )
 
-// Logger is the runtime logger for goup-util apps.
+// Logger is the runtime logger for utm-dev apps.
 type Logger struct {
 	slog      *slog.Logger
 	file      *os.File
@@ -42,9 +42,9 @@ type Logger struct {
 type Role string
 
 const (
-	// RoleDev is goup-util itself (build, screenshot, install commands).
+	// RoleDev is utm-dev itself (build, screenshot, install commands).
 	RoleDev Role = "dev"
-	// RoleApp is an application built with goup-util (webviewer, hybrid-dashboard).
+	// RoleApp is an application built with utm-dev (webviewer, hybrid-dashboard).
 	RoleApp Role = "app"
 )
 
@@ -58,7 +58,7 @@ type Config struct {
 	Role Role
 
 	// LogDir is the directory for log files. If empty, uses
-	// os.TempDir()/goup-util-logs.
+	// os.TempDir()/utm-dev-logs.
 	LogDir string
 
 	// Console enables human-readable output to stderr.
@@ -74,7 +74,7 @@ type Config struct {
 // Each line is a self-contained JSON object — perfect for DuckDB ingestion.
 func New(cfg Config) (*Logger, error) {
 	if cfg.AppName == "" {
-		cfg.AppName = "goup-util"
+		cfg.AppName = "utm-dev"
 	}
 	if cfg.Role == "" {
 		cfg.Role = RoleApp
@@ -82,7 +82,7 @@ func New(cfg Config) (*Logger, error) {
 
 	logDir := cfg.LogDir
 	if logDir == "" {
-		logDir = filepath.Join(os.TempDir(), "goup-util-logs")
+		logDir = filepath.Join(os.TempDir(), "utm-dev-logs")
 	}
 	if err := os.MkdirAll(logDir, 0755); err != nil {
 		return nil, fmt.Errorf("logging: create log dir: %w", err)

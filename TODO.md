@@ -1,4 +1,4 @@
-# goup-util TODO
+# utm-dev TODO
 
 **Status**: Tool works! Builds hybrid apps for macOS, iOS, Android successfully.  
 **Next**: Polish the experience and expand platform support.
@@ -103,7 +103,7 @@ Now i want the whole root taskfile system designed so that in each example in th
 │  │  │  - Go (via winget)       │  │     │
 │  │  │  - VSCode (via winget)   │  │     │
 │  │  │                          │  │     │
-│  │  │  → Run goup-util tests   │  │     │
+│  │  │  → Run utm-dev tests   │  │     │
 │  │  │  → Build Windows apps    │  │     │
 │  │  └──────────────────────────┘  │     │
 │  └────────────────────────────────┘     │
@@ -120,7 +120,7 @@ Automated via:
   - Use: https://github.com/naveenrajm7/packer-plugin-utm
 - [ ] **Winget provisioning** - Install dev tools in VM
   - Use: https://github.com/mbarbita/go-winget
-- [ ] **Test runner** - Execute goup-util tests in Windows VM
+- [ ] **Test runner** - Execute utm-dev tests in Windows VM
 - [ ] **CI integration** - Run Windows tests on every commit
 
 **Implementation**: Phase 4 (Q4 2025) or when Windows support needed
@@ -135,11 +135,11 @@ Automated via:
 
 #### 5.1 Better Preset Management
 - [ ] Add `--store` filter to `--list-presets`
-  - Example: `goup-util screenshot --list-presets --store ios`
+  - Example: `utm-dev screenshot --list-presets --store ios`
   - Shows only iOS presets, cleaner output
 - [ ] Group presets by store in `showPresets()` output
 - [ ] Add preset search by dimensions
-  - Example: `goup-util screenshot --find-preset 1920x1080`
+  - Example: `utm-dev screenshot --find-preset 1920x1080`
 
 #### 5.2 Manual Interactive Mode
 **Quick Win - Highest Priority**
@@ -233,9 +233,9 @@ runAndCaptureCmd.Flags().Int("wait-manual", 5000, "Wait time in manual mode (ms)
 ---
 
 ### 8. Testing & Deployment
-- [ ] **Simulator/emulator automation** - `goup-util test ios --simulator`
-- [ ] **Device deployment** - `goup-util deploy android --device`
-- [ ] **Store helpers** - `goup-util deploy appstore --testflight`
+- [ ] **Simulator/emulator automation** - `utm-dev test ios --simulator`
+- [ ] **Device deployment** - `utm-dev deploy android --device`
+- [ ] **Store helpers** - `utm-dev deploy appstore --testflight`
 - [ ] **CI/CD templates** - GitHub Actions, CircleCI configs
 
 **Implementation**: Phase 4 (Q4 2025)
@@ -250,7 +250,7 @@ runAndCaptureCmd.Flags().Int("wait-manual", 5000, "Wait time in manual mode (ms)
 - [ ] **Better CGo detection** - warn early about cross-compile issues
 
 ### 10. Plugin System
-- [ ] **Custom commands** - extend goup-util via plugins
+- [ ] **Custom commands** - extend utm-dev via plugins
 - [ ] **Build hooks** - pre-build, post-build, pre-deploy
 - [ ] **Plugin marketplace** - share community plugins
 
@@ -324,18 +324,18 @@ New features from the latest Gio, gio-plugins, and gio-cmd updates.
 
 **PR #9: Deep Linking / Custom URI Schemes** ✨ FULLY IMPLEMENTED
 - [x] `-schemes` flag merged into gogio (Dec 15, 2025)
-- [x] Add `--schemes` flag to goup-util build command ✅
+- [x] Add `--schemes` flag to utm-dev build command ✅
 - [x] Support for Android, iOS, macOS, Windows deep links ✅
-- [x] Example: `goup-util build macos --schemes hybrid` ✅
+- [x] Example: `utm-dev build macos --schemes hybrid` ✅
 - [x] Integration with webviewer (app.URLEvent → webview navigation) ✅
 - [x] Taskfile tasks: `demo:deeplink`, `test:deeplink`, `build:hybrid:*:deeplink` ✅
 - [x] hybrid-dashboard example with deep link handling ✅
 
 **PR #23: Android App Queries** ✅ IMPLEMENTED
 - [x] `-queries` flag merged (Dec 16, 2025)
-- [x] Add `--queries` flag to goup-util build command ✅
+- [x] Add `--queries` flag to utm-dev build command ✅
 - [x] Enables checking if apps are installed before launching intents ✅
-- [x] Example: `goup-util build android --queries com.google.android.apps.maps` ✅
+- [x] Example: `utm-dev build android --queries com.google.android.apps.maps` ✅
 
 **PR #21: iOS App Store Compatibility Fixes**
 - [x] All 6 validation issues fixed (Dec 16, 2025)
@@ -343,16 +343,16 @@ New features from the latest Gio, gio-plugins, and gio-cmd updates.
 - [x] 3-part version format (1.2.3 not 1.2.3.4)
 - [x] iPad multitasking disabled by default
 - [x] iPad 152x152 icon auto-generated
-- [ ] Test App Store upload with goup-util built apps
+- [ ] Test App Store upload with utm-dev built apps
 
 **PR #22: WASM Go 1.23+ Compatibility**
 - [x] Fixed WASM compatibility (Dec 15, 2025)
-- [ ] Test `goup-util build wasm` with Go 1.25
+- [ ] Test `utm-dev build wasm` with Go 1.25
 
 **PR #19: Android 15+ / 16KB Page Size**
 - [x] 64KB page-size for Android 15+ (May 2025)
 - [x] Google Play requires 16KB-compatible by Nov 2025
-- [ ] Verify goup-util Android builds are compatible
+- [ ] Verify utm-dev Android builds are compatible
 
 **PR #20: macOS/iOS Signing & Profiles** ✅ IMPLEMENTED
 - [x] Custom profile support merged

@@ -12,19 +12,19 @@ import (
 var docsCmd = &cobra.Command{
 	Use:   "docs [output-dir]",
 	Short: "Generate CLI documentation",
-	Long: `Generate documentation for all goup-util commands.
+	Long: `Generate documentation for all utm-dev commands.
 
 Outputs markdown files that can be used in README or documentation sites.
 
 Examples:
   # Generate docs to ./docs/cli/
-  goup-util docs
+  utm-dev docs
 
   # Generate to custom directory
-  goup-util docs ./my-docs/
+  utm-dev docs ./my-docs/
 
   # Generate man pages
-  goup-util docs --format man ./man/`,
+  utm-dev docs --format man ./man/`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		outputDir := "docs/cli"

@@ -1,14 +1,14 @@
 package cmd
 
 import (
-	"github.com/joeblew999/goup-util/pkg/utils"
+	"github.com/joeblew999/utm-dev/pkg/utils"
 	"fmt"
 	"os"
 	"path/filepath"
 
-	"github.com/joeblew999/goup-util/pkg/constants"
-	"github.com/joeblew999/goup-util/pkg/packaging"
-	"github.com/joeblew999/goup-util/pkg/project"
+	"github.com/joeblew999/utm-dev/pkg/constants"
+	"github.com/joeblew999/utm-dev/pkg/packaging"
+	"github.com/joeblew999/utm-dev/pkg/project"
 	"github.com/spf13/cobra"
 )
 
@@ -66,7 +66,7 @@ func packageMacOS(appDir, appName string) error {
 	// Check if app exists
 	appPath := filepath.Join(binDir, appName+".app")
 	if _, err := os.Stat(appPath); os.IsNotExist(err) {
-		return fmt.Errorf("app not found: %s. Run 'goup-util build macos %s' first", appPath, appDir)
+		return fmt.Errorf("app not found: %s. Run 'utm-dev build macos %s' first", appPath, appDir)
 	}
 
 	// Create tar.gz package using packaging library
@@ -93,7 +93,7 @@ func packageAndroid(appDir, appName string) error {
 	// Check if APK exists
 	apkPath := filepath.Join(binDir, appName+".apk")
 	if _, err := os.Stat(apkPath); os.IsNotExist(err) {
-		return fmt.Errorf("APK not found: %s. Run 'goup-util build android %s' first", apkPath, appDir)
+		return fmt.Errorf("APK not found: %s. Run 'utm-dev build android %s' first", apkPath, appDir)
 	}
 
 	// Copy APK to dist with versioned name using packaging library
@@ -120,7 +120,7 @@ func packageIOS(appDir, appName string) error {
 	// Check if app exists
 	appPath := filepath.Join(binDir, appName+".app")
 	if _, err := os.Stat(appPath); os.IsNotExist(err) {
-		return fmt.Errorf("app not found: %s. Run 'goup-util build ios %s' first", appPath, appDir)
+		return fmt.Errorf("app not found: %s. Run 'utm-dev build ios %s' first", appPath, appDir)
 	}
 
 	// Create tar.gz package using packaging library
@@ -147,7 +147,7 @@ func packageWindows(appDir, appName string) error {
 	// Check if exe exists
 	exePath := filepath.Join(binDir, appName+".exe")
 	if _, err := os.Stat(exePath); os.IsNotExist(err) {
-		return fmt.Errorf("executable not found: %s. Run 'goup-util build windows %s' first", exePath, appDir)
+		return fmt.Errorf("executable not found: %s. Run 'utm-dev build windows %s' first", exePath, appDir)
 	}
 
 	// Create zip package using packaging library

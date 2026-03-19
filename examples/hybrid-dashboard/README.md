@@ -41,7 +41,7 @@
 
 ```bash
 # Add to workspace
-cd ../..  # back to goup-util root
+cd ../..  # back to utm-dev root
 go work use examples/hybrid-dashboard
 
 # Build for macOS
@@ -211,4 +211,4 @@ http.HandleFunc("/api/login", handleLogin)
 3. **Add native integrations** - Use Gio plugins for camera, location, etc.
 4. **Deploy** - Build for your target platforms
 
-This is **THE template** for building production hybrid apps with goup-util! 🚀
+This is **THE template** for building production hybrid apps with utm-dev! 🚀

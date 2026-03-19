@@ -7,14 +7,14 @@ weight: 2
 
 # Developer Guides
 
-Documentation for developers working on or contributing to goup-util.
+Documentation for developers working on or contributing to utm-dev.
 
 ## Development Setup
 
 ```bash
 # Clone and build
-git clone https://github.com/joeblew999/goup-util
-cd goup-util
+git clone https://github.com/joeblew999/utm-dev
+cd utm-dev
 go build .
 
 # Run tests
@@ -27,10 +27,10 @@ task --list
 ## Project Structure
 
 ```
-goup-util/
+utm-dev/
   cmd/                # CLI commands (Cobra-based)
   pkg/
-    self/             # Self-management (build/install goup-util itself)
+    self/             # Self-management (build/install utm-dev itself)
     buildcache/       # Idempotent build cache
     config/           # SDK configuration and JSON definitions
     icons/            # Platform icon generation
@@ -47,7 +47,7 @@ goup-util/
   .src/               # Cloned dependency source (gitignored)
 ```
 
-**Key separation:** `pkg/self/` manages goup-util itself (building, installing, upgrading the tool). Everything else manages the apps that goup-util builds. Don't mix them.
+**Key separation:** `pkg/self/` manages utm-dev itself (building, installing, upgrading the tool). Everything else manages the apps that utm-dev builds. Don't mix them.
 
 ## Guides
 

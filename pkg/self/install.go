@@ -10,12 +10,12 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/joeblew999/goup-util/pkg/self/output"
+	"github.com/joeblew999/utm-dev/pkg/self/output"
 )
 
 // InstallSelf installs the current binary to system path.
-// For Unix (macOS, Linux): /usr/local/bin/goup-util
-// For Windows: %USERPROFILE%\goup-util.exe (and adds to PATH if needed)
+// For Unix (macOS, Linux): /usr/local/bin/utm-dev
+// For Windows: %USERPROFILE%\utm-dev.exe (and adds to PATH if needed)
 func InstallSelf() error {
 	var installPath string
 	var err error
@@ -123,7 +123,7 @@ func installSelfWindows() (string, error) {
 		return "", fmt.Errorf("USERPROFILE environment variable not set")
 	}
 
-	installPath := filepath.Join(userProfile, "goup-util.exe")
+	installPath := filepath.Join(userProfile, "utm-dev.exe")
 
 	// Get current executable path
 	exePath, err := os.Executable()
@@ -325,7 +325,7 @@ func getBinaryName() string {
 	arch := CurrentArchitecture()
 	if arch == nil {
 		// Fallback if platform not supported
-		return fmt.Sprintf("goup-util-%s-%s", runtime.GOOS, runtime.GOARCH)
+		return fmt.Sprintf("utm-dev-%s-%s", runtime.GOOS, runtime.GOARCH)
 	}
 	return arch.BinaryName()
 }
@@ -333,14 +333,14 @@ func getBinaryName() string {
 // getInstallPath returns the installation path for the current platform
 func getInstallPath() string {
 	if runtime.GOOS == "windows" {
-		return filepath.Join(os.Getenv("USERPROFILE"), "goup-util.exe")
+		return filepath.Join(os.Getenv("USERPROFILE"), "utm-dev.exe")
 	}
 	return UnixInstallPath
 }
 
-// UninstallSelf removes goup-util from the system path.
-// For Unix (macOS, Linux): removes /usr/local/bin/goup-util
-// For Windows: removes %USERPROFILE%\goup-util.exe
+// UninstallSelf removes utm-dev from the system path.
+// For Unix (macOS, Linux): removes /usr/local/bin/utm-dev
+// For Windows: removes %USERPROFILE%\utm-dev.exe
 func UninstallSelf() error {
 	result := output.UninstallResult{
 		Removed: []string{},
@@ -368,7 +368,7 @@ func UninstallSelf() error {
 	return nil
 }
 
-// findAllGoupUtilInstallations finds all goup-util binaries in PATH
+// findAllGoupUtilInstallations finds all utm-dev binaries in PATH
 func findAllGoupUtilInstallations() []string {
 	var installations []string
 

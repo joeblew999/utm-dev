@@ -1,4 +1,4 @@
-# mise.toml — tool version pins + tasks for goup-util
+# mise.toml — tool version pins + tasks for utm-dev
 #
 # Install: https://mise.jdx.dev
 # Usage:   mise install   (installs all tools)
@@ -18,14 +18,14 @@ xcodegen          = {version = "latest", os = ["macos"]}
 ruby              = {version = "3.3",    os = ["macos"]}
 
 # ── Tasks ────────────────────────────────────────────────────────────────────
-# Kept minimal — goup-util IS the CLI. Use `goup-util <subcommand>` directly
+# Kept minimal — utm-dev IS the CLI. Use `utm-dev <subcommand>` directly
 # for utm, android, ios, sdk etc. These tasks cover the dev loop only.
 # go.work is gitignored (local dev only) — mise doesn't set GOWORK so it
 # resolves naturally: present → workspace mode, absent → module mode.
 
 [tasks.build]
-description = "Build goup-util binary for local dev"
-run = "go build -o .bin/goup-util ."
+description = "Build utm-dev binary for local dev"
+run = "go build -o .bin/utm-dev ."
 
 [tasks.test]
 description = "Run tests"

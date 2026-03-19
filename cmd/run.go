@@ -5,10 +5,10 @@ import (
 	"os/exec"
 	"runtime"
 
-	"github.com/joeblew999/goup-util/pkg/adb"
-	"github.com/joeblew999/goup-util/pkg/project"
-	"github.com/joeblew999/goup-util/pkg/simctl"
-	"github.com/joeblew999/goup-util/pkg/utils"
+	"github.com/joeblew999/utm-dev/pkg/adb"
+	"github.com/joeblew999/utm-dev/pkg/project"
+	"github.com/joeblew999/utm-dev/pkg/simctl"
+	"github.com/joeblew999/utm-dev/pkg/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -22,12 +22,12 @@ opened using the platform-specific path, so you don't need to know where it's bu
 
 Platforms: macos, android, ios-simulator
 
-For Windows, use: goup-util utm run "Windows 11" <app-dir>
+For Windows, use: utm-dev utm run "Windows 11" <app-dir>
 
 Examples:
-  goup-util run macos ./myapp
-  goup-util run android examples/hybrid-dashboard
-  goup-util run ios-simulator examples/hybrid-dashboard`,
+  utm-dev run macos ./myapp
+  utm-dev run android examples/hybrid-dashboard
+  utm-dev run ios-simulator examples/hybrid-dashboard`,
 	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		platform := args[0]
@@ -100,12 +100,12 @@ Examples:
 func launchAndroidApp(apkPath, appName string) error {
 	client := adb.New()
 	if !client.Available() {
-		return fmt.Errorf("adb not found at %s\nInstall with: goup-util install platform-tools", client.ADBPath())
+		return fmt.Errorf("adb not found at %s\nInstall with: utm-dev install platform-tools", client.ADBPath())
 	}
 
 	// Ensure a device is connected
 	if !client.HasDevice() {
-		return fmt.Errorf("no Android device connected. Start an emulator with: goup-util android emulator start <avd-name>")
+		return fmt.Errorf("no Android device connected. Start an emulator with: utm-dev android emulator start <avd-name>")
 	}
 
 	// Install the APK
@@ -141,7 +141,7 @@ func launchIOSSimulator(appPath, appName string) error {
 		// Try to open Simulator.app which boots the default device
 		fmt.Println("No simulator booted, opening Simulator.app...")
 		if err := client.OpenSimulatorApp(); err != nil {
-			return fmt.Errorf("could not open Simulator app: %w\nBoot a simulator with: goup-util ios boot \"iPhone 16\"", err)
+			return fmt.Errorf("could not open Simulator app: %w\nBoot a simulator with: utm-dev ios boot \"iPhone 16\"", err)
 		}
 		fmt.Println("Waiting for simulator to boot...")
 	}

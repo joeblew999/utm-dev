@@ -118,7 +118,7 @@ gioplugins.Execute(gtx, giowebview.NavigateCmd{
 
 **Location**: `.src/gio-plugins/explorer/`
 
-## Integration with goup-util
+## Integration with utm-dev
 
 **Example Projects**:
 - `examples/gio-plugin-webviewer/` - Multi-tab browser

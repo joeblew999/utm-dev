@@ -1,6 +1,6 @@
 # UTM AppleScript Automation
 
-This document describes the UTM AppleScript automation patterns used in goup-util, adapted from [naveenrajm7/packer-plugin-utm](https://github.com/naveenrajm7/packer-plugin-utm).
+This document describes the UTM AppleScript automation patterns used in utm-dev, adapted from [naveenrajm7/packer-plugin-utm](https://github.com/naveenrajm7/packer-plugin-utm).
 
 ## Source Reference
 
@@ -74,26 +74,26 @@ osascript attach_iso.applescript <UUID> --interface "QdIu" --source "/path/to/is
 osascript add_network_interface.applescript <UUID> "ShRd"
 ```
 
-## Usage in goup-util
+## Usage in utm-dev
 
 ```bash
 # Automated VM creation (recommended)
-goup-util utm create debian-13-arm
+utm-dev utm create debian-13-arm
 
 # With verbose output
-goup-util utm create debian-13-arm --verbose
+utm-dev utm create debian-13-arm --verbose
 
 # Force recreate existing VM
-goup-util utm create debian-13-arm --force
+utm-dev utm create debian-13-arm --force
 
 # Manual mode (shows instructions)
-goup-util utm create debian-13-arm --manual
+utm-dev utm create debian-13-arm --manual
 ```
 
 ## Prerequisites
 
-1. **UTM Installed**: `goup-util utm install`
-2. **ISO Downloaded**: `goup-util utm install <vm-key>`
+1. **UTM Installed**: `utm-dev utm install`
+2. **ISO Downloaded**: `utm-dev utm install <vm-key>`
 3. **Automation Permission**: System Settings > Privacy > Automation > Terminal > UTM
 
 ## Troubleshooting

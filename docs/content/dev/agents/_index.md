@@ -7,7 +7,7 @@ weight: 2
 
 # AI Agent Collaboration Guide
 
-This directory contains documentation for AI assistants (like Claude Code, GitHub Copilot, Cursor, etc.) to collaborate effectively on the goup-util project.
+This directory contains documentation for AI assistants (like Claude Code, GitHub Copilot, Cursor, etc.) to collaborate effectively on the utm-dev project.
 
 ## Purpose
 
@@ -32,7 +32,7 @@ When adding a new major dependency or subsystem:
 
 ## For AI Assistants
 
-When working on goup-util:
+When working on utm-dev:
 
 1. Check `.src/` for dependency source code
 2. Read relevant agent guides before making changes

@@ -1,16 +1,16 @@
 ---
-title: "goup-util Documentation"
+title: "utm-dev Documentation"
 date: 2025-12-21
 draft: false
 ---
 
-# goup-util
+# utm-dev
 
 A build tool for cross-platform hybrid applications using Go and Gio UI.
 
 Write your app in Go, deploy it to macOS, iOS, Android, and Windows from a single codebase. Combine native Gio UI controls with native webviews for hybrid apps.
 
-## What goup-util Does
+## What utm-dev Does
 
 - **Builds** Gio applications for macOS, iOS, Android, and Windows
 - **Bundles** signed app packages for distribution (macOS code signing, Android APK signing)
@@ -20,21 +20,21 @@ Write your app in Go, deploy it to macOS, iOS, Android, and Windows from a singl
 
 ```bash
 # Build a hybrid app for macOS
-goup-util build macos examples/hybrid-dashboard
+utm-dev build macos examples/hybrid-dashboard
 
 # Build for Android
-goup-util build android examples/hybrid-dashboard
+utm-dev build android examples/hybrid-dashboard
 
 # Create a signed macOS bundle
-goup-util bundle macos examples/hybrid-dashboard
+utm-dev bundle macos examples/hybrid-dashboard
 
 # Generate platform icons
-goup-util icons examples/hybrid-dashboard
+utm-dev icons examples/hybrid-dashboard
 ```
 
 ## The Hybrid App Architecture
 
-goup-util enables apps that combine **native Gio UI** (Go-based controls, navigation, layout) with **native webviews** (WKWebView on macOS/iOS, Chromium WebView on Android, WebView2 on Windows):
+utm-dev enables apps that combine **native Gio UI** (Go-based controls, navigation, layout) with **native webviews** (WKWebView on macOS/iOS, Chromium WebView on Android, WebView2 on Windows):
 
 ```
 +-------------------------------------+
@@ -61,14 +61,14 @@ This is for apps where you want native performance and native platform integrati
 
 ### For Users
 
-- **[Quick Start](/users/quickstart/)** -- Install goup-util, build your first app
+- **[Quick Start](/users/quickstart/)** -- Install utm-dev, build your first app
 - **[Platform Support](/users/platforms/)** -- What works on each platform, requirements, known limitations
 - **[Packaging](/users/packaging/)** -- Build, bundle, and package apps for distribution
 - **[Webviewer Shell](/users/webviewer-shell/)** -- Run any website as a desktop app with zero coding
 
 ### For Developers
 
-- **[Architecture](/architecture/)** -- How goup-util works, webview analysis, project structure
+- **[Architecture](/architecture/)** -- How utm-dev works, webview analysis, project structure
 - **[CI/CD](/dev/cicd/)** -- GitHub Actions integration for automated builds
 - **[AI Collaboration](/dev/agents/)** -- Guides for AI assistants working on this project
 
@@ -101,6 +101,6 @@ The `examples/` directory contains working apps:
 
 ## Links
 
-- [GitHub Repository](https://github.com/joeblew999/goup-util)
-- [Issues](https://github.com/joeblew999/goup-util/issues)
-- [Releases](https://github.com/joeblew999/goup-util/releases)
+- [GitHub Repository](https://github.com/joeblew999/utm-dev)
+- [Issues](https://github.com/joeblew999/utm-dev/issues)
+- [Releases](https://github.com/joeblew999/utm-dev/releases)

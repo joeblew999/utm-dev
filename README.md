@@ -1,6 +1,6 @@
-# goup-util
+# utm-dev
 
-https://github.com/joeblew999/goup-util
+https://github.com/joeblew999/utm-dev
 
 **About:** Write HTML/HTMX once, deploy everywhere: Web, iOS, Android, Desktop—with instant updates and no app store approval.
 
@@ -14,7 +14,7 @@ Write HTML/CSS once → Deploy everywhere: Web, iOS, Android, Desktop
 ![Go Version](https://img.shields.io/badge/go-1.25%2B-blue)
 ![Platforms](https://img.shields.io/badge/platforms-macOS%20%7C%20iOS%20%7C%20Android%20%7C%20Windows%20%7C%20Linux-green)
 
-**[Documentation](https://joeblew999.github.io/goup-util/)** | **[Quick Start](https://joeblew999.github.io/goup-util/users/quickstart/)** | **[Platform Support](https://joeblew999.github.io/goup-util/users/platforms/)** | **[Examples](examples/)**
+**[Documentation](https://joeblew999.github.io/utm-dev/)** | **[Quick Start](https://joeblew999.github.io/utm-dev/users/quickstart/)** | **[Platform Support](https://joeblew999.github.io/utm-dev/users/platforms/)** | **[Examples](examples/)**
 
 <p align="center">
   <img src="docs/screenshots/hybrid-dashboard-macos.png" alt="Hybrid Dashboard - Native app with web UI" width="600">
@@ -35,7 +35,7 @@ Write HTML/CSS once → Deploy everywhere: Web, iOS, Android, Desktop
 - ✅ **Example apps** - Working demos for webviewer and hybrid apps
 
 ### 🔨 Current Focus (Polish Phase)
-- 🔧 Self-updating improvements for goup-util binary
+- 🔧 Self-updating improvements for utm-dev binary
 - 🔧 Enhanced error messages and user feedback
 - 🔧 Progress indicators for long operations
 - 🔧 Documentation refinement
@@ -52,7 +52,7 @@ Write HTML/CSS once → Deploy everywhere: Web, iOS, Android, Desktop
 - ✅ **Pilot projects** - Small to medium deployments
 - ⚠️ **Not yet**: Large-scale production (still polishing rough edges)
 
-**Want to help?** See [Contributing](#contributing) or [open an issue](https://github.com/joeblew999/goup-util/issues)
+**Want to help?** See [Contributing](#contributing) or [open an issue](https://github.com/joeblew999/utm-dev/issues)
 
 ---
 
@@ -76,7 +76,7 @@ Write HTML/CSS once → Deploy everywhere: Web, iOS, Android, Desktop
 
 ### The Solution: Digital Sovereignty with Tiny Teams
 
-**goup-util + HTMX/Datastar enables:**
+**utm-dev + HTMX/Datastar enables:**
 
 ✅ **1-2 developers** instead of 5+ specialists
 ✅ **Weeks to build** instead of months
@@ -101,7 +101,7 @@ Write HTML/CSS once → Deploy everywhere: Web, iOS, Android, Desktop
 ├─────────────────────────────────────────────────────────┤
 │  95% → HTML/CSS with HTMX or Datastar (web tech)       │
 │   4% → Go backend (your business logic)                 │
-│   1% → goup-util commands (packaging)                   │
+│   1% → utm-dev commands (packaging)                   │
 │   0% → Swift, Kotlin, Xcode, Android Studio            │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -160,7 +160,7 @@ Cloud Infrastructure:    $30K-100K/year
   Annual Cost:           $900K-$1M+
 ```
 
-**goup-util + HTMX/Datastar:**
+**utm-dev + HTMX/Datastar:**
 ```
 Team:
   - Go Developer:         $140K/year
@@ -201,7 +201,7 @@ Infrastructure:          $10K-30K/year
 - **React Native**: JavaScript hell, version chaos
 - **Native**: Most expensive, slowest
 
-**goup-util**: Simple (web tech), fast (instant updates), cheap (tiny teams), sovereign (your infrastructure).
+**utm-dev**: Simple (web tech), fast (instant updates), cheap (tiny teams), sovereign (your infrastructure).
 
 ---
 
@@ -266,11 +266,11 @@ func main() {
 ### Package for All Platforms
 
 ```bash
-# Build native apps (goup-util creates thin wrappers automatically)
-goup-util build ios myapp
-goup-util build android myapp
-goup-util build macos myapp
-goup-util build windows myapp
+# Build native apps (utm-dev creates thin wrappers automatically)
+utm-dev build ios myapp
+utm-dev build android myapp
+utm-dev build macos myapp
+utm-dev build windows myapp
 
 # Users install native apps
 # Apps load HTML from YOUR server
@@ -338,8 +338,8 @@ http.HandleFunc("/api/pick-file", func(w http.ResponseWriter, r *http.Request) {
 │  └────────────────────────────────────────────────────────────┘  │
 │                              ↕                                    │
 │  ┌────────────────────────────────────────────────────────────┐  │
-│  │  Thin Native Wrapper (Automatic - goup-util handles this) │  │
-│  │  (1% of your work - just run goup-util build)             │  │
+│  │  Thin Native Wrapper (Automatic - utm-dev handles this) │  │
+│  │  (1% of your work - just run utm-dev build)             │  │
 │  │                                                             │  │
 │  │  🍎 iOS: WKWebView      🤖 Android: WebView               │  │
 │  │  🖥️  macOS: WKWebView    🪟 Windows: WebView2             │  │
@@ -348,7 +348,7 @@ http.HandleFunc("/api/pick-file", func(w http.ResponseWriter, r *http.Request) {
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-**Key insight**: You write HTML/HTMX (web code). Native apps are just wrappers created by goup-util. **You never write Gio/Swift/Kotlin code** unless you need custom native UI (extremely rare).
+**Key insight**: You write HTML/HTMX (web code). Native apps are just wrappers created by utm-dev. **You never write Gio/Swift/Kotlin code** unless you need custom native UI (extremely rare).
 
 ---
 
@@ -410,7 +410,7 @@ No React. No build tools. Just HTML served from your Go backend.
 7. Now support 5 different versions in production
 ```
 
-**goup-util + web UI:**
+**utm-dev + web UI:**
 ```
 1. Update HTML/CSS on your server
 2. That's it. Everyone gets it instantly.
@@ -493,44 +493,44 @@ wellknown.HandleURI("myapp://dashboard?tab=analytics")
 
 - **Go 1.25+**
 - **macOS**: Xcode Command Line Tools
-- **Android**: Auto-installed via `goup-util install ndk-bundle`
+- **Android**: Auto-installed via `utm-dev install ndk-bundle`
 
-### Install goup-util
+### Install utm-dev
 
 **Quick Install (Recommended)**:
 
 ```bash
 # macOS (via curl)
-curl -fsSL https://raw.githubusercontent.com/joeblew999/goup-util/main/scripts/macos-bootstrap.sh | bash
+curl -fsSL https://raw.githubusercontent.com/joeblew999/utm-dev/main/scripts/macos-bootstrap.sh | bash
 
 # Windows (via PowerShell as Administrator)
-iwr https://raw.githubusercontent.com/joeblew999/goup-util/main/scripts/windows-bootstrap.ps1 -UseBasicParsing | iex
+iwr https://raw.githubusercontent.com/joeblew999/utm-dev/main/scripts/windows-bootstrap.ps1 -UseBasicParsing | iex
 ```
 
 This installs:
 - ✅ Go (via Homebrew/winget)
 - ✅ Task (Taskfile runner)
-- ✅ goup-util (latest release binary)
+- ✅ utm-dev (latest release binary)
 - ✅ Git (if needed)
 
 **Manual Install**:
 
 ```bash
 # Clone the repository
-git clone https://github.com/joeblew999/goup-util.git
-cd goup-util
+git clone https://github.com/joeblew999/utm-dev.git
+cd utm-dev
 
 # Build from source
 go build .
 
 # Or use pre-built binaries from GitHub Releases
-# https://github.com/joeblew999/goup-util/releases/latest
+# https://github.com/joeblew999/utm-dev/releases/latest
 ```
 
-**Update goup-util**:
+**Update utm-dev**:
 
 ```bash
-goup-util self upgrade
+utm-dev self upgrade
 ```
 
 ---
@@ -581,8 +581,8 @@ task setup             # Initialize workspace + install NDKs
 
 **Quick start with Task:**
 ```bash
-git clone https://github.com/joeblew999/goup-util.git
-cd goup-util
+git clone https://github.com/joeblew999/utm-dev.git
+cd utm-dev
 task setup    # One command to set everything up
 task demo     # See hybrid-dashboard in action!
 ```
@@ -669,7 +669,7 @@ go run . ensure-workspace examples/my-app
 
 ### 🚀 Self-Building
 ```bash
-# Build goup-util itself
+# Build utm-dev itself
 go run . self build
 ```
 
@@ -679,12 +679,12 @@ go run . self build
 
 ```bash
 # Deploy to app stores (coming soon)
-goup-util deploy ios myapp --store
-goup-util deploy android myapp --store
+utm-dev deploy ios myapp --store
+utm-dev deploy android myapp --store
 
 # Monitor user feedback
-goup-util analytics myapp --reviews
-goup-util analytics myapp --dashboard
+utm-dev analytics myapp --reviews
+utm-dev analytics myapp --dashboard
 ```
 
 **What you get:**
@@ -745,7 +745,7 @@ No more jumping between App Store Connect, Google Play Console, and analytics to
 
 ---
 
-## Why goup-util?
+## Why utm-dev?
 
 ### vs Electron/Tauri
 - ✅ **Much smaller binaries** (~5MB vs 100MB+)
@@ -812,7 +812,7 @@ Built on top of:
 
 ### Special Thanks
 
-A huge thank you to **[@inkeliz](https://github.com/inkeliz)** for creating and maintaining [gio-plugins](https://github.com/gioui-plugins/gio-plugins) and [gioismobile](https://github.com/inkeliz/gioismobile). The native webview integration that makes this entire project possible is built on inkeliz's work. The webviewer plugin provides cross-platform WKWebView/WebView2/WebKitGTK support that is the foundation of goup-util's hybrid app architecture, and gioismobile provides runtime mobile platform detection.
+A huge thank you to **[@inkeliz](https://github.com/inkeliz)** for creating and maintaining [gio-plugins](https://github.com/gioui-plugins/gio-plugins) and [gioismobile](https://github.com/inkeliz/gioismobile). The native webview integration that makes this entire project possible is built on inkeliz's work. The webviewer plugin provides cross-platform WKWebView/WebView2/WebKitGTK support that is the foundation of utm-dev's hybrid app architecture, and gioismobile provides runtime mobile platform detection.
 
 ---
 
@@ -843,10 +843,10 @@ Interested in digital sovereignty solutions or investment opportunities?
 
 ### For Developers
 
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/joeblew999/goup-util/discussions)
-- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/joeblew999/goup-util/issues)
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/joeblew999/utm-dev/discussions)
+- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/joeblew999/utm-dev/issues)
 - 📖 **Documentation**: See [docs/](docs/) folder
-- 💡 **Feature Requests**: [GitHub Issues](https://github.com/joeblew999/goup-util/issues)
+- 💡 **Feature Requests**: [GitHub Issues](https://github.com/joeblew999/utm-dev/issues)
 
 ### Commercial Support & Consulting
 

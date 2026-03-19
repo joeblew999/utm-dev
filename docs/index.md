@@ -1,4 +1,4 @@
-# goup-util Documentation
+# utm-dev Documentation
 
 Build cross-platform hybrid apps in pure Go.
 
@@ -21,7 +21,7 @@ Build cross-platform hybrid apps in pure Go.
 - [Gio Plugins Reference](agents/gio-plugins.md) - gio-plugins deep dive
 - [robotgo Reference](agents/robotgo.md) - Screenshot system reference
 
-## What is goup-util?
+## What is utm-dev?
 
 A build tool for creating **cross-platform hybrid applications** using Go and Gio UI.
 
@@ -69,7 +69,7 @@ Working demonstrations in `examples/`:
 
 - [TODO.md](../TODO.md) - Known issues and roadmap
 - [CLAUDE.md](../CLAUDE.md) - Development guidelines
-- [GitHub Issues](https://github.com/joeblew999/goup-util/issues) - Report bugs
+- [GitHub Issues](https://github.com/joeblew999/utm-dev/issues) - Report bugs
 
 ---
 

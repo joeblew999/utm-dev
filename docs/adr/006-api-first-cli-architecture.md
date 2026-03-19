@@ -6,7 +6,7 @@
 
 ## Context
 
-Traditional CLI tools like goup-util face a common problem: as they grow, they need multiple interfaces:
+Traditional CLI tools like utm-dev face a common problem: as they grow, they need multiple interfaces:
 
 1. **CLI** - For developers in terminals
 2. **REST API** - For automation, CI/CD, remote control
@@ -75,7 +75,7 @@ Write business logic once in `pkg/core/`. Everything else is generated:
 
 ### Comparison with Traditional Approach
 
-**Traditional (Current goup-util)**:
+**Traditional (Current utm-dev)**:
 ```
 cmd/build.go      → calls → pkg/builder/
 cmd/utm.go        → calls → pkg/utm/
@@ -122,7 +122,7 @@ import (
 func NewServer() *Server {
     router := chi.NewMux()
 
-    api := humachi.New(router, huma.DefaultConfig("goup-util", "1.0.0"))
+    api := humachi.New(router, huma.DefaultConfig("utm-dev", "1.0.0"))
 
     // Register all handlers
     RegisterBuildHandlers(api)
@@ -213,7 +213,7 @@ import (
     "context"
 
     "github.com/danielgtaylor/huma/v2"
-    "github.com/joeblew999/goup-util/pkg/core"
+    "github.com/joeblew999/utm-dev/pkg/core"
 )
 
 func RegisterBuildHandlers(api huma.API) {
@@ -407,7 +407,7 @@ import (
     "os"
     "os/exec"
 
-    "github.com/joeblew999/goup-util/pkg/api"
+    "github.com/joeblew999/utm-dev/pkg/api"
 )
 
 func main() {
@@ -426,8 +426,8 @@ func runRestish(args []string) {
     // Ensure API is configured
     ensureAPIConfigured()
 
-    // Prepend "goup-util" as the API name
-    fullArgs := append([]string{"goup-util"}, args...)
+    // Prepend "utm-dev" as the API name
+    fullArgs := append([]string{"utm-dev"}, args...)
 
     cmd := exec.Command("restish", fullArgs...)
     cmd.Stdin = os.Stdin
@@ -437,7 +437,7 @@ func runRestish(args []string) {
 }
 
 func ensureAPIConfigured() {
-    // Check if ~/.restish/apis.json has goup-util configured
+    // Check if ~/.restish/apis.json has utm-dev configured
     // If not, add it pointing to local socket or default URL
 }
 ```
@@ -446,16 +446,16 @@ func ensureAPIConfigured() {
 
 ```bash
 # Start API server (background or separate terminal)
-goup-util serve
+utm-dev serve
 
 # CLI commands auto-discovered from OpenAPI
-goup-util build --platform macos --app-dir examples/webviewer
-goup-util utm list
-goup-util utm start Win11
-goup-util install android-ndk
+utm-dev build --platform macos --app-dir examples/webviewer
+utm-dev utm list
+utm-dev utm start Win11
+utm-dev install android-ndk
 
 # Or use restish directly
-restish goup-util build --platform macos --app-dir examples/webviewer
+restish utm-dev build --platform macos --app-dir examples/webviewer
 ```
 
 ### Phase 7: Embedded Mode (No Server)
@@ -470,7 +470,7 @@ package cmd
 import (
     "net/http/httptest"
 
-    "github.com/joeblew999/goup-util/pkg/api"
+    "github.com/joeblew999/utm-dev/pkg/api"
 )
 
 // For local CLI usage, embed the API server in-process
@@ -529,7 +529,7 @@ This allows the CLI to work without an external server by spinning up an in-proc
 | `/install/{sdk}` | POST | Install SDK |
 | `/install` | GET | List installed SDKs |
 | `/icons` | POST | Generate icons |
-| `/self/version` | GET | Get goup-util version |
+| `/self/version` | GET | Get utm-dev version |
 | `/self/doctor` | GET | Run diagnostics |
 
 ## Files to Create

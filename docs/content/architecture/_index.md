@@ -7,11 +7,11 @@ weight: 3
 
 # Architecture
 
-How goup-util works and the technical decisions behind it.
+How utm-dev works and the technical decisions behind it.
 
-## How goup-util Builds Apps
+## How utm-dev Builds Apps
 
-goup-util wraps [gogio](https://pkg.go.dev/gioui.org/cmd/gogio) (the official Gio build tool) with additional capabilities:
+utm-dev wraps [gogio](https://pkg.go.dev/gioui.org/cmd/gogio) (the official Gio build tool) with additional capabilities:
 
 1. **Build** -- Compiles Go source to platform binaries via gogio, with idempotent caching
 2. **Bundle** -- Creates signed app bundles with Info.plist, entitlements, code signing (pure Go, no bash)
@@ -21,10 +21,10 @@ The build cache (`pkg/buildcache/`) hashes source files (SHA256) and skips rebui
 
 ## Two Separate Systems
 
-goup-util has two completely separate concerns:
+utm-dev has two completely separate concerns:
 
 ### Self System (`pkg/self/`)
-Manages goup-util itself -- building, installing, upgrading the tool binary. Self-contained, no imports from other `pkg/` directories. All commands output JSON for remote automation.
+Manages utm-dev itself -- building, installing, upgrading the tool binary. Self-contained, no imports from other `pkg/` directories. All commands output JSON for remote automation.
 
 ### App Build System (everything else)
 Manages the Gio applications that users create -- building, bundling, packaging, SDK management, icon generation.
@@ -46,7 +46,7 @@ These never cross-reference each other.
 | `pkg/installer` | SDK download, extraction, checksum verification |
 | `pkg/packaging` | macOS bundle creation, code signing, archive creation |
 | `pkg/project` | Project structure detection and path management |
-| `pkg/self` | goup-util self-management (build, install, upgrade) |
+| `pkg/self` | utm-dev self-management (build, install, upgrade) |
 | `pkg/self/output` | JSON output types for self commands |
 | `pkg/utm` | UTM virtual machine control for Windows testing |
 

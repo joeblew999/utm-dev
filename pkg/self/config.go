@@ -9,7 +9,7 @@ import (
 // Repository configuration
 const (
 	GitHubOwner  = "joeblew999"
-	GitHubRepo   = "goup-util"
+	GitHubRepo   = "utm-dev"
 	FullRepoName = GitHubOwner + "/" + GitHubRepo
 )
 
@@ -21,7 +21,7 @@ const (
 
 // Binary configuration
 const (
-	BinaryName = "goup-util"
+	BinaryName = "utm-dev"
 )
 
 // Installation paths (Unix)
@@ -39,7 +39,7 @@ const (
 )
 
 // Temp file pattern
-const TempFilePattern = "goup-util-*"
+const TempFilePattern = "utm-dev-*"
 
 // GetInstallPath returns the installation path for the current platform
 func GetInstallPath() string {

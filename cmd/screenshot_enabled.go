@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/joeblew999/goup-util/pkg/screenshot"
+	"github.com/joeblew999/utm-dev/pkg/screenshot"
 	"github.com/spf13/cobra"
 )
 
@@ -28,22 +28,22 @@ System Settings → Privacy & Security → Screen Recording
 
 Examples:
   # Capture full screen
-  goup-util screenshot output.png
+  utm-dev screenshot output.png
 
   # Capture specific region
-  goup-util screenshot --x 100 --y 100 -w 800 -H 600 region.png
+  utm-dev screenshot --x 100 --y 100 -w 800 -H 600 region.png
 
   # Capture all displays
-  goup-util screenshot --all --prefix display
+  utm-dev screenshot --all --prefix display
 
   # Delayed capture (useful for menus/tooltips)
-  goup-util screenshot --delay 3000 output.png
+  utm-dev screenshot --delay 3000 output.png
 
   # Get display information
-  goup-util screenshot --info
+  utm-dev screenshot --info
 
   # JPEG with custom quality
-  goup-util screenshot -q 95 output.jpg
+  utm-dev screenshot -q 95 output.jpg
 
 Using: ` + screenshot.Platform(),
 	Args: cobra.MaximumNArgs(1),
@@ -211,8 +211,8 @@ func showPresets() error {
 	}
 
 	fmt.Println("Usage:")
-	fmt.Println("  goup-util screenshot --preset macos-retina output.png")
-	fmt.Println("  goup-util screenshot --preset iphone-6.9 output.png")
+	fmt.Println("  utm-dev screenshot --preset macos-retina output.png")
+	fmt.Println("  utm-dev screenshot --preset iphone-6.9 output.png")
 
 	return nil
 }

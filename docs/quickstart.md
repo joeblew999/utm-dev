@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-Get up and running with goup-util in under 5 minutes.
+Get up and running with utm-dev in under 5 minutes.
 
 ## Prerequisites
 
@@ -12,10 +12,10 @@ Get up and running with goup-util in under 5 minutes.
 
 ```bash
 # Clone the repository
-git clone https://github.com/joeblew999/goup-util
-cd goup-util
+git clone https://github.com/joeblew999/utm-dev
+cd utm-dev
 
-# Build goup-util
+# Build utm-dev
 go build .
 
 # Or use task
@@ -82,7 +82,7 @@ task build:examples:macos
 # Run screenshot capture
 task screenshot-hybrid
 
-# Check goup-util installation
+# Check utm-dev installation
 go run . self doctor
 ```
 
@@ -111,4 +111,4 @@ go run . self doctor
 
 - Run `go run . --help` for command reference
 - Check [TODO.md](../TODO.md) for known issues and roadmap
-- File issues at https://github.com/joeblew999/goup-util/issues
+- File issues at https://github.com/joeblew999/utm-dev/issues

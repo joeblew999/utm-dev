@@ -1,14 +1,14 @@
 package cmd
 
 import (
-	"github.com/joeblew999/goup-util/pkg/utils"
+	"github.com/joeblew999/utm-dev/pkg/utils"
 	"fmt"
 	"os"
 	"path/filepath"
 
-	"github.com/joeblew999/goup-util/pkg/constants"
-	"github.com/joeblew999/goup-util/pkg/packaging"
-	"github.com/joeblew999/goup-util/pkg/project"
+	"github.com/joeblew999/utm-dev/pkg/constants"
+	"github.com/joeblew999/utm-dev/pkg/packaging"
+	"github.com/joeblew999/utm-dev/pkg/project"
 	"github.com/spf13/cobra"
 )
 
@@ -114,7 +114,7 @@ func bundleMacOS(proj *project.GioProject, bundleID, version, signingIdentity, o
 	} else if _, err := os.Stat(standaloneBinary); err == nil {
 		binaryPath = standaloneBinary
 	} else {
-		return fmt.Errorf("binary not found in:\n  %s\n  %s\n  %s\nRun 'goup-util build macos %s' first",
+		return fmt.Errorf("binary not found in:\n  %s\n  %s\n  %s\nRun 'utm-dev build macos %s' first",
 			platformBinaryInApp, legacyBinaryInApp, standaloneBinary, proj.RootDir)
 	}
 
@@ -158,7 +158,7 @@ func bundleMacOS(proj *project.GioProject, bundleID, version, signingIdentity, o
 	fmt.Println("   2. Grant permissions if needed (System Settings → Privacy & Security)")
 	fmt.Println("   3. Package for distribution:")
 	fmt.Printf("      task package:macos:dmg OR\n")
-	fmt.Printf("      goup-util package macos %s\n", proj.RootDir)
+	fmt.Printf("      utm-dev package macos %s\n", proj.RootDir)
 
 	return nil
 }
@@ -203,7 +203,7 @@ func bundleWindows(proj *project.GioProject, bundleID, version, publisher, outpu
 		binaryPath = legacyBinary
 		fmt.Println("ℹ️  Found binary in .bin/")
 	} else {
-		return fmt.Errorf("binary not found in:\n  %s\n  %s\nRun 'goup-util build windows %s' first",
+		return fmt.Errorf("binary not found in:\n  %s\n  %s\nRun 'utm-dev build windows %s' first",
 			platformBinary, legacyBinary, proj.RootDir)
 	}
 
@@ -239,15 +239,15 @@ func bundleWindows(proj *project.GioProject, bundleID, version, publisher, outpu
 		fmt.Println("   2. Install: Add-AppxPackage", filepath.Join(outputDir, proj.Name+".msix"))
 	} else {
 		fmt.Println("   1. Copy .staging directory to Windows machine")
-		fmt.Println("   2. Run: goup-util bundle --create-msix windows", proj.RootDir)
+		fmt.Println("   2. Run: utm-dev bundle --create-msix windows", proj.RootDir)
 	}
 	fmt.Println("   3. Package for distribution:")
-	fmt.Printf("      goup-util package windows %s\n", proj.RootDir)
+	fmt.Printf("      utm-dev package windows %s\n", proj.RootDir)
 
 	return nil
 }
 
-// toDisplayName converts a name like "goup-util" to "Goup Util"
+// toDisplayName converts a name like "utm-dev" to "Goup Util"
 func toDisplayName(name string) string {
 	// Simple title case - can be improved
 	return name

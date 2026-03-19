@@ -111,7 +111,7 @@ Based on the code and architecture:
 ### 3. **Build Complexity**
 - Requires platform SDKs (Android SDK, Xcode)
 - Native dependencies for webview
-- Build tool (`goup-util`) needed for cross-platform builds
+- Build tool (`utm-dev`) needed for cross-platform builds
 
 ### 4. **JavaScript Bridge**
 - Not clear how to expose Go functions to JavaScript
@@ -273,7 +273,7 @@ Based on the code and architecture:
 
 ## Recommended Path
 
-**For goup-util project**: **Option A** (Gio UI Everywhere)
+**For utm-dev project**: **Option A** (Gio UI Everywhere)
 
 **Rationale**:
 1. Leverages existing Gio expertise
@@ -296,7 +296,7 @@ Based on the code and architecture:
 3. ⏸ Document platform compatibility matrix
 4. ⏸ Create JavaScript ↔ Go bridge examples
 5. ⏸ Build production-ready hybrid app template
-6. ⏸ Add to goup-util documentation
+6. ⏸ Add to utm-dev documentation
 7. ⏸ Consider contributing improvements back to gio-plugins
 
 ## Conclusion
@@ -315,4 +315,4 @@ The main work needed is:
 - JavaScript bridge patterns
 - Production templates
 
-This positions goup-util well to support hybrid application development with Go as the primary language and native webviews for web content display.
+This positions utm-dev well to support hybrid application development with Go as the primary language and native webviews for web content display.

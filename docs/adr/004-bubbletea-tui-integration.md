@@ -28,15 +28,15 @@ Reference:
 
 ## Decision
 
-Add an optional TUI mode to goup-util for interactive operations:
+Add an optional TUI mode to utm-dev for interactive operations:
 
 ```bash
 # Start interactive TUI
-goup-util tui
+utm-dev tui
 
 # Or use --interactive flag on specific commands
-goup-util build --interactive
-goup-util utm --interactive
+utm-dev build --interactive
+utm-dev utm --interactive
 ```
 
 This provides a richer experience while maintaining the standard CLI for scripting and automation.
@@ -83,14 +83,14 @@ pkg/tui/
 package cmd
 
 import (
-    "github.com/joeblew999/goup-util/pkg/tui"
+    "github.com/joeblew999/utm-dev/pkg/tui"
     "github.com/spf13/cobra"
 )
 
 var tuiCmd = &cobra.Command{
     Use:   "tui",
     Short: "Start interactive terminal UI",
-    Long: `Launch goup-util in interactive TUI mode.
+    Long: `Launch utm-dev in interactive TUI mode.
 
 This provides a visual interface for:
 - Building applications for multiple platforms
@@ -106,10 +106,10 @@ Navigation:
 
 Examples:
   # Start main TUI
-  goup-util tui
+  utm-dev tui
 
   # Start directly in VM management
-  goup-util tui --section vm`,
+  utm-dev tui --section vm`,
     RunE: func(cmd *cobra.Command, args []string) error {
         section, _ := cmd.Flags().GetString("section")
         return tui.Run(section)
@@ -158,7 +158,7 @@ var mainMenu = []menuItem{
     {"Build", "Build applications for different platforms", "build"},
     {"Virtual Machines", "Manage UTM virtual machines", "vm"},
     {"SDKs", "Install and manage platform SDKs", "sdk"},
-    {"Settings", "Configure goup-util", "settings"},
+    {"Settings", "Configure utm-dev", "settings"},
 }
 
 func Run(section string) error {
@@ -227,7 +227,7 @@ func (m Model) View() string {
 }
 
 func (m Model) renderMainMenu() string {
-    s := titleStyle.Render("goup-util") + "\n\n"
+    s := titleStyle.Render("utm-dev") + "\n\n"
 
     for i, item := range mainMenu {
         cursor := "  "
@@ -376,7 +376,7 @@ package components
 
 import (
     "github.com/charmbracelet/bubbles/table"
-    "github.com/joeblew999/goup-util/pkg/utm"
+    "github.com/joeblew999/utm-dev/pkg/utm"
 )
 
 type VMModel struct {
@@ -505,7 +505,7 @@ func RunSetupWizard() error {
 
 1. **Test TUI launches:**
    ```bash
-   goup-util tui
+   utm-dev tui
    # Should show interactive menu
    ```
 
@@ -517,14 +517,14 @@ func RunSetupWizard() error {
 
 3. **Test build workflow:**
    ```bash
-   goup-util tui --section build
+   utm-dev tui --section build
    # Select platform and example
    # Verify build runs with progress
    ```
 
 4. **Test VM management:**
    ```bash
-   goup-util tui --section vm
+   utm-dev tui --section vm
    # Verify VM list shows
    # Test start/stop controls
    ```

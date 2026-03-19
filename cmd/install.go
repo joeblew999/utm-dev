@@ -8,9 +8,9 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/joeblew999/goup-util/pkg/config"
-	"github.com/joeblew999/goup-util/pkg/installer"
-	"github.com/joeblew999/goup-util/pkg/utils"
+	"github.com/joeblew999/utm-dev/pkg/config"
+	"github.com/joeblew999/utm-dev/pkg/installer"
+	"github.com/joeblew999/utm-dev/pkg/utils"
 	"github.com/spf13/cobra"
 )
 

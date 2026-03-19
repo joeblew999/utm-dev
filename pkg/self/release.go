@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	selfOutput "github.com/joeblew999/goup-util/pkg/self/output"
+	selfOutput "github.com/joeblew999/utm-dev/pkg/self/output"
 )
 
 // Release creates a git tag and pushes it to trigger GitHub Actions release workflow

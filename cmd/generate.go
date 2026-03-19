@@ -19,10 +19,10 @@ It's typically run as part of CI/CD or release preparation.
 
 Examples:
   # Generate everything
-  goup-util generate all
+  utm-dev generate all
 
   # Generate only documentation
-  goup-util generate docs`,
+  utm-dev generate docs`,
 }
 
 var generateAllCmd = &cobra.Command{
@@ -34,8 +34,8 @@ This runs all generation tasks:
 - CLI documentation (markdown)
 
 Examples:
-  goup-util generate all
-  goup-util generate all --output-dir ./custom-docs`,
+  utm-dev generate all
+  utm-dev generate all --output-dir ./custom-docs`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		outputDir, _ := cmd.Flags().GetString("output-dir")
 
@@ -59,12 +59,12 @@ var generateDocsCmd = &cobra.Command{
 	Short: "Generate CLI documentation",
 	Long: `Generate CLI documentation in markdown format.
 
-This generates documentation for all goup-util commands.
+This generates documentation for all utm-dev commands.
 Output is written to docs/cli/ by default.
 
 Examples:
-  goup-util generate docs
-  goup-util generate docs ./my-docs`,
+  utm-dev generate docs
+  utm-dev generate docs ./my-docs`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		outputDir := "docs/cli"

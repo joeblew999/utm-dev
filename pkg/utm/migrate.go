@@ -204,7 +204,7 @@ func MigrateAll() error {
 	fmt.Println()
 	fmt.Println("Migration complete!")
 	fmt.Println()
-	fmt.Println("Verify with: goup-util utm paths")
+	fmt.Println("Verify with: utm-dev utm paths")
 
 	return nil
 }

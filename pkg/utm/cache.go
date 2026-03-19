@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/joeblew999/goup-util/pkg/config"
-	"github.com/joeblew999/goup-util/pkg/installer"
+	"github.com/joeblew999/utm-dev/pkg/config"
+	"github.com/joeblew999/utm-dev/pkg/installer"
 )
 
 // Cache key prefixes

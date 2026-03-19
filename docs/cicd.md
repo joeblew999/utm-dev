@@ -1,6 +1,6 @@
 # CI/CD Integration
 
-goup-util is designed for seamless integration with continuous integration and deployment pipelines.
+utm-dev is designed for seamless integration with continuous integration and deployment pipelines.
 
 ## GitHub Actions
 
@@ -30,16 +30,16 @@ jobs:
     - name: Install Task
       run: sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d
     
-    - name: Setup goup-util
+    - name: Setup utm-dev
       run: |
         task build
         task setup:android
     
     - name: Build for all platforms
       run: |
-        goup-util build android ./my-app
-        goup-util build linux ./my-app
-        goup-util build web ./my-app
+        utm-dev build android ./my-app
+        utm-dev build linux ./my-app
+        utm-dev build web ./my-app
     
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
@@ -68,7 +68,7 @@ jobs:
         task setup:ios
     
     - name: Build iOS app
-      run: goup-util build ios ./my-app
+      run: utm-dev build ios ./my-app
 ```
 
 ### Windows Builds
@@ -91,7 +91,7 @@ jobs:
         task setup:windows
     
     - name: Build Windows app
-      run: goup-util build windows-msix ./my-app
+      run: utm-dev build windows-msix ./my-app
 ```
 
 ## GitLab CI
@@ -116,7 +116,7 @@ build:android:
   script:
     - task build
     - task setup:android
-    - goup-util build android ./my-app
+    - utm-dev build android ./my-app
   artifacts:
     paths:
       - my-app/.bin/
@@ -127,7 +127,7 @@ build:web:
   image: golang:${GO_VERSION}
   script:
     - task build
-    - goup-util build web ./my-app
+    - utm-dev build web ./my-app
   artifacts:
     paths:
       - my-app/.bin/
@@ -150,13 +150,13 @@ RUN sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d
 WORKDIR /app
 COPY . .
 
-# Build goup-util and setup environment
+# Build utm-dev and setup environment
 RUN task build
 RUN task setup:android
 
 # Build the application
-RUN goup-util build android ./my-app
-RUN goup-util build linux ./my-app
+RUN utm-dev build android ./my-app
+RUN utm-dev build linux ./my-app
 
 # Runtime stage
 FROM alpine:latest
@@ -224,7 +224,7 @@ export WINDOWS_CERT_THUMBPRINT=YOUR_CERT
   with:
     path: |
       sdks/
-      ~/.cache/goup-util
+      ~/.cache/utm-dev
     key: ${{ runner.os }}-sdks-${{ hashFiles('**/sdk-*.json') }}
     restore-keys: |
       ${{ runner.os }}-sdks-
@@ -234,9 +234,9 @@ export WINDOWS_CERT_THUMBPRINT=YOUR_CERT
 
 ```bash
 # Build multiple platforms in parallel
-goup-util build android ./my-app &
-goup-util build linux ./my-app &
-goup-util build web ./my-app &
+utm-dev build android ./my-app &
+utm-dev build linux ./my-app &
+utm-dev build web ./my-app &
 wait
 ```
 
@@ -260,13 +260,13 @@ wait
 
 ```bash
 # Upload to Google Play
-goup-util deploy android ./my-app --store google-play
+utm-dev deploy android ./my-app --store google-play
 
 # Upload to App Store
-goup-util deploy ios ./my-app --store app-store
+utm-dev deploy ios ./my-app --store app-store
 
 # Upload to Microsoft Store
-goup-util deploy windows ./my-app --store microsoft-store
+utm-dev deploy windows ./my-app --store microsoft-store
 ```
 
 ## Monitoring & Notifications
@@ -284,7 +284,7 @@ curl -X POST -H 'Content-type: application/json' \
 
 ```bash
 # Capture build logs
-goup-util build all ./my-app 2>&1 | tee build.log
+utm-dev build all ./my-app 2>&1 | tee build.log
 
 # Send error reports
 if [ $? -ne 0 ]; then

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/joeblew999/goup-util/pkg/simctl"
+	"github.com/joeblew999/utm-dev/pkg/simctl"
 	"github.com/spf13/cobra"
 )
 
@@ -51,11 +51,11 @@ var iosBootCmd = &cobra.Command{
 	Use:   "boot [udid-or-name]",
 	Short: "Boot an iOS simulator",
 	Long: `Boot a simulator by UDID or device name.
-Use 'goup-util ios devices' to find available simulators.
+Use 'utm-dev ios devices' to find available simulators.
 
 Examples:
-  goup-util ios boot "iPhone 15"
-  goup-util ios boot XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX`,
+  utm-dev ios boot "iPhone 15"
+  utm-dev ios boot XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, err := newSimctlClient()
@@ -113,7 +113,7 @@ var iosInstallCmd = &cobra.Command{
 			return err
 		}
 		if !client.HasBooted() {
-			return fmt.Errorf("no simulator is booted. Boot one with: goup-util ios boot \"iPhone 15\"")
+			return fmt.Errorf("no simulator is booted. Boot one with: utm-dev ios boot \"iPhone 15\"")
 		}
 		fmt.Printf("Installing %s...\n", args[0])
 		if err := client.Install(args[0]); err != nil {
@@ -152,7 +152,7 @@ var iosLaunchCmd = &cobra.Command{
 			return err
 		}
 		if !client.HasBooted() {
-			return fmt.Errorf("no simulator is booted. Boot one with: goup-util ios boot \"iPhone 15\"")
+			return fmt.Errorf("no simulator is booted. Boot one with: utm-dev ios boot \"iPhone 15\"")
 		}
 		fmt.Printf("Launching %s...\n", args[0])
 		return client.Launch(args[0])
@@ -169,7 +169,7 @@ var iosScreenshotCmd = &cobra.Command{
 			return err
 		}
 		if !client.HasBooted() {
-			return fmt.Errorf("no simulator is booted. Boot one with: goup-util ios boot \"iPhone 15\"")
+			return fmt.Errorf("no simulator is booted. Boot one with: utm-dev ios boot \"iPhone 15\"")
 		}
 
 		output := "ios-screenshot.png"
@@ -207,7 +207,7 @@ Use --all to show all logs instead of just Gio/Go-related ones.`,
 			return err
 		}
 		if !client.HasBooted() {
-			return fmt.Errorf("no simulator is booted. Boot one with: goup-util ios boot \"iPhone 16\"")
+			return fmt.Errorf("no simulator is booted. Boot one with: utm-dev ios boot \"iPhone 16\"")
 		}
 		all, _ := cmd.Flags().GetBool("all")
 		if all {
@@ -280,7 +280,7 @@ func resolveSimulatorUDID(client *simctl.Client, identifier string) (string, err
 	for _, d := range devices {
 		names = append(names, fmt.Sprintf("  %s (%s)", d.Name, d.Runtime))
 	}
-	return "", fmt.Errorf("simulator not found: %q\n\nAvailable simulators:\n%s\n\nRun 'goup-util ios devices' for full list",
+	return "", fmt.Errorf("simulator not found: %q\n\nAvailable simulators:\n%s\n\nRun 'utm-dev ios devices' for full list",
 		identifier, strings.Join(names, "\n"))
 }
 

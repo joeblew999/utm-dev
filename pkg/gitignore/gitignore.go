@@ -68,10 +68,10 @@ func (g *GitIgnore) HasPattern(pattern string) bool {
 	return false
 }
 
-// HasManagedSection checks if goup-util managed section exists
+// HasManagedSection checks if utm-dev managed section exists
 func (g *GitIgnore) HasManagedSection() bool {
 	for _, line := range g.Lines {
-		if strings.Contains(line, "# goup-util managed") {
+		if strings.Contains(line, "# utm-dev managed") {
 			return true
 		}
 	}

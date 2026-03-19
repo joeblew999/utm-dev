@@ -20,7 +20,7 @@ var macosEntitlementsTemplate string
 // MacOSBundleConfig contains configuration for creating a macOS app bundle
 type MacOSBundleConfig struct {
 	// App identity
-	Name        string // App name (e.g., "goup-util")
+	Name        string // App name (e.g., "utm-dev")
 	DisplayName string // Display name (e.g., "Goup Util")
 	BundleID    string // Bundle identifier (e.g., "com.example.myapp")
 	Version     string // Version string (e.g., "1.0.0")

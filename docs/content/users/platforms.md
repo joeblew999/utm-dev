@@ -7,7 +7,7 @@ weight: 2
 
 # Platform Support
 
-goup-util builds native Gio applications for macOS, iOS, Android, and Windows. Each platform uses the system's native webview engine for hybrid apps.
+utm-dev builds native Gio applications for macOS, iOS, Android, and Windows. Each platform uses the system's native webview engine for hybrid apps.
 
 ## Platform Matrix
 
@@ -23,7 +23,7 @@ goup-util builds native Gio applications for macOS, iOS, Android, and Windows. E
 
 **Build:**
 ```bash
-goup-util build macos examples/hybrid-dashboard
+utm-dev build macos examples/hybrid-dashboard
 ```
 
 **Output:** `.app` bundle in `<app>/.bin/macos/`
@@ -34,11 +34,11 @@ goup-util build macos examples/hybrid-dashboard
 
 **Webview:** WKWebView (Safari engine). Full HTML5, Service Workers, OPFS, WebSocket, IndexedDB, WebAssembly support.
 
-**Distribution:** Use `goup-util bundle macos` for code-signed bundles, then `goup-util package macos` for tar.gz archives. See [Packaging](/users/packaging/).
+**Distribution:** Use `utm-dev bundle macos` for code-signed bundles, then `utm-dev package macos` for tar.gz archives. See [Packaging](/users/packaging/).
 
 **Deep linking:** Supported via `--schemes` flag:
 ```bash
-goup-util build macos examples/hybrid-dashboard --schemes "myapp://,https://example.com"
+utm-dev build macos examples/hybrid-dashboard --schemes "myapp://,https://example.com"
 ```
 
 ## iOS
@@ -46,10 +46,10 @@ goup-util build macos examples/hybrid-dashboard --schemes "myapp://,https://exam
 **Build:**
 ```bash
 # For device
-goup-util build ios examples/hybrid-dashboard
+utm-dev build ios examples/hybrid-dashboard
 
 # For simulator
-goup-util build ios-simulator examples/hybrid-dashboard
+utm-dev build ios-simulator examples/hybrid-dashboard
 ```
 
 **Output:** `.app` bundle in `<app>/.bin/ios/` or `<app>/.bin/ios-simulator/`
@@ -63,41 +63,41 @@ goup-util build ios-simulator examples/hybrid-dashboard
 
 **Signing:**
 ```bash
-goup-util build ios examples/hybrid-dashboard --signkey /path/to/profile.mobileprovision
+utm-dev build ios examples/hybrid-dashboard --signkey /path/to/profile.mobileprovision
 ```
 
 **Deep linking:**
 ```bash
-goup-util build ios examples/hybrid-dashboard --schemes "myapp://,https://example.com"
+utm-dev build ios examples/hybrid-dashboard --schemes "myapp://,https://example.com"
 ```
 
 ## Android
 
 **Build:**
 ```bash
-goup-util build android examples/hybrid-dashboard
+utm-dev build android examples/hybrid-dashboard
 ```
 
 **Output:** `.apk` in `<app>/.bin/android/`
 
 **Requirements:**
 - Any host OS
-- Android SDK and NDK (goup-util installs these):
+- Android SDK and NDK (utm-dev installs these):
   ```bash
-  goup-util install android-sdk
-  goup-util install android-ndk
+  utm-dev install android-sdk
+  utm-dev install android-ndk
   ```
 
 **Webview:** System Chromium WebView. Full modern web API support.
 
 **Signing:**
 ```bash
-goup-util build android examples/hybrid-dashboard --signkey /path/to/keystore.jks
+utm-dev build android examples/hybrid-dashboard --signkey /path/to/keystore.jks
 ```
 
 **Deep linking and intent queries:**
 ```bash
-goup-util build android examples/hybrid-dashboard \
+utm-dev build android examples/hybrid-dashboard \
   --schemes "myapp://,https://example.com" \
   --queries "com.google.android.apps.maps"
 ```
@@ -106,7 +106,7 @@ goup-util build android examples/hybrid-dashboard \
 
 **Build:**
 ```bash
-goup-util build windows examples/hybrid-dashboard
+utm-dev build windows examples/hybrid-dashboard
 ```
 
 **Output:** `.exe` in `<app>/.bin/windows/`
@@ -117,11 +117,11 @@ goup-util build windows examples/hybrid-dashboard
 
 **Webview:** WebView2 (Edge/Chromium engine). Full modern web API support.
 
-**Note:** Cross-compiling Windows apps from macOS works for pure Go apps. Webview-based apps may require a Windows build environment. goup-util supports [UTM virtual machines](/dev/cicd/) for Windows builds from macOS.
+**Note:** Cross-compiling Windows apps from macOS works for pure Go apps. Webview-based apps may require a Windows build environment. utm-dev supports [UTM virtual machines](/dev/cicd/) for Windows builds from macOS.
 
 ## Linux
 
-**Status:** Gio UI supports Linux natively. goup-util does not currently have a dedicated `build linux` command, but you can build Gio apps for Linux using standard Go:
+**Status:** Gio UI supports Linux natively. utm-dev does not currently have a dedicated `build linux` command, but you can build Gio apps for Linux using standard Go:
 
 ```bash
 GOOS=linux GOARCH=amd64 go build -o myapp ./examples/hybrid-dashboard
@@ -131,7 +131,7 @@ GOOS=linux GOARCH=amd64 go build -o myapp ./examples/hybrid-dashboard
 
 ## Web / WASM
 
-**Status:** Not currently supported by goup-util. Gio UI compiles to WASM, but the webview plugin does not work in a browser context (a webview inside a browser doesn't make sense). Pure Gio UI apps (without webview) can be compiled to WASM using standard Go tools.
+**Status:** Not currently supported by utm-dev. Gio UI compiles to WASM, but the webview plugin does not work in a browser context (a webview inside a browser doesn't make sense). Pure Gio UI apps (without webview) can be compiled to WASM using standard Go tools.
 
 ## Gio Version Compatibility
 
@@ -154,7 +154,7 @@ Do **not** use `@latest` -- it may pull incompatible versions.
 ## All Build Flags
 
 ```bash
-goup-util build [platform] [app-directory] [flags]
+utm-dev build [platform] [app-directory] [flags]
 
 Flags:
   --force            Force rebuild even if up-to-date

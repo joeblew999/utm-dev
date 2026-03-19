@@ -130,7 +130,7 @@ func generateIOSIcons(inputPath, outputDir string) error {
     {"idiom": "ipad", "scale": "2x", "size": "83.5x83.5", "filename": "icon-83.5@2x.png"},
     {"idiom": "ios-marketing", "scale": "1x", "size": "1024x1024", "filename": "icon-1024.png"}
   ],
-  "info": {"version": 1, "author": "goup-util"}
+  "info": {"version": 1, "author": "utm-dev"}
 }`
 
 	contentsPath := filepath.Join(iconSetDir, "Contents.json")

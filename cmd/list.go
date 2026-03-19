@@ -6,9 +6,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/joeblew999/goup-util/pkg/config"
-	"github.com/joeblew999/goup-util/pkg/installer"
-	"github.com/joeblew999/goup-util/pkg/utils"
+	"github.com/joeblew999/utm-dev/pkg/config"
+	"github.com/joeblew999/utm-dev/pkg/installer"
+	"github.com/joeblew999/utm-dev/pkg/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -142,7 +142,7 @@ func listCachedSDKs() error {
 	}
 
 	if len(cache.Entries) == 0 {
-		fmt.Println("No SDKs cached yet. Use 'goup-util install' or 'goup-util setup' to download SDKs.")
+		fmt.Println("No SDKs cached yet. Use 'utm-dev install' or 'utm-dev setup' to download SDKs.")
 		return nil
 	}
 

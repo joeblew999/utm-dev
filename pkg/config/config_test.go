@@ -17,24 +17,24 @@ func TestGetCacheDir(t *testing.T) {
 		t.Error("GetCacheDir() returned empty string")
 	}
 
-	// Should contain goup-util
-	if !strings.Contains(cacheDir, "goup-util") {
-		t.Errorf("GetCacheDir() returned %q, expected it to contain 'goup-util'", cacheDir)
+	// Should contain utm-dev
+	if !strings.Contains(cacheDir, "utm-dev") {
+		t.Errorf("GetCacheDir() returned %q, expected it to contain 'utm-dev'", cacheDir)
 	}
 
 	// OS-specific checks - simplified for CI environments
 	switch runtime.GOOS {
 	case "darwin":
-		// Allow both ~/Library/Caches and ~/goup-util-cache
-		if !strings.Contains(cacheDir, "Library/Caches") && !strings.Contains(cacheDir, "goup-util") {
+		// Allow both ~/Library/Caches and ~/utm-dev-cache
+		if !strings.Contains(cacheDir, "Library/Caches") && !strings.Contains(cacheDir, "utm-dev") {
 			t.Logf("macOS cache dir: %q (may vary by environment)", cacheDir)
 		}
 	case "linux":
-		if !strings.Contains(cacheDir, ".cache") && !strings.Contains(cacheDir, "goup-util") {
+		if !strings.Contains(cacheDir, ".cache") && !strings.Contains(cacheDir, "utm-dev") {
 			t.Logf("Linux cache dir: %q (may vary by environment)", cacheDir)
 		}
 	case "windows":
-		if !strings.Contains(cacheDir, "AppData") && !strings.Contains(cacheDir, "goup-util") {
+		if !strings.Contains(cacheDir, "AppData") && !strings.Contains(cacheDir, "utm-dev") {
 			t.Logf("Windows cache dir: %q (may vary by environment)", cacheDir)
 		}
 	}
@@ -49,9 +49,9 @@ func TestGetSDKDir(t *testing.T) {
 		t.Error("GetSDKDir() returned empty string")
 	}
 
-	// Should contain goup-util and sdks
-	if !strings.Contains(sdkDir, "goup-util") {
-		t.Errorf("GetSDKDir() returned %q, expected it to contain 'goup-util'", sdkDir)
+	// Should contain utm-dev and sdks
+	if !strings.Contains(sdkDir, "utm-dev") {
+		t.Errorf("GetSDKDir() returned %q, expected it to contain 'utm-dev'", sdkDir)
 	}
 	if !strings.Contains(sdkDir, "sdks") {
 		t.Errorf("GetSDKDir() returned %q, expected it to contain 'sdks'", sdkDir)
@@ -60,15 +60,15 @@ func TestGetSDKDir(t *testing.T) {
 	// OS-specific checks
 	switch runtime.GOOS {
 	case "darwin":
-		if !strings.Contains(sdkDir, "goup-util-sdks") {
-			t.Errorf("On macOS, expected SDK dir to contain 'goup-util-sdks', got %q", sdkDir)
+		if !strings.Contains(sdkDir, "utm-dev-sdks") {
+			t.Errorf("On macOS, expected SDK dir to contain 'utm-dev-sdks', got %q", sdkDir)
 		}
 	case "linux":
 		if !strings.Contains(sdkDir, ".local/share") && !strings.Contains(sdkDir, "XDG_DATA_HOME") {
 			t.Errorf("On Linux, expected SDK dir to contain '.local/share' or XDG path, got %q", sdkDir)
 		}
 	case "windows":
-		if !strings.Contains(sdkDir, "APPDATA") && !strings.Contains(sdkDir, "goup-util") {
+		if !strings.Contains(sdkDir, "APPDATA") && !strings.Contains(sdkDir, "utm-dev") {
 			t.Errorf("On Windows, expected SDK dir to be in appropriate location, got %q", sdkDir)
 		}
 	}

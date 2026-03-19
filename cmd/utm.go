@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/joeblew999/goup-util/pkg/utm"
+	"github.com/joeblew999/utm-dev/pkg/utm"
 	"github.com/spf13/cobra"
 )
 
@@ -22,25 +22,25 @@ Requires UTM to be installed and QEMU guest agent running in the VM.
 
 Examples:
   # List all VMs
-  goup-util utm list
+  utm-dev utm list
 
   # List available VMs from gallery
-  goup-util utm gallery
+  utm-dev utm gallery
 
   # Check VM status
-  goup-util utm status "Windows 11"
+  utm-dev utm status "Windows 11"
 
   # Execute command in VM
-  goup-util utm exec "Windows 11" -- build windows examples/hybrid-dashboard
+  utm-dev utm exec "Windows 11" -- build windows examples/hybrid-dashboard
 
   # Execute Task in VM
-  goup-util utm task "Windows 11" build:hybrid:windows
+  utm-dev utm task "Windows 11" build:hybrid:windows
 
   # Pull file from VM
-  goup-util utm pull "Windows 11" "/path/in/vm/file.txt" ./local/
+  utm-dev utm pull "Windows 11" "/path/in/vm/file.txt" ./local/
 
   # Push file to VM
-  goup-util utm push "Windows 11" ./local/file.txt "/path/in/vm/"`,
+  utm-dev utm push "Windows 11" ./local/file.txt "/path/in/vm/"`,
 }
 
 var utmListCmd = &cobra.Command{
@@ -61,9 +61,9 @@ The gallery contains pre-configured VM definitions for common operating systems
 including Windows 11 ARM, Ubuntu, Debian, and Fedora.
 
 Examples:
-  goup-util utm gallery
-  goup-util utm gallery --os windows
-  goup-util utm gallery --arch arm64`,
+  utm-dev utm gallery
+  utm-dev utm gallery --os windows
+  utm-dev utm gallery --arch arm64`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		gallery, err := utm.LoadGallery()
 		if err != nil {
@@ -143,13 +143,13 @@ With a VM key, downloads the ISO for that VM.
 
 Examples:
   # Install UTM app
-  goup-util utm install
+  utm-dev utm install
 
   # Download Windows 11 ISO
-  goup-util utm install windows-11-arm
+  utm-dev utm install windows-11-arm
 
   # Force reinstall UTM
-  goup-util utm install --force`,
+  utm-dev utm install --force`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		force, _ := cmd.Flags().GetBool("force")
 
@@ -190,14 +190,14 @@ var utmDoctorCmd = &cobra.Command{
 			}
 		} else {
 			fmt.Printf("  ✗ UTM not installed\n")
-			fmt.Printf("    Run: goup-util utm install\n")
+			fmt.Printf("    Run: utm-dev utm install\n")
 		}
 
 		fmt.Printf("  Gallery version: %s\n", status.GalleryVersion)
 
 		if status.UpdateAvailable {
 			fmt.Printf("  ⚠ Update available: %s\n", status.GalleryVersion)
-			fmt.Printf("    Run: goup-util utm install --force\n")
+			fmt.Printf("    Run: utm-dev utm install --force\n")
 		}
 
 		// Show driver capabilities
@@ -286,24 +286,24 @@ var utmIPCmd = &cobra.Command{
 
 var utmExecCmd = &cobra.Command{
 	Use:   "exec <vm-name> -- <command> [args...]",
-	Short: "Execute a goup-util command in the VM",
-	Long: `Execute a goup-util command in the VM.
+	Short: "Execute a utm-dev command in the VM",
+	Long: `Execute a utm-dev command in the VM.
 
-The command after '--' will be prefixed with 'goup-util' automatically.
+The command after '--' will be prefixed with 'utm-dev' automatically.
 
 Examples:
   # Build for Windows
-  goup-util utm exec "Windows 11" -- build windows examples/hybrid-dashboard
+  utm-dev utm exec "Windows 11" -- build windows examples/hybrid-dashboard
 
   # Generate icons
-  goup-util utm exec "Windows 11" -- icons examples/hybrid-dashboard
+  utm-dev utm exec "Windows 11" -- icons examples/hybrid-dashboard
 
   # Check config
-  goup-util utm exec "Windows 11" -- config`,
+  utm-dev utm exec "Windows 11" -- config`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 2 {
-			return fmt.Errorf("usage: goup-util utm exec <vm-name> -- <command> [args...]")
+			return fmt.Errorf("usage: utm-dev utm exec <vm-name> -- <command> [args...]")
 		}
 
 		vmName := args[0]
@@ -321,8 +321,8 @@ Examples:
 			return fmt.Errorf("missing command after '--'")
 		}
 
-		// Build goup-util command
-		goupCommand := append([]string{"goup-util"}, args[dashIndex+1:]...)
+		// Build utm-dev command
+		goupCommand := append([]string{"utm-dev"}, args[dashIndex+1:]...)
 		cmdStr := strings.Join(goupCommand, " ")
 
 		fmt.Printf("Executing in VM '%s': %s\n\n", vmName, cmdStr)
@@ -339,8 +339,8 @@ var utmTaskCmd = &cobra.Command{
 This is a convenience wrapper around 'task <taskname>'.
 
 Examples:
-  goup-util utm task "Windows 11" build:hybrid:windows
-  goup-util utm task "Windows 11" test:all`,
+  utm-dev utm task "Windows 11" build:hybrid:windows
+  utm-dev utm task "Windows 11" test:all`,
 	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		vmName := args[0]
@@ -360,10 +360,10 @@ var utmPullCmd = &cobra.Command{
 
 Examples:
   # Pull MSIX from VM
-  goup-util utm pull "Windows 11" "C:\\Users\\User\\goup-util\\examples\\hybrid-dashboard\\.bin\\hybrid-dashboard.msix" ./artifacts/
+  utm-dev utm pull "Windows 11" "C:\\Users\\User\\utm-dev\\examples\\hybrid-dashboard\\.bin\\hybrid-dashboard.msix" ./artifacts/
 
   # Pull build log
-  goup-util utm pull "Windows 11" "/tmp/build.log" ./logs/`,
+  utm-dev utm pull "Windows 11" "/tmp/build.log" ./logs/`,
 	Args: cobra.ExactArgs(3),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		vmName := args[0]
@@ -390,10 +390,10 @@ var utmPushCmd = &cobra.Command{
 
 Examples:
   # Push config file
-  goup-util utm push "Windows 11" ./config.json "C:\\Users\\User\\config.json"
+  utm-dev utm push "Windows 11" ./config.json "C:\\Users\\User\\config.json"
 
   # Push test data
-  goup-util utm push "Windows 11" ./test-data.zip "/tmp/test-data.zip"`,
+  utm-dev utm push "Windows 11" ./test-data.zip "/tmp/test-data.zip"`,
 	Args: cobra.ExactArgs(3),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		vmName := args[0]
@@ -428,22 +428,22 @@ This uses UTM's AppleScript API to fully automate VM creation including:
 AppleScript automation adapted from github.com/naveenrajm7/packer-plugin-utm
 
 Prerequisites:
-  1. UTM must be installed: goup-util utm install
-  2. ISO must be downloaded: goup-util utm install <vm-key>
+  1. UTM must be installed: utm-dev utm install
+  2. ISO must be downloaded: utm-dev utm install <vm-key>
   3. UTM Automation permission granted in System Settings
 
 Examples:
   # Create Debian ARM64 VM (automated)
-  goup-util utm create debian-13-arm
+  utm-dev utm create debian-13-arm
 
   # Create with verbose output
-  goup-util utm create debian-13-arm --verbose
+  utm-dev utm create debian-13-arm --verbose
 
   # Force recreate existing VM
-  goup-util utm create debian-13-arm --force
+  utm-dev utm create debian-13-arm --force
 
   # Use manual mode (shows instructions instead of automating)
-  goup-util utm create debian-13-arm --manual`,
+  utm-dev utm create debian-13-arm --manual`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		force, _ := cmd.Flags().GetBool("force")
@@ -465,8 +465,8 @@ var utmMigrateCmd = &cobra.Command{
 	Long: `Migrate UTM.app and ISOs from local repo paths to global SDK location.
 
 This moves:
-  .bin/UTM.app     -> ~/goup-util-sdks/utm/UTM.app
-  .data/utm/iso/*  -> ~/goup-util-sdks/utm/iso/
+  .bin/UTM.app     -> ~/utm-dev-sdks/utm/UTM.app
+  .data/utm/iso/*  -> ~/utm-dev-sdks/utm/iso/
 
 VMs and share directories remain local (project-specific).
 
@@ -486,10 +486,10 @@ Requires UTM 4.6 or later.
 
 Examples:
   # Export to current directory
-  goup-util utm export "Debian 13 Trixie" ./debian-template.utm
+  utm-dev utm export "Debian 13 Trixie" ./debian-template.utm
 
   # Export to specific path
-  goup-util utm export "Windows 11" ~/vm-templates/windows-dev.utm`,
+  utm-dev utm export "Windows 11" ~/vm-templates/windows-dev.utm`,
 	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		vmName := args[0]
@@ -516,10 +516,10 @@ Requires UTM 4.6 or later.
 
 Examples:
   # Import a VM template
-  goup-util utm import ./debian-template.utm
+  utm-dev utm import ./debian-template.utm
 
   # Import from absolute path
-  goup-util utm import ~/vm-templates/windows-dev.utm`,
+  utm-dev utm import ~/vm-templates/windows-dev.utm`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		utmPath := args[0]
@@ -542,16 +542,16 @@ var utmScreenshotCmd = &cobra.Command{
 	Long: `Capture a screenshot from a running VM.
 
 Uses PowerShell to capture the screen inside the VM, then pulls the
-image back to the host. Does NOT require goup-util to be installed in the VM.
+image back to the host. Does NOT require utm-dev to be installed in the VM.
 
 The VM must have the QEMU guest agent running.
 
 Examples:
   # Capture screenshot from Windows VM
-  goup-util utm screenshot "Windows 11" windows-screenshot.png
+  utm-dev utm screenshot "Windows 11" windows-screenshot.png
 
   # Capture with default filename
-  goup-util utm screenshot "Windows 11"`,
+  utm-dev utm screenshot "Windows 11"`,
 	Args: cobra.RangeArgs(1, 2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		vmName := args[0]
@@ -561,17 +561,17 @@ Examples:
 		}
 
 		// Remote temp path in the VM
-		remotePath := "C:\\Users\\User\\goup-util-screenshot.png"
+		remotePath := "C:\\Users\\User\\utm-dev-screenshot.png"
 
-		// Use PowerShell to capture screenshot (no goup-util needed in VM)
+		// Use PowerShell to capture screenshot (no utm-dev needed in VM)
 		// This uses .NET's System.Drawing to capture the primary screen
 		psScript := fmt.Sprintf(`powershell -Command "Add-Type -AssemblyName System.Windows.Forms; Add-Type -AssemblyName System.Drawing; $bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds; $bmp = New-Object System.Drawing.Bitmap($bounds.Width, $bounds.Height); $graphics = [System.Drawing.Graphics]::FromImage($bmp); $graphics.CopyFromScreen($bounds.Location, [System.Drawing.Point]::Empty, $bounds.Size); $bmp.Save('%s'); $graphics.Dispose(); $bmp.Dispose()"`, remotePath)
 
 		fmt.Printf("Capturing screenshot in VM '%s'...\n", vmName)
 		if err := utm.ExecInVM(vmName, psScript); err != nil {
-			// Fallback: try goup-util if PowerShell fails
-			fmt.Println("PowerShell screenshot failed, trying goup-util in VM...")
-			goupCmd := fmt.Sprintf("goup-util screenshot --force %s", remotePath)
+			// Fallback: try utm-dev if PowerShell fails
+			fmt.Println("PowerShell screenshot failed, trying utm-dev in VM...")
+			goupCmd := fmt.Sprintf("utm-dev screenshot --force %s", remotePath)
 			if err2 := utm.ExecInVM(vmName, goupCmd); err2 != nil {
 				return fmt.Errorf("screenshot failed in VM: %w (PowerShell: %v)", err2, err)
 			}
@@ -606,10 +606,10 @@ The VM must have the QEMU guest agent running.
 
 Examples:
   # Build and run hybrid-dashboard in Windows VM
-  goup-util utm run "Windows 11" examples/hybrid-dashboard
+  utm-dev utm run "Windows 11" examples/hybrid-dashboard
 
   # Build and run webviewer example
-  goup-util utm run "Windows 11" examples/gio-plugin-webviewer`,
+  utm-dev utm run "Windows 11" examples/gio-plugin-webviewer`,
 	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		vmName := args[0]
@@ -617,7 +617,7 @@ Examples:
 
 		// Build for Windows
 		fmt.Printf("Building %s for Windows...\n", appDir)
-		buildCmdStr := fmt.Sprintf("goup-util build windows %s", appDir)
+		buildCmdStr := fmt.Sprintf("utm-dev build windows %s", appDir)
 		buildExec := exec.Command("sh", "-c", buildCmdStr)
 		buildExec.Stdout = os.Stdout
 		buildExec.Stderr = os.Stderr
@@ -661,15 +661,15 @@ This is different from 'utm run' which cross-compiles on macOS. This command
 executes the build inside the VM, producing a native binary. Useful when
 cross-compilation isn't sufficient (e.g., CGO dependencies, native libraries).
 
-Requires goup-util and Go to be installed in the VM.
-Use 'goup-util utm exec <vm> -- self setup' to install the toolchain.
+Requires utm-dev and Go to be installed in the VM.
+Use 'utm-dev utm exec <vm> -- self setup' to install the toolchain.
 
 Examples:
   # Build hybrid-dashboard for Windows inside the VM
-  goup-util utm build "Windows 11" windows examples/hybrid-dashboard
+  utm-dev utm build "Windows 11" windows examples/hybrid-dashboard
 
   # Build with platform auto-detected from VM OS
-  goup-util utm build "Windows 11" examples/hybrid-dashboard`,
+  utm-dev utm build "Windows 11" examples/hybrid-dashboard`,
 	Args: cobra.RangeArgs(2, 3),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		vmName := args[0]
@@ -684,8 +684,8 @@ Examples:
 			appDir = args[1]
 		}
 
-		// Build the goup-util command to run inside the VM
-		buildCmd := fmt.Sprintf("goup-util build %s %s", platform, appDir)
+		// Build the utm-dev command to run inside the VM
+		buildCmd := fmt.Sprintf("utm-dev build %s %s", platform, appDir)
 
 		fmt.Printf("Building %s for %s in VM '%s'...\n", appDir, platform, vmName)
 		if err := utm.ExecInVM(vmName, buildCmd); err != nil {
@@ -733,13 +733,13 @@ Use --setup-network to automatically configure the required network interfaces.
 
 Examples:
   # Forward SSH (guest:22 -> host:2222)
-  goup-util utm port-forward "Debian 13 Trixie" 22 2222
+  utm-dev utm port-forward "Debian 13 Trixie" 22 2222
 
   # Forward with network setup (adds emulated VLAN if needed)
-  goup-util utm port-forward "Debian 13 Trixie" 22 2222 --setup-network
+  utm-dev utm port-forward "Debian 13 Trixie" 22 2222 --setup-network
 
   # Forward HTTP
-  goup-util utm port-forward "Windows 11" 80 8080`,
+  utm-dev utm port-forward "Windows 11" 80 8080`,
 	Args: cobra.ExactArgs(3),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		vmName := args[0]

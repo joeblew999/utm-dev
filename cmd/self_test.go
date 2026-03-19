@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/joeblew999/goup-util/pkg/self"
-	"github.com/joeblew999/goup-util/pkg/utils"
+	"github.com/joeblew999/utm-dev/pkg/self"
+	"github.com/joeblew999/utm-dev/pkg/utils"
 )
 
 func TestBootstrapScriptGenerationLocal(t *testing.T) {
@@ -23,7 +23,7 @@ func TestBootstrapScriptGenerationLocal(t *testing.T) {
 	}
 
 	config := self.Config{
-		Repo:           "joeblew999/goup-util",
+		Repo:           "joeblew999/utm-dev",
 		SupportedArchs: "darwin-amd64, darwin-arm64, linux-amd64, linux-arm64, windows-amd64, windows-arm64",
 		MacOSArchs:     []string{"amd64", "arm64"},
 		WindowsArchs:   []string{"amd64", "arm64"},
@@ -93,7 +93,7 @@ func TestBootstrapScriptGenerationLocal(t *testing.T) {
 func TestBootstrapScriptGenerationRemote(t *testing.T) {
 	// Test REMOTE mode bootstrap script generation
 	config := self.Config{
-		Repo:           "joeblew999/goup-util",
+		Repo:           "joeblew999/utm-dev",
 		SupportedArchs: "darwin-amd64, darwin-arm64, linux-amd64, linux-arm64, windows-amd64, windows-arm64",
 		MacOSArchs:     []string{"amd64", "arm64"},
 		WindowsArchs:   []string{"amd64", "arm64"},
@@ -174,8 +174,8 @@ func TestSupportedArchitectures(t *testing.T) {
 
 		// Verify binary name format
 		binaryName := arch.BinaryName()
-		if !strings.HasPrefix(binaryName, "goup-util-") {
-			t.Errorf("binary name should start with 'goup-util-', got: %s", binaryName)
+		if !strings.HasPrefix(binaryName, "utm-dev-") {
+			t.Errorf("binary name should start with 'utm-dev-', got: %s", binaryName)
 		}
 
 		// Verify Windows binaries have .exe extension
@@ -209,7 +209,7 @@ func TestConfigValidation(t *testing.T) {
 	// Test Config validation
 	t.Run("valid config", func(t *testing.T) {
 		config := self.Config{
-			Repo:           "joeblew999/goup-util",
+			Repo:           "joeblew999/utm-dev",
 			SupportedArchs: "darwin-arm64",
 			MacOSArchs:     []string{"arm64"},
 			WindowsArchs:   []string{"amd64"},
@@ -232,7 +232,7 @@ func TestConfigValidation(t *testing.T) {
 
 	t.Run("LOCAL mode missing LocalBinDir", func(t *testing.T) {
 		config := self.Config{
-			Repo:     "joeblew999/goup-util",
+			Repo:     "joeblew999/utm-dev",
 			UseLocal: true,
 			// Missing LocalBinDir
 		}

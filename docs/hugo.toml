@@ -1,12 +1,12 @@
 baseURL = '/'
 languageCode = 'en-us'
-title = 'goup-util'
+title = 'utm-dev'
 theme = 'hugo-book'
 
 [params]
   BookToC = true
   BookSection = '/'
-  BookRepo = 'https://github.com/joeblew999/goup-util'
+  BookRepo = 'https://github.com/joeblew999/utm-dev'
   BookEditPath = 'edit/main/docs/content'
 
 [markup]

@@ -1,6 +1,6 @@
 # Architecture Decision Records
 
-This directory contains Architecture Decision Records (ADRs) for goup-util.
+This directory contains Architecture Decision Records (ADRs) for utm-dev.
 
 ## Core Principle: Single Source of Truth
 

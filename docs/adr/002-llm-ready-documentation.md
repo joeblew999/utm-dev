@@ -35,7 +35,7 @@ Reference: [Cobra LLM Documentation Guide](https://cobra.dev/docs/how-to-guides/
 
 ## Decision
 
-Enhance all goup-util commands with LLM-friendly documentation patterns:
+Enhance all utm-dev commands with LLM-friendly documentation patterns:
 
 1. **Every command gets strong `Example` fields** with concrete input/output
 2. **Every command gets detailed `Long` descriptions** explaining what/why
@@ -76,7 +76,7 @@ func GenerateDocs(root *cobra.Command, outputDir string, opts Options) error {
 func generateConsolidated(root *cobra.Command, outputDir string) error {
     var buf bytes.Buffer
 
-    buf.WriteString("# goup-util CLI Reference\n\n")
+    buf.WriteString("# utm-dev CLI Reference\n\n")
 
     // Walk command tree - everything comes from existing Cobra fields
     walkForDocs(root, &buf, 0)
@@ -144,15 +144,15 @@ This command compiles your Go/Gio application into platform-specific binaries:
 
 The build system is idempotent - it only rebuilds when source files change.`,
     Example: `  # Build for macOS
-  goup-util build macos examples/hybrid-dashboard
+  utm-dev build macos examples/hybrid-dashboard
   # Output: examples/hybrid-dashboard/.bin/macos/hybrid-dashboard.app
 
   # Build for Android with deep linking
-  goup-util build android examples/hybrid-dashboard --schemes "myapp://,https://example.com"
+  utm-dev build android examples/hybrid-dashboard --schemes "myapp://,https://example.com"
   # Output: examples/hybrid-dashboard/.bin/android/hybrid-dashboard.apk
 
   # Check if rebuild is needed (for CI)
-  goup-util build --check macos examples/hybrid-dashboard
+  utm-dev build --check macos examples/hybrid-dashboard
   # Exit code: 0 = up-to-date, 1 = needs rebuild`,
 }
 ```
@@ -193,13 +193,13 @@ All documentation comes from existing command fields:
 
 No additional metadata required - Cobra IS the source of truth.`,
     Example: `  # Generate markdown docs
-  goup-util generate docs
+  utm-dev generate docs
 
   # Generate single LLM-optimized file
-  goup-util generate docs --single-file
+  utm-dev generate docs --single-file
 
   # Generate without timestamps (for git)
-  goup-util generate docs --no-timestamp`,
+  utm-dev generate docs --no-timestamp`,
     RunE: func(cmd *cobra.Command, args []string) error {
         outputDir := "docs/cli"
         if len(args) > 0 {
@@ -234,7 +234,7 @@ No additional metadata required - Cobra IS the source of truth.`,
 
 1. **Generate docs:**
    ```bash
-   goup-util generate docs docs/cli
+   utm-dev generate docs docs/cli
    ```
 
 2. **Check no timestamps:**
@@ -245,7 +245,7 @@ No additional metadata required - Cobra IS the source of truth.`,
 
 3. **Verify examples exist:**
    ```bash
-   for f in docs/cli/goup-util_*.md; do
+   for f in docs/cli/utm-dev_*.md; do
      grep -q "## Examples" "$f" || echo "Missing examples: $f"
    done
    ```
@@ -259,7 +259,7 @@ No additional metadata required - Cobra IS the source of truth.`,
 
 ### Benefits
 - **Single source of truth** - Cobra definitions are the only place to update
-- LLMs can accurately answer questions about goup-util
+- LLMs can accurately answer questions about utm-dev
 - Better discoverability through search engines
 - Consistent documentation across all commands
 - Easy to integrate with documentation sites

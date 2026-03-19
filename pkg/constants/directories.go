@@ -1,5 +1,5 @@
 // Package constants provides centralized constants for directory names and paths
-// used throughout the goup-util project.
+// used throughout the utm-dev project.
 package constants
 
 const (

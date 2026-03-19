@@ -1,4 +1,4 @@
-# Claude Instructions for goup-util
+# Claude Instructions for utm-dev
 
 ## Philosphy
 
@@ -8,7 +8,7 @@ MUST use the .src folder as needed.
 
 ## Project Overview
 
-**goup-util** is a specialized build tool for creating **cross-platform hybrid applications** using Go and Gio UI.
+**utm-dev** is a specialized build tool for creating **cross-platform hybrid applications** using Go and Gio UI.
 
 ### The Real Mission
 
@@ -21,7 +21,7 @@ Enable developers to build **one codebase** that runs everywhere:
 
 ### Why This Matters
 
-Traditional cross-platform tools require multiple languages (Swift, Kotlin, JavaScript). **goup-util enables pure Go development** for hybrid apps by:
+Traditional cross-platform tools require multiple languages (Swift, Kotlin, JavaScript). **utm-dev enables pure Go development** for hybrid apps by:
 1. Managing platform SDKs (Android SDK, Xcode tools)
 2. Building platform-specific binaries from Go source
 3. Handling native integrations (webviews, icons, packaging)
@@ -37,27 +37,27 @@ Traditional cross-platform tools require multiple languages (Swift, Kotlin, Java
 
 ## CRITICAL: Two Separate Systems - Don't Mix Them!
 
-**goup-util has TWO completely separate concerns:**
+**utm-dev has TWO completely separate concerns:**
 
-### 1. The `self` System (Meta - Managing goup-util Itself)
+### 1. The `self` System (Meta - Managing utm-dev Itself)
 
-**Purpose**: Build, install, and manage **goup-util the tool**
+**Purpose**: Build, install, and manage **utm-dev the tool**
 
 ```
-pkg/self/          # SELF-CONTAINED - manages goup-util itself
-├── architecture.go  # goup-util's supported platforms
-├── build.go        # Build goup-util binaries
-├── install.go      # Install goup-util to system
-├── scripts.go      # Bootstrap scripts for goup-util
+pkg/self/          # SELF-CONTAINED - manages utm-dev itself
+├── architecture.go  # utm-dev's supported platforms
+├── build.go        # Build utm-dev binaries
+├── install.go      # Install utm-dev to system
+├── scripts.go      # Bootstrap scripts for utm-dev
 └── templates/      # Bootstrap script templates
 
-cmd/self.go        # CLI commands for goup-util management
+cmd/self.go        # CLI commands for utm-dev management
 ```
 
 **Commands**: `self build`, `self install`, `self setup`, `self upgrade`
-**Builds**: goup-util binaries (the tool itself)
+**Builds**: utm-dev binaries (the tool itself)
 **Uses**: Standard Go cross-compilation
-**Output**: `goup-util-darwin-arm64`, `goup-util-linux-amd64`, etc.
+**Output**: `utm-dev-darwin-arm64`, `utm-dev-linux-amd64`, etc.
 
 ### 2. The App Building System (What Users Use)
 
@@ -91,15 +91,15 @@ cmd/
 ```go
 // ❌ DON'T use pkg/self for user apps
 func buildUserApp() {
-    self.Build()  // NO! This builds goup-util, not user apps
+    self.Build()  // NO! This builds utm-dev, not user apps
 }
 
-// ❌ DON'T use app build dirs for goup-util
+// ❌ DON'T use app build dirs for utm-dev
 func buildSelf() {
     outputPath := constants.BinDir  // NO! That's for user apps
 }
 
-// ❌ DON'T use app config for goup-util
+// ❌ DON'T use app config for utm-dev
 func installSelf() {
     cfg := config.Load()  // NO! That's user app config
 }
@@ -110,7 +110,7 @@ func installSelf() {
 // ✅ Self system is isolated
 func buildGoupUtil() {
     self.Build(self.BuildOptions{UseLocal: false})
-    // Outputs to project root: goup-util-darwin-arm64
+    // Outputs to project root: utm-dev-darwin-arm64
 }
 
 // ✅ App building uses its own system
@@ -127,27 +127,27 @@ func buildUserApp() {
 2. **No cross-contamination** - App building code never calls pkg/self, self never calls app building
 3. **Different outputs** - Self outputs to project root, apps output to `.bin/.build/.dist`
 4. **Different configs** - Self uses hardcoded config, apps use user config files
-5. **Different purposes** - Self is for developers OF goup-util, rest is for developers USING goup-util
+5. **Different purposes** - Self is for developers OF utm-dev, rest is for developers USING utm-dev
 
 ### Easy Way to Remember
 
 ```
 ┌─────────────────────────────────────────┐
-│  pkg/self/  →  Manages goup-util        │
+│  pkg/self/  →  Manages utm-dev        │
 │  Everything else  →  Manages user apps  │
 └─────────────────────────────────────────┘
 
 If you're working on:
 - Bootstrap scripts → pkg/self/
-- Installing goup-util → pkg/self/
-- Building goup-util → pkg/self/
+- Installing utm-dev → pkg/self/
+- Building utm-dev → pkg/self/
 
 - Building Gio apps → pkg/project, pkg/icons, cmd/build.go
 - Installing SDKs → pkg/installer, cmd/install.go
 - Packaging apps → pkg/packaging, cmd/package.go
 ```
 
-**When in doubt**: Ask yourself "Is this for goup-util itself or for the apps it builds?"
+**When in doubt**: Ask yourself "Is this for utm-dev itself or for the apps it builds?"
 
 ## JSON-Only Output (Self System)
 
@@ -156,7 +156,7 @@ If you're working on:
 ### Why JSON-Only?
 
 The self system uses JSON output to enable:
-1. **Remote execution** - Parse output when controlling goup-util on Windows VMs, Docker containers, SSH
+1. **Remote execution** - Parse output when controlling utm-dev on Windows VMs, Docker containers, SSH
 2. **Automation** - CI/CD pipelines can easily parse results
 3. **Consistent interface** - Same parsing code works locally and remotely
 4. **Machine-readable** - No need to parse human-friendly text
@@ -197,7 +197,7 @@ Every self command outputs this consistent schema:
     "version": "dev",
     "os": "darwin",
     "arch": "arm64",
-    "location": "/usr/local/bin/goup-util"
+    "location": "/usr/local/bin/utm-dev"
   }
 }
 ```
@@ -212,7 +212,7 @@ Every self command outputs this consistent schema:
     "current_version": "dev",
     "latest_version": "v1.0.1",
     "update_available": true,
-    "location": "/usr/local/bin/goup-util"
+    "location": "/usr/local/bin/utm-dev"
   }
 }
 ```
@@ -224,10 +224,10 @@ Every self command outputs this consistent schema:
   "status": "warning",
   "data": {
     "installations": [
-      {"path": "/usr/local/bin/goup-util", "active": true, "shadowed": false}
+      {"path": "/usr/local/bin/utm-dev", "active": true, "shadowed": false}
     ],
-    "issues": ["Multiple goup-util installations found"],
-    "suggestions": ["Remove: /opt/bin/goup-util"]
+    "issues": ["Multiple utm-dev installations found"],
+    "suggestions": ["Remove: /opt/bin/utm-dev"]
   }
 }
 ```
@@ -238,9 +238,9 @@ Every self command outputs this consistent schema:
   "command": "self build",
   "status": "ok",
   "data": {
-    "binaries": ["goup-util-darwin-arm64", "goup-util-linux-amd64"],
+    "binaries": ["utm-dev-darwin-arm64", "utm-dev-linux-amd64"],
     "scripts_generated": true,
-    "output_dir": "/path/to/goup-util",
+    "output_dir": "/path/to/utm-dev",
     "local_mode": false
   }
 }
@@ -253,7 +253,7 @@ Every self command outputs this consistent schema:
   "status": "ok",
   "data": {
     "installed": true,
-    "location": "/usr/local/bin/goup-util",
+    "location": "/usr/local/bin/utm-dev",
     "in_path": true,
     "dependencies_ok": true
   }
@@ -266,7 +266,7 @@ Every self command outputs this consistent schema:
   "command": "self uninstall",
   "status": "ok",
   "data": {
-    "removed": ["/usr/local/bin/goup-util"],
+    "removed": ["/usr/local/bin/utm-dev"],
     "failed": []
   }
 }
@@ -296,7 +296,7 @@ Every self command outputs this consistent schema:
     "new_version": "v1.0.1",
     "downloaded": true,
     "installed": true,
-    "location": "/usr/local/bin/goup-util"
+    "location": "/usr/local/bin/utm-dev"
   }
 }
 ```
@@ -312,7 +312,7 @@ Every self command outputs this consistent schema:
     "built": true,
     "tagged": true,
     "pushed": true,
-    "binaries": ["goup-util-darwin-arm64", "goup-util-linux-amd64", "goup-util-windows-amd64"]
+    "binaries": ["utm-dev-darwin-arm64", "utm-dev-linux-amd64", "utm-dev-windows-amd64"]
   }
 }
 ```
@@ -323,7 +323,7 @@ Every self command outputs this consistent schema:
 
 **Go (Type-Safe Parsing):**
 ```go
-import "github.com/joeblew999/goup-util/pkg/self/output"
+import "github.com/joeblew999/utm-dev/pkg/self/output"
 
 // Step 1: Parse BaseResult
 var base output.BaseResult
@@ -358,7 +358,7 @@ fmt.Printf("Arch: %s\n", versionData.Arch)
 
 **PowerShell:**
 ```powershell
-$result = ./goup-util.exe self version | ConvertFrom-Json
+$result = ./utm-dev.exe self version | ConvertFrom-Json
 if ($result.status -eq "ok") {
     Write-Host "Version: $($result.data.version)"
 }
@@ -366,7 +366,7 @@ if ($result.status -eq "ok") {
 
 **Bash:**
 ```bash
-result=$(./goup-util self version)
+result=$(./utm-dev self version)
 status=$(echo "$result" | jq -r '.status')
 if [ "$status" = "ok" ]; then
     version=$(echo "$result" | jq -r '.data.version')
@@ -378,7 +378,7 @@ fi
 ```python
 import json, subprocess
 
-result = json.loads(subprocess.check_output(['./goup-util', 'self', 'version']))
+result = json.loads(subprocess.check_output(['./utm-dev', 'self', 'version']))
 if result['status'] == 'ok':
     print(f"Version: {result['data']['version']}")
 ```
@@ -394,7 +394,7 @@ type Client struct {
 }
 
 func (c *Client) SelfVersion() (*output.VersionResult, error) {
-    stdout, err := c.Executor.Execute([]string{"goup-util", "self", "version"})
+    stdout, err := c.Executor.Execute([]string{"utm-dev", "self", "version"})
     if err != nil {
         return nil, err
     }
@@ -452,13 +452,13 @@ pkg/self/output/
 - ✅ `self status` - Installation status
 - ✅ `self doctor` - Validate installation
 - ✅ `self build` - Build binaries
-- ✅ `self setup` - Install goup-util
-- ✅ `self uninstall` - Remove goup-util
+- ✅ `self setup` - Install utm-dev
+- ✅ `self uninstall` - Remove utm-dev
 - ✅ `self test` - Test bootstrap scripts
 - ✅ `self upgrade` - Upgrade to latest release
 - ✅ `self release` - Create and push release
 
-**ALL self commands now output JSON!** This enables full remote automation including upgrading goup-util inside Windows VMs.
+**ALL self commands now output JSON!** This enables full remote automation including upgrading utm-dev inside Windows VMs.
 
 ### Testing JSON Output
 
@@ -487,12 +487,12 @@ done
 ## Project Structure
 
 ```
-goup-util/
+utm-dev/
 ├── cmd/                    # CLI commands (Cobra-based)
 │   ├── root.go            # Root command
 │   ├── build.go           # Build Gio apps for platforms
 │   ├── install.go         # Install SDKs
-│   ├── self.go            # Build/update goup-util itself
+│   ├── self.go            # Build/update utm-dev itself
 │   ├── icons.go           # Generate platform icons
 │   ├── package.go         # Package apps for distribution
 │   ├── workspace.go       # Manage Go workspaces
@@ -518,7 +518,7 @@ goup-util/
 
 ## The Hybrid App Vision
 
-**goup-util exists to make this possible**:
+**utm-dev exists to make this possible**:
 
 ```
 ┌─────────────────────────────────────┐
@@ -595,16 +595,16 @@ This gives you:
 
 ### Version Management TODO
 
-goup-util should eventually automate this:
-- `goup-util init <project>` - Initialize with correct versions
-- `goup-util doctor` - Check and fix version compatibility
+utm-dev should eventually automate this:
+- `utm-dev init <project>` - Initialize with correct versions
+- `utm-dev doctor` - Check and fix version compatibility
 - Auto-update go.mod when building examples
 
 ## Development Workflow
 
-### Self System Commands (Managing goup-util)
+### Self System Commands (Managing utm-dev)
 
-The `self` commands manage goup-util itself. These are organized into three categories:
+The `self` commands manage utm-dev itself. These are organized into three categories:
 
 #### Information Commands (What's installed?)
 
@@ -612,21 +612,21 @@ The `self` commands manage goup-util itself. These are organized into three cate
 # Check installed version
 go run . self version
 # Output:
-#   goup-util version v1.2.3
+#   utm-dev version v1.2.3
 #   OS: darwin
 #   Arch: arm64
-#   Location: /usr/local/bin/goup-util
+#   Location: /usr/local/bin/utm-dev
 
 # Check status and updates
 go run . self status
 # Output:
-#   ✅ goup-util is installed
+#   ✅ utm-dev is installed
 #   📦 Update available: v1.2.3 → v1.2.4
 
 # Validate installation
 go run . self doctor
 # Output:
-#   ✅ goup-util: installed
+#   ✅ utm-dev: installed
 #   ✅ Homebrew: installed
 #   ✅ git: installed
 #   ✅ go: installed
@@ -646,7 +646,7 @@ go run . self upgrade
 go run . self uninstall
 ```
 
-#### Development Commands (For goup-util developers)
+#### Development Commands (For utm-dev developers)
 
 ```bash
 # Build all platform binaries (for release)
@@ -744,7 +744,7 @@ All build commands support:
 
 ## Three-Tier Packaging System
 
-goup-util provides **three distinct operations** for the app lifecycle:
+utm-dev provides **three distinct operations** for the app lifecycle:
 
 ### 1. Build - Compile & Create Basic Structures
 
@@ -826,7 +826,7 @@ See [docs/PACKAGING.md](docs/PACKAGING.md) for complete details.
 
 - `build <platform> <app>` - Build Gio apps for different platforms (macos, windows, android, ios)
 - `install <sdk>` - Install platform SDKs (Android SDK, NDK, etc.)
-- `self build` - Build goup-util binaries for distribution
+- `self build` - Build utm-dev binaries for distribution
 - `icons <app>` - Generate platform-specific icons from source images
 - `package <app>` - Package built apps for distribution
 - `workspace` - Manage Go workspace files for multi-module projects
@@ -839,7 +839,7 @@ See [docs/PACKAGING.md](docs/PACKAGING.md) for complete details.
 - `pkg/installer/` - SDK installation logic
 - `examples/gio-plugin-webviewer/main.go` - **THE KEY EXAMPLE** - Multi-tab browser showing full webview capabilities
 - `go.mod` - Dependencies (cobra, progressbar, icns, gio-plugins, etc.)
-- `.gitignore` - Build binaries are excluded (goup-util*)
+- `.gitignore` - Build binaries are excluded (utm-dev*)
 
 ## Common Tasks
 
@@ -894,8 +894,8 @@ See [docs/PACKAGING.md](docs/PACKAGING.md) for complete details.
 
 ## Code Obfuscation with Garble
 
-**CRITICAL**: goup-util uses [garble](https://github.com/burrowers/garble) for code obfuscation to protect:
-1. **The tool itself** - When building goup-util binaries (`self build`)
+**CRITICAL**: utm-dev uses [garble](https://github.com/burrowers/garble) for code obfuscation to protect:
+1. **The tool itself** - When building utm-dev binaries (`self build`)
 2. **User applications** - When building Gio apps for distribution
 
 ### Why Garble?
@@ -919,7 +919,7 @@ package self
 // Repository configuration
 const (
     GitHubOwner  = "joeblew999"
-    GitHubRepo   = "goup-util"
+    GitHubRepo   = "utm-dev"
     FullRepoName = GitHubOwner + "/" + GitHubRepo
 )
 
@@ -931,7 +931,7 @@ const (
 
 // Binary configuration
 const (
-    BinaryName = "goup-util"
+    BinaryName = "utm-dev"
 )
 
 // Installation paths
@@ -991,9 +991,9 @@ garble version
 
 ### Build Integration
 
-#### Building goup-util with Garble
+#### Building utm-dev with Garble
 
-When building goup-util itself:
+When building utm-dev itself:
 
 ```bash
 # Without garble (development)
@@ -1063,11 +1063,11 @@ Always test obfuscated builds before release:
 go run . self build --obfuscate
 
 # Test the obfuscated binary
-./goup-util-darwin-arm64 self version  # Should output JSON
-./goup-util-darwin-arm64 self doctor   # Should work normally
+./utm-dev-darwin-arm64 self version  # Should output JSON
+./utm-dev-darwin-arm64 self doctor   # Should work normally
 
 # Test upgrade works (critical!)
-./goup-util-darwin-arm64 self upgrade
+./utm-dev-darwin-arm64 self upgrade
 ```
 
 ### Common Garble Issues
@@ -1090,11 +1090,11 @@ go run . self build --obfuscate
 
 ### Garble and Remote Execution
 
-When using goup-util on remote machines (Windows VMs, Docker, SSH):
+When using utm-dev on remote machines (Windows VMs, Docker, SSH):
 
 1. **Install garble on the remote** - Required for building obfuscated binaries
 2. **JSON output works fine** - JSON parsing is not affected by obfuscation
-3. **Constants ensure compatibility** - Remote goup-util can still make GitHub API calls
+3. **Constants ensure compatibility** - Remote utm-dev can still make GitHub API calls
 4. **Upgrade still works** - Remote upgrade downloads and installs correctly
 
 ### Development Workflow
@@ -1115,10 +1115,10 @@ go run . self test               # Test obfuscated binaries work
 ```bash
 # Test upgrade with obfuscation
 go run . self build --obfuscate
-./goup-util-darwin-arm64 self upgrade
+./utm-dev-darwin-arm64 self upgrade
 
 # Test JSON output still valid
-./goup-util-darwin-arm64 self version | jq
+./utm-dev-darwin-arm64 self version | jq
 ```
 
 ### CI/CD Integration
@@ -1132,8 +1132,8 @@ GitHub Actions automatically uses garble for releases:
 
 - name: Test obfuscated binaries
   run: |
-    ./goup-util-darwin-arm64 self version
-    ./goup-util-linux-amd64 self version
+    ./utm-dev-darwin-arm64 self version
+    ./utm-dev-linux-amd64 self version
 ```
 
 ### Future: Garble for Gio Apps
@@ -1158,16 +1158,16 @@ go run . package --obfuscate examples/gio-plugin-webviewer
 - **Documentation**: https://github.com/burrowers/garble#readme
 ## SDK System Architecture
 
-**IMPORTANT**: goup-util has a sophisticated SDK management system for installing platform tools.
+**IMPORTANT**: utm-dev has a sophisticated SDK management system for installing platform tools.
 
 ### How SDKs Work
 
 SDKs are defined in JSON files and installed to platform-specific directories:
 
 ```
-macOS:    ~/goup-util-sdks/
-Linux:    ~/.local/share/goup-util/sdks/
-Windows:  %LOCALAPPDATA%\goup-util\sdks\
+macOS:    ~/utm-dev-sdks/
+Linux:    ~/.local/share/utm-dev/sdks/
+Windows:  %LOCALAPPDATA%\utm-dev\sdks\
 ```
 
 ### SDK Definition Files
@@ -1326,13 +1326,13 @@ User runs: go run . install android-ndk
 2. utils.FindSDKItem() → searches all *.json files
 3. Finds SDK definition in sdk-android-list.json
 4. installer.Install() → downloads, extracts, verifies
-5. Cache entry created in ~/.cache/goup-util/cache.json
+5. Cache entry created in ~/.cache/utm-dev/cache.json
 6. Binary/tools available for use
 ```
 
 ### SDK Cache System
 
-SDKs are tracked in `~/.cache/goup-util/cache.json`:
+SDKs are tracked in `~/.cache/utm-dev/cache.json`:
 
 ```json
 {
@@ -1383,10 +1383,10 @@ This prevents re-downloading if already installed.
 go run . list
 
 # Check specific SDK
-ls ~/goup-util-sdks/
+ls ~/utm-dev-sdks/
 
 # View cache
-cat ~/.cache/goup-util/cache.json
+cat ~/.cache/utm-dev/cache.json
 
 # Doctor command checks all dependencies
 go run . self doctor
@@ -1450,12 +1450,12 @@ pkg/utils/utils.go                  # FindSDKItem()
 pkg/config/config.go                # GetSDKDir()
 
 # Cache
-~/.cache/goup-util/cache.json       # Tracks installed SDKs
+~/.cache/utm-dev/cache.json       # Tracks installed SDKs
 
 # Installed SDKs
-~/goup-util-sdks/                   # macOS
-~/.local/share/goup-util/sdks/      # Linux
-%LOCALAPPDATA%\goup-util\sdks\      # Windows
+~/utm-dev-sdks/                   # macOS
+~/.local/share/utm-dev/sdks/      # Linux
+%LOCALAPPDATA%\utm-dev\sdks\      # Windows
 ```
 
 ### Adding Verification Tools
@@ -1483,7 +1483,7 @@ pkg/config/config.go                # GetSDKDir()
 go run . install redress
 
 # Analyze obfuscated binary
-redress goup-util-darwin-arm64
+redress utm-dev-darwin-arm64
 
 # Should show minimal symbol information if properly obfuscated
 ```
@@ -1566,7 +1566,7 @@ The agent documentation helps multiple AI assistants work effectively on the cod
 3. **Maintain idempotency** - Operations should be safe to run multiple times
 4. **Follow existing patterns** - Look at similar commands for consistency
 5. **Update docs/** - Keep end-user docs in sync with code changes
-6. **Check .gitignore** - Don't commit build binaries (goup-util*)
+6. **Check .gitignore** - Don't commit build binaries (utm-dev*)
 7. **Use examples/** - Test changes with the example Gio projects
 8. **Cross-platform awareness** - Code runs on macOS, Linux, Windows, Android, iOS
 9. **Hybrid apps are the goal** - Native UI + webview content in pure Go
@@ -1603,7 +1603,7 @@ open examples/gio-plugin-webviewer/.bin/macos/gio-plugin-webviewer.app
 
 ## The Big Picture
 
-**goup-util is a developer tool for building a specific class of apps:**
+**utm-dev is a developer tool for building a specific class of apps:**
 
 **Cross-platform hybrid applications where:**
 - Shell/controls are native Gio UI (Go)
@@ -1774,7 +1774,7 @@ task --dry demo
 
 ### Why Test Tasks?
 
-Currently, goup-util has **limited unit tests**. The Taskfile tasks serve as:
+Currently, utm-dev has **limited unit tests**. The Taskfile tasks serve as:
 - ✅ Integration tests (build → run workflows)
 - ✅ Smoke tests (does it build at all?)
 - ✅ Platform compatibility tests

@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/joeblew999/goup-util/pkg/self/output"
+	"github.com/joeblew999/utm-dev/pkg/self/output"
 )
 
 // TestBootstrap generates and tests bootstrap scripts locally

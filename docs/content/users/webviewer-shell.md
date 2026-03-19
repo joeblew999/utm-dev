@@ -33,7 +33,7 @@ The **Webviewer Shell** is a pre-built native desktop app that loads any website
 
 ### 1. Download
 
-Go to [GitHub Releases](https://github.com/joeblew999/goup-util/releases) and download the zip for your platform:
+Go to [GitHub Releases](https://github.com/joeblew999/utm-dev/releases) and download the zip for your platform:
 
 - **macOS**: `webviewer-shell-macos.zip`
 - **Windows**: `webviewer-shell-windows.zip`
@@ -117,7 +117,7 @@ Add an `update` section to `app.json`:
 {
     "url": "https://your-website.com",
     "update": {
-        "repo": "joeblew999/goup-util",
+        "repo": "joeblew999/utm-dev",
         "asset": "webviewer-shell"
     }
 }

@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	selfOutput "github.com/joeblew999/goup-util/pkg/self/output"
+	selfOutput "github.com/joeblew999/utm-dev/pkg/self/output"
 )
 
 // CheckReleaseResult represents the result of checking a release

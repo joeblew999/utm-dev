@@ -2,11 +2,11 @@
 
 ## Status
 
-**Implemented** - UTM storage aligned with goup-util SDK caching for idempotency.
+**Implemented** - UTM storage aligned with utm-dev SDK caching for idempotency.
 
 ## Context
 
-UTM previously used repo-local paths (`.bin/UTM.app`, `.data/utm/`) while Android SDKs use global paths (`~/goup-util-sdks/`). This inconsistency meant:
+UTM previously used repo-local paths (`.bin/UTM.app`, `.data/utm/`) while Android SDKs use global paths (`~/utm-dev-sdks/`). This inconsistency meant:
 - ISOs were re-downloaded per project
 - No checksum verification for cached files
 - Different caching patterns confused users
@@ -17,11 +17,11 @@ All UTM paths are now global (shared across projects):
 
 | Component | Legacy (Local) | Current (Global) |
 |-----------|----------------|------------------|
-| UTM.app | `.bin/UTM.app` | `~/goup-util-sdks/utm/UTM.app` |
-| ISOs | `.data/utm/iso/` | `~/goup-util-sdks/utm/iso/` |
-| VMs | `.data/utm/vms/` | `~/goup-util-sdks/utm/vms/` |
-| Share | `.data/utm/share/` | `~/goup-util-sdks/utm/share/` |
-| Cache | None | `~/goup-util-cache/cache.json` |
+| UTM.app | `.bin/UTM.app` | `~/utm-dev-sdks/utm/UTM.app` |
+| ISOs | `.data/utm/iso/` | `~/utm-dev-sdks/utm/iso/` |
+| VMs | `.data/utm/vms/` | `~/utm-dev-sdks/utm/vms/` |
+| Share | `.data/utm/share/` | `~/utm-dev-sdks/utm/share/` |
+| Cache | None | `~/utm-dev-cache/cache.json` |
 
 **Rationale:** VMs are large (20-60GB) and reused across projects. Share folders are used for host<->VM file transfer and can be organized per-VM.
 
@@ -35,7 +35,7 @@ All UTM paths are now global (shared across projects):
 
 ```go
 func DefaultPaths() Paths {
-    sdkDir := config.GetSDKDir()  // ~/goup-util-sdks
+    sdkDir := config.GetSDKDir()  // ~/utm-dev-sdks
 
     return Paths{
         // All paths are global (shared across projects)
@@ -80,14 +80,14 @@ AddISOToCache(vmKey) error
 **File: `pkg/utm/migrate.go`**
 
 ```go
-MigrateUTMApp()  // .bin/UTM.app → ~/goup-util-sdks/utm/UTM.app
-MigrateISOs()    // .data/utm/iso/* → ~/goup-util-sdks/utm/iso/
+MigrateUTMApp()  // .bin/UTM.app → ~/utm-dev-sdks/utm/UTM.app
+MigrateISOs()    // .data/utm/iso/* → ~/utm-dev-sdks/utm/iso/
 MigrateAll()     // Full migration with status output
 ```
 
 **File: `cmd/utm.go`**
 
-Added `goup-util utm migrate` command.
+Added `utm-dev utm migrate` command.
 
 ### Phase 4: Remove Taskfile.utm.yml ✅
 
@@ -95,19 +95,19 @@ Deleted `Taskfile.utm.yml` - all functionality in Go CLI:
 
 | Taskfile Command | Go CLI Equivalent |
 |------------------|-------------------|
-| `task utm:install` | `goup-util utm install` |
-| `task utm:install:check` | `goup-util utm doctor` |
-| `task utm:vm:list` | `goup-util utm list` |
-| `task utm:vm:start` | `goup-util utm start <vm>` |
-| `task utm:gallery` | `goup-util utm gallery` |
-| (new) | `goup-util utm migrate` |
+| `task utm:install` | `utm-dev utm install` |
+| `task utm:install:check` | `utm-dev utm doctor` |
+| `task utm:vm:list` | `utm-dev utm list` |
+| `task utm:vm:start` | `utm-dev utm start <vm>` |
+| `task utm:gallery` | `utm-dev utm gallery` |
+| (new) | `utm-dev utm migrate` |
 
 ### Phase 5: Global Paths for All ✅
 
 All paths are now global:
 
 ```
-~/goup-util-sdks/utm/
+~/utm-dev-sdks/utm/
 ├── UTM.app     # Application
 ├── iso/        # ISO images
 ├── vms/        # Virtual machines
@@ -130,30 +130,30 @@ All paths are now global:
 
 1. **Test idempotency:**
    ```bash
-   goup-util utm install              # Downloads UTM
-   goup-util utm install              # Says "already cached"
-   goup-util utm install debian-13-arm # Downloads ISO
-   goup-util utm install debian-13-arm # Says "already cached"
+   utm-dev utm install              # Downloads UTM
+   utm-dev utm install              # Says "already cached"
+   utm-dev utm install debian-13-arm # Downloads ISO
+   utm-dev utm install debian-13-arm # Says "already cached"
    ```
 
 2. **Verify cache:**
    ```bash
-   cat ~/goup-util-cache/cache.json | grep utm
+   cat ~/utm-dev-cache/cache.json | grep utm
    # Should show utm-app-* and utm-iso-* entries
    ```
 
 3. **Test migration:**
    ```bash
    # If legacy files exist
-   goup-util utm migrate
+   utm-dev utm migrate
    # Moves .bin/UTM.app and .data/utm/iso/* to global location
    ```
 
 4. **Verify paths:**
    ```bash
-   goup-util utm paths
-   # Shows: App: ~/goup-util-sdks/utm/UTM.app
-   #        ISO: ~/goup-util-sdks/utm/iso
+   utm-dev utm paths
+   # Shows: App: ~/utm-dev-sdks/utm/UTM.app
+   #        ISO: ~/utm-dev-sdks/utm/iso
    ```
 
 ## Expected cache.json After Implementation
@@ -165,13 +165,13 @@ All paths are now global:
       "name": "utm-app-5.0.1",
       "version": "5.0.1",
       "checksum": "sha256:...",
-      "installPath": "/Users/apple/goup-util-sdks/utm/UTM.app"
+      "installPath": "/Users/apple/utm-dev-sdks/utm/UTM.app"
     },
     "utm-iso-debian-13-arm": {
       "name": "utm-iso-debian-13-arm",
       "version": "debian-13-arm",
       "checksum": "sha256:...",
-      "installPath": "/Users/apple/goup-util-sdks/utm/iso/debian-13-arm64.iso"
+      "installPath": "/Users/apple/utm-dev-sdks/utm/iso/debian-13-arm64.iso"
     }
   }
 }

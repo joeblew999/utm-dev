@@ -5,14 +5,14 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/joeblew999/goup-util/pkg/self"
+	"github.com/joeblew999/utm-dev/pkg/self"
 	"github.com/spf13/cobra"
 )
 
 var selfCmd = &cobra.Command{
 	Use:   "self",
-	Short: "Manage goup-util itself",
-	Long: `Commands for managing goup-util itself.
+	Short: "Manage utm-dev itself",
+	Long: `Commands for managing utm-dev itself.
 
 For Users:
   version        - Show version and check for updates
@@ -20,7 +20,7 @@ For Users:
   doctor         - Validate dependencies
 
 For Developers:
-  build          - Build goup-util binaries for all platforms
+  build          - Build utm-dev binaries for all platforms
   release        - Create git tag and trigger GitHub Actions
   release-check  - Check if GitHub release is ready (async monitoring)`,
 }
@@ -32,11 +32,11 @@ var (
 
 var selfBuildCmd = &cobra.Command{
 	Use:   "build",
-	Short: "Build goup-util binaries for all platforms",
-	Long: `Cross-compile goup-util for all supported architectures and generate bootstrap scripts.
+	Short: "Build utm-dev binaries for all platforms",
+	Long: `Cross-compile utm-dev for all supported architectures and generate bootstrap scripts.
 
 Output: All artifacts are placed in .dist/ directory
-- Binaries: .dist/goup-util-<platform>
+- Binaries: .dist/utm-dev-<platform>
 - Scripts: .dist/macos-bootstrap.sh, .dist/windows-bootstrap.ps1
 
 Flags:
@@ -55,8 +55,8 @@ This is a LOCAL build command - it does NOT create releases or push to GitHub.`,
 
 var selfVersionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "Show goup-util version",
-	Long:  "Display the currently installed version of goup-util.",
+	Short: "Show utm-dev version",
+	Long:  "Display the currently installed version of utm-dev.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return self.ShowVersion()
 	},
@@ -65,7 +65,7 @@ var selfVersionCmd = &cobra.Command{
 var selfDoctorCmd = &cobra.Command{
 	Use:   "doctor",
 	Short: "Validate installation and dependencies",
-	Long:  "Check that goup-util and all dependencies (Homebrew, git, go, task) are properly installed.",
+	Long:  "Check that utm-dev and all dependencies (Homebrew, git, go, task) are properly installed.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return self.Doctor()
 	},
@@ -79,8 +79,8 @@ var selfReleaseCheckCmd = &cobra.Command{
 This is useful after running 'self release' to monitor the async GitHub Actions workflow.
 
 Examples:
-  goup-util self release-check v1.5.0
-  goup-util self release-check          # checks latest tag
+  utm-dev self release-check v1.5.0
+  utm-dev self release-check          # checks latest tag
 
 Returns JSON with:
 - exists: whether release exists on GitHub
@@ -107,12 +107,12 @@ Returns JSON with:
 var selfUpgradeCmd = &cobra.Command{
 	Use:   "upgrade",
 	Short: "Download and install latest release from GitHub",
-	Long: `Download and install the latest goup-util release from GitHub.
+	Long: `Download and install the latest utm-dev release from GitHub.
 
 This downloads the pre-built binary for your platform from the GitHub Releases page
 and installs it to your system PATH (~/.local/bin/ or ~/bin/).
 
-Use this command to update goup-util after a new release has been published.`,
+Use this command to update utm-dev after a new release has been published.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return self.DownloadAndInstallLatest(self.FullRepoName)
 	},

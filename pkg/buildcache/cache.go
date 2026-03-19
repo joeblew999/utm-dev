@@ -204,5 +204,5 @@ func hashDirectory(path string) (string, error) {
 // GetDefaultCachePath returns the default cache file path
 func GetDefaultCachePath() string {
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".goup-util", "build-cache.json")
+	return filepath.Join(home, ".utm-dev", "build-cache.json")
 }

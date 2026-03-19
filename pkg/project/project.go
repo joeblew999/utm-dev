@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/joeblew999/goup-util/pkg/constants"
+	"github.com/joeblew999/utm-dev/pkg/constants"
 )
 
 // GioProject represents a Gio application project

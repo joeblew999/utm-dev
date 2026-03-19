@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/joeblew999/goup-util/pkg/logging"
-	"github.com/joeblew999/goup-util/pkg/screenshot"
+	"github.com/joeblew999/utm-dev/pkg/logging"
+	"github.com/joeblew999/utm-dev/pkg/screenshot"
 	"github.com/spf13/cobra"
 )
 
@@ -65,13 +65,13 @@ This automates the workflow of:
 
 Examples:
   # Run app and capture screenshot
-  goup-util run-and-capture examples/hybrid-dashboard screenshot.png
+  utm-dev run-and-capture examples/hybrid-dashboard screenshot.png
 
   # Load a specific URL (writes temporary app.json)
-  goup-util run-and-capture --url https://example.com examples/gio-plugin-webviewer screenshot.png
+  utm-dev run-and-capture --url https://example.com examples/gio-plugin-webviewer screenshot.png
 
   # Use App Store preset size
-  goup-util run-and-capture --preset macos-retina examples/hybrid-dashboard screenshot.png`,
+  utm-dev run-and-capture --preset macos-retina examples/hybrid-dashboard screenshot.png`,
 	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		appDir := args[0]
@@ -85,7 +85,7 @@ Examples:
 		waitTime, _ := cmd.Flags().GetInt("wait")
 		urlOverride, _ := cmd.Flags().GetString("url")
 
-		// Initialize structured logger (DEV role — this is goup-util itself)
+		// Initialize structured logger (DEV role — this is utm-dev itself)
 		log, err := logging.New(logging.Config{
 			AppName: "run-and-capture",
 			Role:    logging.RoleDev,

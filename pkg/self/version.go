@@ -7,17 +7,17 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/joeblew999/goup-util/pkg/self/output"
+	"github.com/joeblew999/utm-dev/pkg/self/output"
 )
 
 // Version is set by the build process
 var Version = "dev"
 
-// ShowVersion displays the current version of goup-util
+// ShowVersion displays the current version of utm-dev
 func ShowVersion() error {
 	output.Run("self version", func() (*output.VersionResult, error) {
 		location := ""
-		if path, err := exec.LookPath("goup-util"); err == nil {
+		if path, err := exec.LookPath("utm-dev"); err == nil {
 			location = path
 		}
 
@@ -37,7 +37,7 @@ func ShowStatus() error {
 		result := &output.StatusResult{}
 
 		// Check if installed
-		installPath, err := exec.LookPath("goup-util")
+		installPath, err := exec.LookPath("utm-dev")
 		if err != nil {
 			result.Installed = false
 			result.UpdateAvailable = false

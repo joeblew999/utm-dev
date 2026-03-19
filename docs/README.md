@@ -1,10 +1,10 @@
-# goup-util Documentation
+# utm-dev Documentation
 
-Welcome to the goup-util documentation.
+Welcome to the utm-dev documentation.
 
-## What is goup-util?
+## What is utm-dev?
 
-**goup-util** is a build tool for creating **cross-platform hybrid applications** using Go and Gio UI.
+**utm-dev** is a build tool for creating **cross-platform hybrid applications** using Go and Gio UI.
 
 Build pure Go apps that run everywhere:
 - 🖥️ **Desktop**: macOS, Windows, Linux
@@ -136,11 +136,11 @@ The `examples/` directory contains working demonstrations:
 
 - Check [TODO.md](../TODO.md) for known issues and roadmap
 - Read [CLAUDE.md](../CLAUDE.md) for development guidelines
-- File issues at https://github.com/joeblew999/goup-util/issues
+- File issues at https://github.com/joeblew999/utm-dev/issues
 
 ## Philosophy
 
-**KISS (Keep It Simple, Stupid)** - goup-util aims to provide just enough functionality to build and package cross-platform hybrid apps without unnecessary complexity.
+**KISS (Keep It Simple, Stupid)** - utm-dev aims to provide just enough functionality to build and package cross-platform hybrid apps without unnecessary complexity.
 
 **Pure Go** - Everything is written in Go. No polyglot toolchains required.
 

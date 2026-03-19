@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/joeblew999/goup-util/pkg/icons"
+	"github.com/joeblew999/utm-dev/pkg/icons"
 	"github.com/spf13/cobra"
 )
 
@@ -14,18 +14,18 @@ var iconCmd = &cobra.Command{
 	Long: `[DEPRECATED] Generates platform-specific icons from a source PNG image.
 
 This command is deprecated in favor of the project-aware 'icons' command.
-Please use 'goup-util icons [platform] [project-directory]' instead.
+Please use 'utm-dev icons [platform] [project-directory]' instead.
 
 Examples (deprecated):
-  goup-util icon --input icon.png --output ./out --platform android
+  utm-dev icon --input icon.png --output ./out --platform android
 
 Recommended (new):
-  goup-util icons android ./my-project`,
+  utm-dev icons android ./my-project`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Show deprecation warning
 		fmt.Println("⚠️  WARNING: The 'icon' command is deprecated.")
-		fmt.Println("   Please use 'goup-util icons [platform] [project-directory]' instead.")
-		fmt.Println("   Example: goup-util icons android ./my-project")
+		fmt.Println("   Please use 'utm-dev icons [platform] [project-directory]' instead.")
+		fmt.Println("   Example: utm-dev icons android ./my-project")
 		fmt.Println()
 
 		inputPath, _ := cmd.Flags().GetString("input")

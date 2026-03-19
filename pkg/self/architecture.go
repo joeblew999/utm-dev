@@ -68,9 +68,9 @@ func ArchsToGoArchList(archs []Architecture) []string {
 }
 
 // BinaryName returns the full binary filename for an architecture.
-// Format: goup-util-{suffix}
+// Format: utm-dev-{suffix}
 func (a Architecture) BinaryName() string {
-	return "goup-util-" + a.Suffix
+	return "utm-dev-" + a.Suffix
 }
 
 // Validate checks if an Architecture has all required fields.

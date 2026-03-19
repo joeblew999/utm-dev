@@ -1,4 +1,4 @@
-module github.com/joeblew999/goup-util
+module github.com/joeblew999/utm-dev
 
 go 1.25.0
 
@@ -6,14 +6,14 @@ require (
 	github.com/JackMordaunt/icns v1.0.0
 	github.com/go-vgo/robotgo v0.110.8
 	github.com/google/jsonschema-go v0.4.2
-	github.com/joeblew999/goup-util/pkg/logging v0.0.0
+	github.com/joeblew999/utm-dev/pkg/logging v0.0.0
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/schollz/progressbar/v3 v3.18.0
 	github.com/spf13/cobra v1.9.1
 	github.com/vldrus/golang/image v0.0.0-20240807082152-296ae0857d76
 )
 
-replace github.com/joeblew999/goup-util/pkg/logging => ./pkg/logging
+replace github.com/joeblew999/utm-dev/pkg/logging => ./pkg/logging
 
 require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.6 // indirect

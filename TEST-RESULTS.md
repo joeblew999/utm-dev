@@ -31,13 +31,13 @@ $ go run . install redress
 ✅ Extraction complete.
 ```
 
-**Result**: ✅ Downloaded, verified, extracted to `~/goup-util-sdks/tools/redress/`
+**Result**: ✅ Downloaded, verified, extracted to `~/utm-dev-sdks/tools/redress/`
 
 ## Obfuscation Build Tests ✅
 
 ### Build Command
 ```bash
-$ ./goup-util self build --obfuscate
+$ ./utm-dev self build --obfuscate
 🔒 Building with garble obfuscation...
 ```
 
@@ -51,15 +51,15 @@ $ ./goup-util self build --obfuscate
   "exit_code": 0,
   "data": {
     "binaries": [
-      "goup-util-darwin-arm64",
-      "goup-util-darwin-amd64",
-      "goup-util-linux-amd64",
-      "goup-util-linux-arm64",
-      "goup-util-windows-amd64.exe",
-      "goup-util-windows-arm64.exe"
+      "utm-dev-darwin-arm64",
+      "utm-dev-darwin-amd64",
+      "utm-dev-linux-amd64",
+      "utm-dev-linux-arm64",
+      "utm-dev-windows-amd64.exe",
+      "utm-dev-windows-arm64.exe"
     ],
     "scripts_generated": true,
-    "output_dir": "/Users/apple/workspace/go/src/github.com/joeblew999/goup-util",
+    "output_dir": "/Users/apple/workspace/go/src/github.com/joeblew999/utm-dev",
     "local_mode": false
   }
 }
@@ -71,14 +71,14 @@ $ ./goup-util self build --obfuscate
 
 ### Redress Analysis
 ```bash
-$ ~/goup-util-sdks/tools/redress/redress-v1.2.41/redress info ./goup-util-darwin-arm64
+$ ~/utm-dev-sdks/tools/redress/redress-v1.2.41/redress info ./utm-dev-darwin-arm64
 OS        macOS
 Arch      arm64
 # main    0
 # std     0
 # vendor  0
 
-$ ~/goup-util-sdks/tools/redress/redress-v1.2.41/redress packages ./goup-util-darwin-arm64
+$ ~/utm-dev-sdks/tools/redress/redress-v1.2.41/redress packages ./utm-dev-darwin-arm64
 Packages:
 Name  Version
 ----  -------
@@ -98,7 +98,7 @@ Name  Version
 
 **Test 1: self version**
 ```bash
-$ ./goup-util-darwin-arm64 self version
+$ ./utm-dev-darwin-arm64 self version
 {
   "command": "self version",
   "version": "1",
@@ -109,7 +109,7 @@ $ ./goup-util-darwin-arm64 self version
     "version": "dev",
     "os": "darwin",
     "arch": "arm64",
-    "location": "/usr/local/bin/goup-util"
+    "location": "/usr/local/bin/utm-dev"
   }
 }
 ```
@@ -117,7 +117,7 @@ $ ./goup-util-darwin-arm64 self version
 
 **Test 2: self status**
 ```bash
-$ ./goup-util-darwin-arm64 self status
+$ ./utm-dev-darwin-arm64 self status
 {
   "command": "self status",
   "version": "1",
@@ -129,7 +129,7 @@ $ ./goup-util-darwin-arm64 self status
     "current_version": "vdev",
     "latest_version": "v1.0.1",
     "update_available": true,
-    "location": "/usr/local/bin/goup-util"
+    "location": "/usr/local/bin/utm-dev"
   }
 }
 ```
@@ -170,8 +170,8 @@ $ ./goup-util-darwin-arm64 self status
 
 ## Binary Size Comparison
 
-- **Normal build**: ~14.3 MB (goup-util)
-- **Obfuscated build**: ~11.1 MB (goup-util-darwin-arm64)
+- **Normal build**: ~14.3 MB (utm-dev)
+- **Obfuscated build**: ~11.1 MB (utm-dev-darwin-arm64)
 
 **Note**: Obfuscated binary is SMALLER due to stripped symbols and debug info
 
@@ -196,7 +196,7 @@ $ ./goup-util-darwin-arm64 self status
 ### Test Scenario: Parse JSON Output
 ```bash
 # Simulated remote execution
-OUTPUT=$(./goup-util-darwin-arm64 self version)
+OUTPUT=$(./utm-dev-darwin-arm64 self version)
 echo "$OUTPUT" | jq -r '.data.version'
 # Output: dev
 ```
@@ -252,10 +252,10 @@ go run . install redress
 go run . self build --obfuscate
 
 # Verify obfuscation
-~/goup-util-sdks/tools/redress/redress-v1.2.41/redress info ./goup-util-darwin-arm64
+~/utm-dev-sdks/tools/redress/redress-v1.2.41/redress info ./utm-dev-darwin-arm64
 
 # Test functionality
-./goup-util-darwin-arm64 self version | jq
+./utm-dev-darwin-arm64 self version | jq
 
 # Release (auto-obfuscated)
 go run . self release v1.2.3

@@ -1,6 +1,6 @@
 # Platform Support
 
-goup-util supports building native applications for all major platforms from a single codebase.
+utm-dev supports building native applications for all major platforms from a single codebase.
 
 ## Mobile Platforms
 
@@ -15,10 +15,10 @@ goup-util supports building native applications for all major platforms from a s
 
 ```bash
 # Build for iOS
-goup-util build ios ./my-app
+utm-dev build ios ./my-app
 
 # Generate iOS-specific assets
-goup-util icons ios ./my-app
+utm-dev icons ios ./my-app
 ```
 
 ### 🤖 Android
@@ -32,10 +32,10 @@ goup-util icons ios ./my-app
 
 ```bash
 # Build for Android
-goup-util build android ./my-app
+utm-dev build android ./my-app
 
 # Generate Android assets
-goup-util icons android ./my-app
+utm-dev icons android ./my-app
 ```
 
 ## Desktop Platforms
@@ -51,7 +51,7 @@ goup-util icons android ./my-app
 
 ```bash
 # Build for macOS
-goup-util build macos ./my-app
+utm-dev build macos ./my-app
 ```
 
 ### 🪟 Windows
@@ -65,10 +65,10 @@ goup-util build macos ./my-app
 
 ```bash
 # Build Windows executable
-goup-util build windows ./my-app
+utm-dev build windows ./my-app
 
 # Create MSIX package
-goup-util build windows-msix ./my-app
+utm-dev build windows-msix ./my-app
 ```
 
 ### 🐧 Linux
@@ -81,7 +81,7 @@ goup-util build windows-msix ./my-app
 
 ```bash
 # Build for Linux
-goup-util build linux ./my-app
+utm-dev build linux ./my-app
 ```
 
 ## Web Platform
@@ -97,7 +97,7 @@ goup-util build linux ./my-app
 
 ```bash
 # Build for web
-goup-util build web ./my-app
+utm-dev build web ./my-app
 ```
 
 ## Cross-Platform Features
@@ -135,14 +135,14 @@ Build for multiple platforms simultaneously:
 
 ```bash
 # Build for all platforms
-goup-util build all ./my-app
+utm-dev build all ./my-app
 
 # Build for mobile only
-goup-util build mobile ./my-app
+utm-dev build mobile ./my-app
 
 # Build for desktop only
-goup-util build desktop ./my-app
+utm-dev build desktop ./my-app
 
 # Custom combinations
-goup-util build ios,android,web ./my-app
+utm-dev build ios,android,web ./my-app
 ```

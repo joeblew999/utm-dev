@@ -4,7 +4,7 @@ This is a simple example application built with the [Gio](https://gioui.org) UI 
 
 ## Building and Running
 
-To build and run this application, you will need to have the `goup-util` tool installed and configured. You can then use the `Taskfile.yml` in the root of this repository to build and run the application for different platforms.
+To build and run this application, you will need to have the `utm-dev` tool installed and configured. You can then use the `Taskfile.yml` in the root of this repository to build and run the application for different platforms.
 
 ### macOS
 

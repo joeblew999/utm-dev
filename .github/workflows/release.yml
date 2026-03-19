@@ -32,7 +32,7 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         files: |
-          .dist/goup-util-*
+          .dist/utm-dev-*
           .dist/*.sh
           .dist/*.ps1
         generate_release_notes: true

@@ -31,7 +31,7 @@ func CreateVM(vmKey string, opts CreateVMOptions) error {
 
 	vm, ok := gallery.GetVM(vmKey)
 	if !ok {
-		return fmt.Errorf("VM '%s' not found in gallery. Run 'goup-util utm gallery' to see available VMs", vmKey)
+		return fmt.Errorf("VM '%s' not found in gallery. Run 'utm-dev utm gallery' to see available VMs", vmKey)
 	}
 
 	paths := GetPaths()
@@ -39,7 +39,7 @@ func CreateVM(vmKey string, opts CreateVMOptions) error {
 	// Check if ISO is downloaded
 	isoPath := filepath.Join(paths.ISO, vm.ISO.Filename)
 	if _, err := os.Stat(isoPath); os.IsNotExist(err) {
-		return fmt.Errorf("ISO not found. Run 'goup-util utm install %s' first", vmKey)
+		return fmt.Errorf("ISO not found. Run 'utm-dev utm install %s' first", vmKey)
 	}
 
 	// Ensure directories exist
@@ -73,7 +73,7 @@ func createVMAutomated(vmKey string, vm *VMEntry, isoPath, shareDir string, disk
 	// Check UTM version
 	version, err := GetUTMVersion()
 	if err != nil {
-		return fmt.Errorf("failed to get UTM version: %w\nMake sure UTM is installed. Run 'goup-util utm install' to install it", err)
+		return fmt.Errorf("failed to get UTM version: %w\nMake sure UTM is installed. Run 'utm-dev utm install' to install it", err)
 	}
 
 	if opts.Verbose {
@@ -213,7 +213,7 @@ func createVMAutomated(vmKey string, vm *VMEntry, isoPath, shareDir string, disk
 
 	fmt.Printf("\n✅ VM '%s' created successfully!\n", vmName)
 	fmt.Printf("\nNext steps:\n")
-	fmt.Printf("  1. Start the VM:  goup-util utm start \"%s\"\n", vmName)
+	fmt.Printf("  1. Start the VM:  utm-dev utm start \"%s\"\n", vmName)
 	fmt.Printf("  2. Complete OS installation in the VM window\n")
 	fmt.Printf("  3. After installation, eject the ISO from UTM settings\n")
 	fmt.Printf("\nShared folder: %s\n", shareDir)

@@ -71,14 +71,14 @@ var CommandSchemas = map[string]Schema{
 
 ## Decision
 
-Add OpenAPI specification generation to goup-util:
+Add OpenAPI specification generation to utm-dev:
 
 ```bash
 # Generate OpenAPI spec (extracts from Cobra)
-goup-util generate openapi
+utm-dev generate openapi
 
 # Generate LLM function schemas
-goup-util generate functions --format anthropic
+utm-dev generate functions --format anthropic
 ```
 
 ## Implementation Plan
@@ -131,7 +131,7 @@ var Schemas = map[string]CommandSchema{
 package generate
 
 import (
-    "github.com/joeblew999/goup-util/pkg/schema"
+    "github.com/joeblew999/utm-dev/pkg/schema"
     "github.com/spf13/cobra"
     "github.com/spf13/pflag"
 )
@@ -140,7 +140,7 @@ func GenerateOpenAPI(root *cobra.Command) map[string]interface{} {
     spec := map[string]interface{}{
         "openapi": "3.0.3",
         "info": map[string]interface{}{
-            "title":   "goup-util API",
+            "title":   "utm-dev API",
             "version": "1.0.0",
         },
         "paths": make(map[string]interface{}),
@@ -288,10 +288,10 @@ var generateOpenAPICmd = &cobra.Command{
     Use:   "openapi [output-file]",
     Short: "Generate OpenAPI spec from Cobra definitions",
     Example: `  # Generate OpenAPI YAML
-  goup-util generate openapi api/openapi.yaml
+  utm-dev generate openapi api/openapi.yaml
 
   # Generate as JSON
-  goup-util generate openapi --format json`,
+  utm-dev generate openapi --format json`,
     RunE: func(cmd *cobra.Command, args []string) error {
         spec := generate.GenerateOpenAPI(rootCmd)
         // ... output logic
@@ -302,10 +302,10 @@ var generateFunctionsCmd = &cobra.Command{
     Use:   "functions",
     Short: "Generate LLM function schemas from Cobra definitions",
     Example: `  # Generate Anthropic tool schemas
-  goup-util generate functions --format anthropic
+  utm-dev generate functions --format anthropic
 
   # Generate OpenAI function schemas
-  goup-util generate functions --format openai`,
+  utm-dev generate functions --format openai`,
     RunE: func(cmd *cobra.Command, args []string) error {
         format, _ := cmd.Flags().GetString("format")
         functions := generate.GenerateFunctions(rootCmd, format)
@@ -348,18 +348,18 @@ var generateFunctionsCmd = &cobra.Command{
 
 1. **Generate OpenAPI spec:**
    ```bash
-   goup-util generate openapi api/openapi.yaml
+   utm-dev generate openapi api/openapi.yaml
    ```
 
 2. **Generate LLM functions:**
    ```bash
-   goup-util generate functions --format anthropic
+   utm-dev generate functions --format anthropic
    ```
 
 3. **Validate coverage:**
    ```bash
    # All flags should appear in generated schema
-   goup-util build --help | grep -E "^\s+--"
+   utm-dev build --help | grep -E "^\s+--"
    # Compare with generated openapi.yaml
    ```
 

@@ -7,7 +7,7 @@ weight: 1
 
 # CI/CD Integration
 
-goup-util integrates with GitHub Actions for automated cross-platform builds.
+utm-dev integrates with GitHub Actions for automated cross-platform builds.
 
 ## GitHub Actions
 
@@ -30,7 +30,7 @@ jobs:
         with:
           go-version: '1.24'
 
-      - name: Build goup-util
+      - name: Build utm-dev
         run: go build .
 
       - name: Build macOS app
@@ -164,8 +164,8 @@ Cache SDKs across CI runs to avoid re-downloading:
   uses: actions/cache@v4
   with:
     path: |
-      ~/goup-util-sdks/
-      ~/.cache/goup-util/
+      ~/utm-dev-sdks/
+      ~/.cache/utm-dev/
     key: ${{ runner.os }}-sdks-${{ hashFiles('pkg/config/sdk-*.json') }}
     restore-keys: |
       ${{ runner.os }}-sdks-
@@ -173,7 +173,7 @@ Cache SDKs across CI runs to avoid re-downloading:
 
 ## Build Caching
 
-goup-util's build cache is automatic. It hashes source files and skips rebuilds when nothing changed:
+utm-dev's build cache is automatic. It hashes source files and skips rebuilds when nothing changed:
 
 ```bash
 # First build -- compiles
@@ -226,17 +226,17 @@ jobs:
 
 ## Windows from macOS (UTM)
 
-goup-util includes UTM virtual machine control for building and testing Windows apps from macOS:
+utm-dev includes UTM virtual machine control for building and testing Windows apps from macOS:
 
 ```bash
 # List VMs
-goup-util utm list
+utm-dev utm list
 
 # Start a Windows VM
-goup-util utm start "Windows 11"
+utm-dev utm start "Windows 11"
 
 # Run a command in the VM
-goup-util utm exec "Windows 11" "goup-util build windows examples/hybrid-dashboard"
+utm-dev utm exec "Windows 11" "utm-dev build windows examples/hybrid-dashboard"
 ```
 
 This enables macOS-based CI to produce Windows builds without a separate Windows runner.
@@ -247,7 +247,7 @@ This enables macOS-based CI to produce Windows builds without a separate Windows
 # Override SDK installation directory
 export GOUP_SDK_DIR=/custom/sdk/path
 
-# Android SDK paths (set automatically by goup-util install)
-export ANDROID_SDK_ROOT=~/goup-util-sdks/android-sdk
-export ANDROID_NDK_ROOT=~/goup-util-sdks/ndk/26.1.10909125
+# Android SDK paths (set automatically by utm-dev install)
+export ANDROID_SDK_ROOT=~/utm-dev-sdks/android-sdk
+export ANDROID_NDK_ROOT=~/utm-dev-sdks/ndk/26.1.10909125
 ```

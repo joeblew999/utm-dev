@@ -21,7 +21,7 @@ type AppConfig struct {
 
 // UpdateConfig tells the app where to find updates on GitHub.
 type UpdateConfig struct {
-	Repo  string `json:"repo"`  // GitHub owner/repo (e.g. "joeblew999/goup-util")
+	Repo  string `json:"repo"`  // GitHub owner/repo (e.g. "joeblew999/utm-dev")
 	Asset string `json:"asset"` // Asset name prefix (e.g. "webviewer-shell")
 }
 

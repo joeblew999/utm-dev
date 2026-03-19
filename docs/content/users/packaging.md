@@ -7,14 +7,14 @@ weight: 3
 
 # Packaging System
 
-goup-util provides a three-tier packaging system for distributing Gio applications:
+utm-dev provides a three-tier packaging system for distributing Gio applications:
 
 ## The Three Tiers
 
 ### 1. Build - Compile the Application
 
 ```bash
-goup-util build <platform> <app-directory>
+utm-dev build <platform> <app-directory>
 ```
 
 **What it does:**
@@ -36,13 +36,13 @@ goup-util build <platform> <app-directory>
 **Examples:**
 ```bash
 # Build for macOS (skip if up-to-date)
-goup-util build macos examples/hybrid-dashboard
+utm-dev build macos examples/hybrid-dashboard
 
 # Force rebuild
-goup-util build --force macos examples/hybrid-dashboard
+utm-dev build --force macos examples/hybrid-dashboard
 
 # Check if rebuild needed
-goup-util build --check macos examples/hybrid-dashboard
+utm-dev build --check macos examples/hybrid-dashboard
 echo $?  # 0=up-to-date, 1=needs rebuild
 ```
 
@@ -51,7 +51,7 @@ echo $?  # 0=up-to-date, 1=needs rebuild
 ### 2. Bundle - Create Signed App Bundles
 
 ```bash
-goup-util bundle <platform> <app-directory> [flags]
+utm-dev bundle <platform> <app-directory> [flags]
 ```
 
 **What it does:**
@@ -77,16 +77,16 @@ goup-util bundle <platform> <app-directory> [flags]
 **Examples:**
 ```bash
 # Create signed macOS bundle (auto-detect certificate)
-goup-util bundle macos examples/hybrid-dashboard
+utm-dev bundle macos examples/hybrid-dashboard
 
 # Use specific bundle ID
-goup-util bundle macos examples/hybrid-dashboard --bundle-id com.mycompany.app
+utm-dev bundle macos examples/hybrid-dashboard --bundle-id com.mycompany.app
 
 # Skip entitlements
-goup-util bundle macos examples/hybrid-dashboard --entitlements=false
+utm-dev bundle macos examples/hybrid-dashboard --entitlements=false
 
 # Use specific signing identity
-goup-util bundle macos examples/hybrid-dashboard --sign "Developer ID Application: Company Name"
+utm-dev bundle macos examples/hybrid-dashboard --sign "Developer ID Application: Company Name"
 ```
 
 **Code Signing:**
@@ -100,7 +100,7 @@ goup-util bundle macos examples/hybrid-dashboard --sign "Developer ID Applicatio
 ### 3. Package - Create Distribution Archives
 
 ```bash
-goup-util package <platform> <app-directory>
+utm-dev package <platform> <app-directory>
 ```
 
 **What it does:**
@@ -117,10 +117,10 @@ goup-util package <platform> <app-directory>
 **Examples:**
 ```bash
 # Package macOS app for distribution
-goup-util package macos examples/hybrid-dashboard
+utm-dev package macos examples/hybrid-dashboard
 
 # Package Android app
-goup-util package android examples/hybrid-dashboard
+utm-dev package android examples/hybrid-dashboard
 ```
 
 ---
@@ -131,23 +131,23 @@ goup-util package android examples/hybrid-dashboard
 
 ```bash
 # 1. Build and test (idempotent, fast iterations)
-goup-util build macos examples/hybrid-dashboard
+utm-dev build macos examples/hybrid-dashboard
 open examples/hybrid-dashboard/.bin/hybrid-dashboard.app
 
 # Make changes to code...
 
 # 2. Rebuild (automatic skip if no changes)
-goup-util build macos examples/hybrid-dashboard
+utm-dev build macos examples/hybrid-dashboard
 ```
 
 ### Release Distribution
 
 ```bash
 # 1. Build the app
-goup-util build macos examples/hybrid-dashboard
+utm-dev build macos examples/hybrid-dashboard
 
 # 2. Create signed bundle
-goup-util bundle macos examples/hybrid-dashboard \
+utm-dev bundle macos examples/hybrid-dashboard \
   --bundle-id com.mycompany.myapp \
   --version 1.0.0
 
@@ -155,7 +155,7 @@ goup-util bundle macos examples/hybrid-dashboard \
 open examples/hybrid-dashboard/.dist/hybrid-dashboard.app
 
 # 4. Package for distribution
-goup-util package macos examples/hybrid-dashboard
+utm-dev package macos examples/hybrid-dashboard
 
 # 5. Upload the tar.gz to your distribution channel
 ls examples/hybrid-dashboard/.dist/*.tar.gz
@@ -165,13 +165,13 @@ ls examples/hybrid-dashboard/.dist/*.tar.gz
 
 ```bash
 # Check if rebuild needed (fast!)
-if goup-util build --check macos examples/hybrid-dashboard; then
+if utm-dev build --check macos examples/hybrid-dashboard; then
   echo "Up to date, skipping build"
 else
   echo "Building..."
-  goup-util build macos examples/hybrid-dashboard
-  goup-util bundle macos examples/hybrid-dashboard
-  goup-util package macos examples/hybrid-dashboard
+  utm-dev build macos examples/hybrid-dashboard
+  utm-dev bundle macos examples/hybrid-dashboard
+  utm-dev package macos examples/hybrid-dashboard
 fi
 ```
 
@@ -314,7 +314,7 @@ Build operations are idempotent via `pkg/buildcache/`:
 ```
 Error: binary not found in .bin/myapp or .bin/myapp.app/Contents/MacOS/myapp
 ```
-**Solution:** Run `goup-util build <platform> <app>` first
+**Solution:** Run `utm-dev build <platform> <app>` first
 
 ### Code signing failed
 ```
@@ -331,5 +331,5 @@ Error: codesign failed: errSecInternalComponent
 ```
 **Solution:** The build cache doesn't detect all changes yet. Use `--force`:
 ```bash
-goup-util build --force macos examples/myapp
+utm-dev build --force macos examples/myapp
 ```

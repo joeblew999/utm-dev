@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/joeblew999/goup-util/pkg/config"
+	"github.com/joeblew999/utm-dev/pkg/config"
 	"github.com/schollz/progressbar/v3"
 )
 

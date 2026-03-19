@@ -3,16 +3,16 @@
 
 [tasks.dev]
 description = "Run on macOS (dev mode)"
-run = "goup-util run macos ."
+run = "utm-dev run macos ."
 
 [tasks.build]
 description = "Build for macOS"
-run = "goup-util build macos ."
+run = "utm-dev build macos ."
 
 [tasks.ios]
 description = "Run on iOS simulator (macOS only)"
-run = "goup-util run ios ."
+run = "utm-dev run ios ."
 
 [tasks.android]
 description = "Run on Android device/emulator"
-run = "goup-util run android ."
+run = "utm-dev run android ."

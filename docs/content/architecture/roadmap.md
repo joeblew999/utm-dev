@@ -5,11 +5,11 @@ draft: false
 weight: 2
 ---
 
-# goup-util: Deep Improvement Analysis & Roadmap
+# utm-dev: Deep Improvement Analysis & Roadmap
 
 ## Executive Summary
 
-After comprehensive testing, goup-util **successfully builds hybrid apps** for macOS, iOS, and Android. However, several areas need improvement to make it **production-grade** and **developer-friendly**.
+After comprehensive testing, utm-dev **successfully builds hybrid apps** for macOS, iOS, and Android. However, several areas need improvement to make it **production-grade** and **developer-friendly**.
 
 ## Current State: What Works ✅
 
@@ -90,11 +90,11 @@ type BuildError struct {
 // ❌ Build failed: NDK compiler not found
 // 
 // Suggestions:
-//   1. Install Android NDK: goup-util install ndk-bundle
-//   2. Check SDK path: goup-util config
+//   1. Install Android NDK: utm-dev install ndk-bundle
+//   2. Check SDK path: utm-dev config
 //   3. Verify NDK version >= r19c
 // 
-// More info: https://docs.goup-util.dev/errors/ndk-not-found
+// More info: https://docs.utm-dev.dev/errors/ndk-not-found
 ```
 
 ### 2. **Build Performance** ⚡ HIGH PRIORITY
@@ -184,7 +184,7 @@ volumes:
 
 **A. Project Configuration File**
 ```yaml
-# goup.yaml (or .goup-util.yaml)
+# goup.yaml (or .utm-dev.yaml)
 project:
   name: my-hybrid-app
   version: 1.0.0
@@ -250,16 +250,16 @@ dependencies:
 **B. CLI Overrides**
 ```bash
 # Override config from command line
-goup-util build android \
+utm-dev build android \
   --package com.test.myapp \
   --min-sdk 26 \
   --signing-key ./debug.keystore \
   --verbose
 
 # Profile-based builds
-goup-util build android --profile debug
-goup-util build android --profile release
-goup-util build android --profile staging
+utm-dev build android --profile debug
+utm-dev build android --profile release
+utm-dev build android --profile staging
 ```
 
 ### 4. **Testing & Deployment** 🚀 MEDIUM PRIORITY
@@ -275,29 +275,29 @@ goup-util build android --profile staging
 **A. Automated Testing**
 ```bash
 # Run on simulators/emulators
-goup-util test ios --simulator "iPhone 15 Pro"
-goup-util test android --emulator "Pixel_8_API_34"
+utm-dev test ios --simulator "iPhone 15 Pro"
+utm-dev test android --emulator "Pixel_8_API_34"
 
 # Screenshot testing
-goup-util test --screenshots ./screenshots/
+utm-dev test --screenshots ./screenshots/
 
 # Integration with standard Go tests
-goup-util test --platform all --coverage
+utm-dev test --platform all --coverage
 ```
 
 **B. Deployment Commands**
 ```bash
 # Install to connected device
-goup-util deploy ios --device "John's iPhone"
-goup-util deploy android --device adb-device-id
+utm-dev deploy ios --device "John's iPhone"
+utm-dev deploy android --device adb-device-id
 
 # Upload to stores
-goup-util deploy appstore --testflight
-goup-util deploy playstore --internal-testing
+utm-dev deploy appstore --testflight
+utm-dev deploy playstore --internal-testing
 
 # Generate store assets
-goup-util assets screenshots --platforms ios,android
-goup-util assets store-listing
+utm-dev assets screenshots --platforms ios,android
+utm-dev assets store-listing
 ```
 
 **C. CI/CD Templates**
@@ -313,8 +313,8 @@ jobs:
     runs-on: ${{ matrix.platform == 'ios' && 'macos-latest' || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v4
-      - uses: goup-util/setup@v1
-      - run: goup-util build ${{ matrix.platform }}
+      - uses: utm-dev/setup@v1
+      - run: utm-dev build ${{ matrix.platform }}
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.platform }}-build
@@ -334,9 +334,9 @@ jobs:
 **A. Interactive Setup**
 ```bash
 # New project wizard
-$ goup-util init
+$ utm-dev init
 
-Welcome to goup-util! Let's create your hybrid app.
+Welcome to utm-dev! Let's create your hybrid app.
 
 ? Project name: my-awesome-app
 ? Description: A cross-platform hybrid application
@@ -359,8 +359,8 @@ Welcome to goup-util! Let's create your hybrid app.
 
 Next steps:
   cd my-awesome-app
-  goup-util build ios
-  goup-util dev  # Start development server
+  utm-dev build ios
+  utm-dev dev  # Start development server
 ```
 
 **B. Rich Examples**
@@ -379,11 +379,11 @@ examples/
 **C. Command Discoverability**
 ```bash
 # Smart suggestions
-$ goup-util buidl ios  # typo
+$ utm-dev buidl ios  # typo
 Did you mean: build ios?
 
 # Contextual help
-$ goup-util build
+$ utm-dev build
 Error: missing platform argument
 
 Available platforms:
@@ -394,10 +394,10 @@ Available platforms:
   all              Build for all platforms
 
 Examples:
-  goup-util build ios ./my-app
-  goup-util build android --release
+  utm-dev build ios ./my-app
+  utm-dev build android --release
   
-Run 'goup-util build --help' for more information.
+Run 'utm-dev build --help' for more information.
 ```
 
 ### 6. **Webview Integration Improvements** 🌐 HIGH PRIORITY
@@ -434,7 +434,7 @@ bridge.Expose("saveData", func(data map[string]interface{}) error {
 **B. TypeScript Definitions Generator**
 ```bash
 # Generate TypeScript definitions from Go code
-$ goup-util bridge generate-types
+$ utm-dev bridge generate-types
 
 # Generates: ./web/src/goup-bridge.d.ts
 declare namespace Goup {
@@ -467,7 +467,7 @@ webview.OnConsoleMessage(func(level, message string) {
 **D. Hot Reload for Web Content**
 ```bash
 # Development mode with hot reload
-$ goup-util dev --platform macos
+$ utm-dev dev --platform macos
 
 ✓ Building app...
 ✓ Starting file watcher...
@@ -492,8 +492,8 @@ $ goup-util dev --platform macos
 **A. Docker-Based Builds**
 ```bash
 # Build in Docker for consistent environment
-goup-util build linux --docker
-goup-util build windows --docker
+utm-dev build linux --docker
+utm-dev build windows --docker
 
 # Uses official build containers:
 # - golang:1.25-bullseye for Linux
@@ -503,8 +503,8 @@ goup-util build windows --docker
 **B. Remote Build Service** (Future)
 ```bash
 # Use cloud builders for platforms you don't have
-goup-util build ios --remote
-goup-util build windows --remote
+utm-dev build ios --remote
+utm-dev build windows --remote
 
 # Uses:
 # - GitHub Actions
@@ -515,26 +515,26 @@ goup-util build windows --remote
 **C. Better CGo Handling**
 ```bash
 # Detect CGo issues early
-goup-util check --platform linux
+utm-dev check --platform linux
 
 ⚠ Warning: Cross-compiling to Linux from macOS requires Docker
   Reason: CGo dependencies cannot be cross-compiled
   
   Options:
-    1. Use Docker: goup-util build linux --docker
+    1. Use Docker: utm-dev build linux --docker
     2. Build on Linux: Use CI/CD or remote build
     3. Disable CGo: Set CGO_ENABLED=0 (may lose some features)
 ```
 
 ### 8. **Plugin System** 🔌 LOW PRIORITY (Future)
 
-Allow extending goup-util with custom commands and hooks.
+Allow extending utm-dev with custom commands and hooks.
 
 ```go
-// ~/.goup-util/plugins/my-plugin/plugin.go
+// ~/.utm-dev/plugins/my-plugin/plugin.go
 package main
 
-import "github.com/joeblew999/goup-util/sdk/plugin"
+import "github.com/joeblew999/utm-dev/sdk/plugin"
 
 type MyPlugin struct{}
 
@@ -571,7 +571,7 @@ Opt-in telemetry to improve tool development.
 
 ```bash
 # Opt-in to anonymous usage analytics
-goup-util telemetry enable
+utm-dev telemetry enable
 
 # Helps us understand:
 # - Which platforms are most used
@@ -580,19 +580,19 @@ goup-util telemetry enable
 # - Error patterns
 
 # Always opt-in, always anonymous
-goup-util telemetry status
-goup-util telemetry disable
+utm-dev telemetry status
+utm-dev telemetry disable
 ```
 
 ## Implementation Roadmap
 
 ### Phase 1: Developer Experience (Q1 2025)
-**Goal**: Make goup-util delightful to use
+**Goal**: Make utm-dev delightful to use
 
 - ✅ Rich terminal UI with progress bars
 - ✅ Better error messages with suggestions
 - ✅ Project config file (goup.yaml)
-- ✅ Interactive `goup-util init`
+- ✅ Interactive `utm-dev init`
 - ✅ Command improvements and discoverability
 
 **Impact**: 10x better developer experience
@@ -689,8 +689,8 @@ type BuildError struct {
 // Error: NDK compiler not found
 // 
 // Try:
-//   goup-util install ndk-bundle
-//   goup-util config  # verify SDK path
+//   utm-dev install ndk-bundle
+//   utm-dev config  # verify SDK path
 ```
 
 ### Week 4: Parallel Builds
@@ -725,7 +725,7 @@ wg.Wait()
 
 ## Conclusion
 
-**goup-util has proven the concept**: Pure Go hybrid apps ARE possible and work on real devices.
+**utm-dev has proven the concept**: Pure Go hybrid apps ARE possible and work on real devices.
 
 **The next step**: Transform from "it works" to "it's amazing to use".
 
