@@ -1,0 +1,41 @@
+# mise.toml — tauri-basic example runner
+#
+# Prerequisites (installed by parent repo's mise.toml):
+#   cargo:tauri-cli@2   macOS + Windows
+#   xcodegen            macOS only (iOS target)
+#   ruby + cocoapods    macOS only (iOS target)
+#
+# Usage:
+#   mise run dev          Desktop dev mode (macOS or Windows)
+#   mise run build        Build desktop bundle (.dmg / .msi)
+#   mise run ios          iOS dev on simulator (macOS only)
+#   mise run ios:init     First-time iOS setup (macOS only)
+#   mise run windows      Build in Windows UTM VM
+
+[tasks.dev]
+description = "Run Tauri desktop app in dev mode"
+run = "cargo tauri dev"
+
+[tasks.build]
+description = "Build Tauri desktop bundle (.app/.dmg on macOS, .msi/.exe on Windows)"
+run = "cargo tauri build"
+
+[tasks."ios:init"]
+description = "One-time iOS target initialisation (macOS only)"
+run = "cargo tauri ios init"
+
+[tasks.ios]
+description = "Run on iOS simulator (macOS only — requires ios:init first)"
+run = "cargo tauri ios dev"
+
+[tasks."ios:build"]
+description = "Build iOS app bundle (macOS only)"
+run = "cargo tauri ios build"
+
+[tasks.windows]
+description = "Build and run desktop app in Windows UTM VM"
+run = "goup-util utm run 'Windows 11' ."
+
+[tasks.icons]
+description = "Regenerate all platform icons from src-tauri/icons/icon-source.png"
+run = "cargo tauri icon src-tauri/icons/icon-source.png"

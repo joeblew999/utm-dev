@@ -10,6 +10,13 @@
 [tools]
 go = "1.25"  # Go runtime — https://go.dev
 
+# ── Tauri (desktop + mobile builds, OS-gated) ────────────────────────────────
+# tauri-cli: macOS + Windows (builds .app/.dmg and .msi/.exe)
+# xcodegen + ruby: macOS only — needed for iOS target (.xcodeproj generation + CocoaPods)
+"cargo:tauri-cli" = {version = "2",      os = ["macos", "windows"]}
+xcodegen          = {version = "latest", os = ["macos"]}
+ruby              = {version = "3.3",    os = ["macos"]}
+
 # ── Tasks ────────────────────────────────────────────────────────────────────
 # Kept minimal — goup-util IS the CLI. Use `goup-util <subcommand>` directly
 # for utm, android, ios, sdk etc. These tasks cover the dev loop only.
