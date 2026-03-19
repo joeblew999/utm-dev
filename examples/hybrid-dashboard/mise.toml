@@ -1,0 +1,27 @@
+# mise.toml — hybrid-dashboard example runner
+# Usage: mise run dev | mise run build | mise run ios | mise run android | mise run windows
+#        mise run dev:deeplink   — launch with custom URI scheme
+
+[tasks.dev]
+description = "Run on macOS (dev mode)"
+run = "goup-util run macos ."
+
+[tasks."dev:deeplink"]
+description = "Run on macOS with deep link scheme"
+run = "goup-util run --schemes hybrid macos ."
+
+[tasks.build]
+description = "Build for macOS"
+run = "goup-util build macos ."
+
+[tasks.ios]
+description = "Run on iOS simulator (macOS only)"
+run = "goup-util run ios ."
+
+[tasks.android]
+description = "Run on Android device/emulator"
+run = "goup-util run android ."
+
+[tasks.windows]
+description = "Build and run in Windows UTM VM"
+run = "goup-util utm run 'Windows 11' ."

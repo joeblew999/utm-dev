@@ -13,15 +13,12 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.25'
+    - uses: jdx/mise-action@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Build goup-util with obfuscation
-      run: |
-        echo "Building with self system (auto-installs garble)..."
-        go run . self build --obfuscate
+      run: mise run ci
 
     - name: Verify JSON output
       run: |

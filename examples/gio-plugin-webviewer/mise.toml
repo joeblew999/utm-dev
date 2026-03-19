@@ -1,0 +1,22 @@
+# mise.toml — gio-plugin-webviewer example runner
+# Usage: mise run dev | mise run build | mise run ios | mise run android | mise run windows
+
+[tasks.dev]
+description = "Run on macOS (dev mode)"
+run = "goup-util run macos ."
+
+[tasks.build]
+description = "Build for macOS"
+run = "goup-util build macos ."
+
+[tasks.ios]
+description = "Run on iOS simulator (macOS only)"
+run = "goup-util run ios ."
+
+[tasks.android]
+description = "Run on Android device/emulator"
+run = "goup-util run android ."
+
+[tasks.windows]
+description = "Build and run in Windows UTM VM"
+run = "goup-util utm run 'Windows 11' ."
