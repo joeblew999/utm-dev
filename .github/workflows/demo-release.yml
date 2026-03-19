@@ -1,8 +1,6 @@
-# Build demo app binaries and webviewer shell for releases
-# Uses Task to build - same tasks that work locally work in CI
-#
-# The webviewer shell is a pre-built binary that loads any website via app.json.
-# Users download the zip, edit app.json with their URL, and run. No compilation needed.
+# Build demo app binaries for releases.
+# utm-dev is built from source (release artifacts aren't published yet when this runs).
+# gogio is installed from source — utm-dev delegates to it for all Gio platforms.
 name: Demo Release
 
 on:
@@ -20,30 +18,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - name: Install mise + tools (Go, Tauri tools)
+        uses: jdx/mise-action@v2
         with:
-          go-version: '1.23'
+          experimental: true
+
+      - name: Build utm-dev from source
+        run: |
+          mise run build
+          echo "$PWD/.bin" >> $GITHUB_PATH
 
       - name: Install gogio
         run: go install gioui.org/cmd/gogio@latest
 
-      - name: Install Task
-        uses: arduino/setup-task@v2
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Clone .src dependencies
-        run: task src:update:all
-
       - name: Build hybrid-dashboard for macOS
-        run: task build:hybrid:macos
+        run: utm-dev build macos examples/hybrid-dashboard
 
       - name: Build hybrid-dashboard for iOS
-        run: task build:hybrid:ios
+        run: utm-dev build ios examples/hybrid-dashboard
+        continue-on-error: true  # iOS signing may fail in CI without certs
 
       - name: Build webviewer shell for macOS
-        run: task build:webviewer:macos
+        run: utm-dev build macos examples/gio-plugin-webviewer
 
       - name: Package hybrid-dashboard macOS
         run: |
@@ -54,6 +50,7 @@ jobs:
         run: |
           cd examples/hybrid-dashboard/.bin/ios
           zip -r ../hybrid-dashboard-ios.zip hybrid-dashboard.app
+        continue-on-error: true
 
       - name: Package webviewer shell macOS (includes app.json + README)
         run: |
@@ -73,7 +70,7 @@ jobs:
         with:
           name: demo-ios
           path: examples/hybrid-dashboard/.bin/hybrid-dashboard-ios.zip
-        continue-on-error: true  # iOS signing may fail in CI without certs
+        continue-on-error: true
 
       - name: Upload webviewer shell macOS
         uses: actions/upload-artifact@v4
@@ -86,27 +83,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - name: Install mise + tools (Go)
+        uses: jdx/mise-action@v2
         with:
-          go-version: '1.23'
+          experimental: true
+
+      - name: Build utm-dev from source
+        run: |
+          mise run build
+          echo "$PWD/.bin" | Out-File -Append -FilePath $env:GITHUB_PATH -Encoding utf8
+        shell: pwsh
 
       - name: Install gogio
         run: go install gioui.org/cmd/gogio@latest
 
-      - name: Install Task
-        uses: arduino/setup-task@v2
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Clone .src dependencies
-        run: task src:update:all
-
       - name: Build hybrid-dashboard for Windows
-        run: task build:hybrid:windows
+        run: utm-dev build windows examples/hybrid-dashboard
 
       - name: Build webviewer shell for Windows
-        run: task build:webviewer:windows
+        run: utm-dev build windows examples/gio-plugin-webviewer
 
       - name: Package hybrid-dashboard Windows
         run: Compress-Archive -Path examples/hybrid-dashboard/.bin/windows/*.exe -DestinationPath examples/hybrid-dashboard/.bin/hybrid-dashboard-windows.zip
@@ -145,6 +140,7 @@ jobs:
       - name: Upload to Release
         uses: softprops/action-gh-release@v2
         with:
+          make_latest: true
           files: |
             artifacts/demo-macos/*.zip
             artifacts/demo-ios/*.zip
