@@ -180,8 +180,19 @@ func downloadFile(url, destPath string) error {
 	}
 	defer out.Close()
 
-	_, err = io.Copy(out, resp.Body)
-	return err
+	written, err := io.Copy(out, resp.Body)
+	if err != nil {
+		os.Remove(destPath)
+		return fmt.Errorf("download interrupted after %d bytes: %w", written, err)
+	}
+
+	// Verify size matches Content-Length if provided
+	if resp.ContentLength > 0 && written != resp.ContentLength {
+		os.Remove(destPath)
+		return fmt.Errorf("incomplete download: got %d bytes, expected %d", written, resp.ContentLength)
+	}
+
+	return nil
 }
 
 // mountDMG mounts a DMG file
@@ -227,15 +238,19 @@ func DownloadISO(vmKey string, force bool) error {
 		return nil
 	}
 
-	// Check if already downloaded (but not in cache - add to cache)
+	// Check if already downloaded (but not in cache - verify size then add to cache)
 	if !force {
-		if _, err := os.Stat(isoPath); err == nil {
-			fmt.Printf("ISO already exists at %s\n", isoPath)
-			// Add to cache for future idempotency
-			if err := AddISOToCache(vmKey); err != nil {
-				fmt.Printf("Warning: failed to update cache: %v\n", err)
+		if fi, err := os.Stat(isoPath); err == nil {
+			// If expected size is known, validate completeness
+			if vm.ISO.Size > 0 && fi.Size() != vm.ISO.Size {
+				fmt.Printf("ISO exists but is incomplete (%d/%d bytes) — redownloading\n", fi.Size(), vm.ISO.Size)
+			} else {
+				fmt.Printf("ISO already exists at %s\n", isoPath)
+				if err := AddISOToCache(vmKey); err != nil {
+					fmt.Printf("Warning: failed to update cache: %v\n", err)
+				}
+				return nil
 			}
-			return nil
 		}
 	}
 
