@@ -69,12 +69,12 @@ func Doctor() error {
 		result.Suggestions = append(result.Suggestions, "Install go")
 	}
 
-	// Check task
-	taskDep := checkDep("task", "task", "--version")
-	result.Dependencies = append(result.Dependencies, taskDep)
-	if !taskDep.Installed {
-		result.Issues = append(result.Issues, "task not installed")
-		result.Suggestions = append(result.Suggestions, "Install task: go install github.com/go-task/task/v3/cmd/task@latest")
+	// Check mise
+	miseDep := checkDep("mise", "mise", "version")
+	result.Dependencies = append(result.Dependencies, miseDep)
+	if !miseDep.Installed {
+		result.Issues = append(result.Issues, "mise not installed")
+		result.Suggestions = append(result.Suggestions, "Install mise: curl -fsSL https://mise.run | sh")
 	}
 
 	output.OK("self doctor", result)

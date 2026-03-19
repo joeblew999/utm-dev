@@ -27,6 +27,10 @@ github.com/google/jsonschema-go v0.4.2 h1:tmrUohrwoLZZS/P3x7ex0WAVknEkBZM46iALbc
 github.com/google/jsonschema-go v0.4.2/go.mod h1:r5quNTdLOYEz95Ru18zA0ydNbBuYoo9tgaYcxEYhJVE=
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
+github.com/inkeliz/gioismobile v0.0.0-20250605191856-aaa9fbad77bc h1:bIwu8LEGFO1w2zqq26ivLoriyMDLAKtlwERIaJqIFDg=
+github.com/inkeliz/gioismobile v0.0.0-20250605191856-aaa9fbad77bc/go.mod h1:Wx2a/rUVgE1sFSUCokd8u9kUjolkwy+uyl2i6b7608s=
+github.com/inkeliz/go_inkwasm v0.1.23-0.20240519174017-989fbe5b10f6 h1:zOY3Po61l43KEg+6p+xxEaSAJlBR4a81HRmxqfVOuyw=
+github.com/inkeliz/go_inkwasm v0.1.23-0.20240519174017-989fbe5b10f6/go.mod h1:68mLNhLJuUItd5PbLmnwC4H5P6wI3l3l8gGnAvXQq9k=
 github.com/jezek/xgb v1.1.1 h1:bE/r8ZZtSv7l9gk6nU0mYx51aXrvnyb44892TwSaqS4=
 github.com/jezek/xgb v1.1.1/go.mod h1:nrhwO0FX/enq75I7Y7G8iN1ubpSGZEiA3v9e9GyRFlk=
 github.com/lufia/plan9stats v0.0.0-20250317134145-8bc96cf8fc35 h1:PpXWgLPs+Fqr325bN2FD2ISlRRztXibcX6e8f5FR5Dc=

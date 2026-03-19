@@ -70,6 +70,7 @@ int GetCGWindowBounds(int targetPID, int *x, int *y, int *width, int *height) {
 
 // Get window ID for a process by PID
 // Returns window ID if found, 0 if not found
+// Finds the LARGEST window (by area) for the PID to skip menu bar items
 int GetCGWindowID(int targetPID) {
     // Use kCGWindowListOptionAll to include Gio windows
     CFArrayRef windowList = CGWindowListCopyWindowInfo(
@@ -81,7 +82,8 @@ int GetCGWindowID(int targetPID) {
         return 0;
     }
 
-    int windowID = 0;
+    int bestWindowID = 0;
+    int bestArea = 0;
     CFIndex count = CFArrayGetCount(windowList);
 
     for (CFIndex i = 0; i < count; i++) {
@@ -96,22 +98,40 @@ int GetCGWindowID(int targetPID) {
 
         if (pid != targetPID) continue;
 
-        // Found a window for this PID - get window number
-        CFNumberRef windowNumberRef = (CFNumberRef)CFDictionaryGetValue(window, kCGWindowNumber);
-        if (windowNumberRef == NULL) continue;
+        // Get bounds to find the largest window
+        CFDictionaryRef boundsRef = (CFDictionaryRef)CFDictionaryGetValue(window, kCGWindowBounds);
+        if (boundsRef == NULL) continue;
 
-        CFNumberGetValue(windowNumberRef, kCFNumberIntType, &windowID);
-        break;
+        CGRect bounds;
+        if (!CGRectMakeWithDictionaryRepresentation(boundsRef, &bounds)) continue;
+
+        int h = (int)bounds.size.height;
+        int w = (int)bounds.size.width;
+        int area = w * h;
+
+        // Skip very thin windows (menu bars are typically 33px tall)
+        if (h < 50) continue;
+
+        // Keep the window ID of the largest window
+        if (area > bestArea) {
+            bestArea = area;
+
+            CFNumberRef windowNumberRef = (CFNumberRef)CFDictionaryGetValue(window, kCGWindowNumber);
+            if (windowNumberRef == NULL) continue;
+
+            CFNumberGetValue(windowNumberRef, kCFNumberIntType, &bestWindowID);
+        }
     }
 
     CFRelease(windowList);
-    return windowID;
+    return bestWindowID;
 }
 */
 import "C"
 
 import (
 	"fmt"
+	"os/exec"
 	"time"
 )
 
@@ -152,17 +172,23 @@ func WaitForCGWindow(pid int, timeout time.Duration) error {
 	return fmt.Errorf("window for PID %d did not appear within %v", pid, timeout)
 }
 
-// CaptureWindowByCGBounds captures a window using CoreGraphics bounds
+// CaptureWindowByCGBounds captures a window using macOS native screencapture.
+// Uses screencapture -R (region) instead of -l (window ID) because -l cannot
+// capture WKWebView content which renders in a separate compositor layer.
 func CaptureWindowByCGBounds(pid int, output string, quality int) error {
 	x, y, w, h, err := GetCGWindowBoundsByPID(pid)
 	if err != nil {
 		return err
 	}
 
-	if w <= 0 || h <= 0 {
-		return fmt.Errorf("invalid window bounds for PID %d: %dx%d at (%d,%d)", pid, w, h, x, y)
+	// Use macOS native screencapture with region bounds
+	// -R x,y,w,h = capture screen region (captures ALL layers including webviews)
+	// -x = no shutter sound
+	region := fmt.Sprintf("%d,%d,%d,%d", x, y, w, h)
+	cmd := exec.Command("screencapture", "-R", region, "-x", output)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("screencapture failed: %w: %s", err, string(out))
 	}
-
-	// Capture that region using robotgo
-	return CaptureRegion(x, y, w, h, output, quality)
+	return nil
 }

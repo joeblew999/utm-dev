@@ -810,6 +810,10 @@ Built on top of:
 - **[Datastar](https://data-star.dev)** - Real-time reactivity
 - **[wellknown](https://github.com/joeblew999/wellknown)** - URI scheme routing
 
+### Special Thanks
+
+A huge thank you to **[@inkeliz](https://github.com/inkeliz)** for creating and maintaining [gio-plugins](https://github.com/gioui-plugins/gio-plugins) and [gioismobile](https://github.com/inkeliz/gioismobile). The native webview integration that makes this entire project possible is built on inkeliz's work. The webviewer plugin provides cross-platform WKWebView/WebView2/WebKitGTK support that is the foundation of goup-util's hybrid app architecture, and gioismobile provides runtime mobile platform detection.
+
 ---
 
 ## Vision

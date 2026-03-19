@@ -8,6 +8,7 @@ vars:
   GIO_REPO: https://github.com/gioui/gio.git
   GIO_CMD_REPO: https://github.com/gioui/gio-cmd.git
   GIO_PLUGINS_REPO: https://github.com/gioui-plugins/gio-plugins.git
+  GIO_PLUGINS_FORK: https://github.com/joeblew999/gio-plugins.git
   ROBOTGO_REPO: https://github.com/go-vgo/robotgo.git
 
   # Pinned versions (keep in sync with main Taskfile.yml)
@@ -250,3 +251,73 @@ tasks:
       - 'echo -n "  gio:         " && cd gio 2>/dev/null && git describe --tags --always || echo "Not cloned"'
       - 'echo -n "  gio-plugins: " && cd gio-plugins 2>/dev/null && git describe --tags --always || echo "Not cloned"'
       - 'echo -n "  robotgo:     " && cd robotgo 2>/dev/null && git describe --tags --always || echo "Not cloned"'
+
+  # ============================================================
+  # Fork management (gio-plugins fork: joeblew999/gio-plugins)
+  # ============================================================
+
+  fork:setup:
+    desc: Add fork remote to gio-plugins (upstream + fork)
+    dir: gio-plugins
+    cmds:
+      - git remote add fork {{.GIO_PLUGINS_FORK}} 2>/dev/null || echo "fork remote already exists"
+      - git remote set-url fork {{.GIO_PLUGINS_FORK}}
+      - git fetch fork
+      - echo "Remotes configured:"
+      - git remote -v
+
+  fork:status:
+    desc: Show fork remote and branch status
+    dir: gio-plugins
+    cmds:
+      - echo "=== Remotes ==="
+      - git remote -v
+      - echo ""
+      - echo "=== Current Branch ==="
+      - git branch --show-current
+      - echo ""
+      - echo "=== Local Changes ==="
+      - git status --short
+
+  fork:branch:
+    desc: Create a feature branch for a fix (usage - task fork:branch -- fix-auto-navigate)
+    dir: gio-plugins
+    cmds:
+      - git fetch origin
+      - git checkout -b {{.CLI_ARGS}} origin/main
+      - echo "Created branch {{.CLI_ARGS}} from upstream main"
+
+  fork:push:
+    desc: Push current branch to fork
+    dir: gio-plugins
+    cmds:
+      - git push fork HEAD
+      - echo "Pushed to fork"
+
+  fork:pr:
+    desc: Create PR from fork to upstream (needs gh CLI)
+    dir: gio-plugins
+    cmds:
+      - |
+        BRANCH=$(git branch --show-current)
+        echo "Creating PR from joeblew999/gio-plugins:$BRANCH -> gioui-plugins/gio-plugins:main"
+        gh pr create --repo gioui-plugins/gio-plugins --head "joeblew999:$BRANCH" --base main
+
+  fork:sync:
+    desc: Sync fork with upstream (fetch upstream main, push to fork)
+    dir: gio-plugins
+    cmds:
+      - git fetch origin
+      - git checkout main
+      - git merge origin/main
+      - git push fork main
+      - echo "Fork synced with upstream"
+
+  fork:diff:
+    desc: Show diff between current branch and upstream main
+    dir: gio-plugins
+    cmds:
+      - git fetch origin
+      - git diff origin/main...HEAD --stat
+      - echo ""
+      - git diff origin/main...HEAD

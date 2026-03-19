@@ -20,6 +20,7 @@ import (
 	"gioui.org/font"
 	"github.com/gioui-plugins/gio-plugins/plugin/gioplugins"
 	"github.com/gioui-plugins/gio-plugins/webviewer/giowebview"
+	"github.com/joeblew999/goup-util/pkg/logging"
 
 	"golang.org/x/exp/shiny/materialdesign/icons"
 
@@ -286,6 +287,23 @@ func main() {
 	DefaultURL = cfg.URL
 	fmt.Printf("Loading %s (%s)\n", cfg.Name, cfg.URL)
 
+	// Initialize structured logger (APP role — this is a user app)
+	log, err := logging.New(logging.Config{
+		AppName: cfg.Name,
+		Role:    logging.RoleApp,
+	})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "warning: logging init failed: %v\n", err)
+	}
+	defer log.Close()
+
+	plat := logging.DetectPlatform()
+	log.Info("app starting",
+		"url", cfg.URL,
+		"platform", plat.DisplayName(),
+		"canSelfUpdate", plat.CanSelfUpdate(),
+	)
+
 	// Check for updates in the background (non-blocking)
 	if cfg.Update.Repo != "" && cfg.Update.Asset != "" {
 		go checkForUpdate(cfg)
@@ -300,6 +318,8 @@ func main() {
 	browsers.add()
 	browsers.InitialURL = DefaultURL
 	browsers.Address[0].SetText(DefaultURL)
+	browsers.window = window
+	browsers.log = log
 
 	go func() {
 		ops := new(op.Ops)
@@ -308,6 +328,7 @@ func main() {
 
 			switch evt := evt.(type) {
 			case app.DestroyEvent:
+				log.Event("app_exit")
 				os.Exit(0)
 				return
 			case app.FrameEvent:
@@ -357,9 +378,11 @@ type Browsers struct {
 	TabsFlex   []layout.FlexChild
 
 	// InitialURL is navigated to automatically on first Layout.
-	InitialURL string
-	navigated  bool
-	frameCount int
+	InitialURL   string
+	navigateSent bool            // NavigateCmd has been sent
+	startTime    time.Time       // when first frame was rendered
+	window       *app.Window     // for calling Invalidate directly
+	log          *logging.Logger // structured runtime logger
 }
 
 func NewBrowser() *Browsers {
@@ -442,7 +465,9 @@ func (b *Browsers) remove(i int) {
 }
 
 func (b *Browsers) Layout(gtx layout.Context) layout.Dimensions {
-	b.frameCount++
+	if b.startTime.IsZero() {
+		b.startTime = time.Now()
+	}
 
 	if b.Add.Clicked(gtx) {
 		b.add()
@@ -468,14 +493,11 @@ func (b *Browsers) Layout(gtx layout.Context) layout.Dimensions {
 		submittedIndex = b.Selected
 	}
 
-	// Auto-navigate initial URL after webview has initialized
-	autoNavigate := b.InitialURL != "" && !b.navigated && b.frameCount > 10
-
-	for i, t := range b.Address {
+	for i := range b.Address {
 		submited := i == submittedIndex
 
 		for {
-			evt, ok := t.Update(gtx)
+			evt, ok := b.Address[i].Update(gtx)
 			if !ok {
 				break
 			}
@@ -485,14 +507,22 @@ func (b *Browsers) Layout(gtx layout.Context) layout.Dimensions {
 			}
 		}
 
-		// Trigger auto-navigation on first tab using same path as Go button
-		if autoNavigate && i == 0 {
-			submited = true
-			b.navigated = true
-		}
-
 		if submited {
-			gioplugins.Execute(gtx, giowebview.NavigateCmd{View: b.Tags[i], URL: t.Text()})
+			gioplugins.Execute(gtx, giowebview.NavigateCmd{View: b.Tags[i], URL: b.Address[i].Text()})
+		}
+	}
+
+	// Auto-navigate: keep generating frames until we've waited long enough
+	// for the native WKWebView to be created on the main thread, then send
+	// NavigateCmd once. window.Invalidate() from within Layout generates the
+	// next frame (goroutine-based Invalidate doesn't work with gioplugins).
+	if b.InitialURL != "" && !b.navigateSent {
+		if b.window != nil {
+			b.window.Invalidate()
+		}
+		if time.Since(b.startTime) > 2*time.Second {
+			gioplugins.Execute(gtx, giowebview.NavigateCmd{View: b.Tags[0], URL: b.InitialURL})
+			b.navigateSent = true
 		}
 	}
 
@@ -512,14 +542,16 @@ func (b *Browsers) Layout(gtx layout.Context) layout.Dimensions {
 			switch evt := evt.(type) {
 			case giowebview.TitleEvent:
 				b.Titles[i] = evt.Title
+				b.log.Event("title", "tab", i, "title", evt.Title)
 			case giowebview.NavigationEvent:
 				b.Address[i].SetText(evt.URL)
+				b.log.Event("navigate", "tab", i, "url", evt.URL)
 			case giowebview.CookiesEvent:
-				fmt.Println(evt.Cookies)
+				b.log.Event("cookies", "tab", i, "count", len(evt.Cookies))
 			case giowebview.StorageEvent:
-				fmt.Println(evt.Storage)
+				b.log.Event("storage", "tab", i, "count", len(evt.Storage))
 			case giowebview.MessageEvent:
-				fmt.Println(evt.Message)
+				b.log.Event("message", "tab", i, "msg", evt.Message)
 			}
 		}
 	}

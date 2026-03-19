@@ -9,6 +9,8 @@ github.com/go-text/typesetting v0.3.0 h1:OWCgYpp8njoxSRpwrdd1bQOxdjOXDj9Rqart9ML
 github.com/go-text/typesetting v0.3.0/go.mod h1:qjZLkhRgOEYMhU9eHBr3AR4sfnGJvOXNLt8yRAySFuY=
 github.com/go-text/typesetting-utils v0.0.0-20241103174707-87a29e9e6066 h1:qCuYC+94v2xrb1PoS4NIDe7DGYtLnU2wWiQe9a1B1c0=
 github.com/go-text/typesetting-utils v0.0.0-20241103174707-87a29e9e6066/go.mod h1:DDxDdQEnB70R8owOx3LVpEFvpMK9eeH1o2r0yZhFI9o=
+github.com/inkeliz/gioismobile v0.0.0-20250605191856-aaa9fbad77bc h1:bIwu8LEGFO1w2zqq26ivLoriyMDLAKtlwERIaJqIFDg=
+github.com/inkeliz/gioismobile v0.0.0-20250605191856-aaa9fbad77bc/go.mod h1:Wx2a/rUVgE1sFSUCokd8u9kUjolkwy+uyl2i6b7608s=
 github.com/inkeliz/go_inkwasm v0.1.23-0.20240519174017-989fbe5b10f6 h1:zOY3Po61l43KEg+6p+xxEaSAJlBR4a81HRmxqfVOuyw=
 github.com/inkeliz/go_inkwasm v0.1.23-0.20240519174017-989fbe5b10f6/go.mod h1:68mLNhLJuUItd5PbLmnwC4H5P6wI3l3l8gGnAvXQq9k=
 golang.org/x/crypto v0.46.0 h1:cKRW/pmt1pKAfetfu+RCEvjvZkA9RimPbh7bhFjGVBU=

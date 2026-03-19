@@ -3,6 +3,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -10,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/joeblew999/goup-util/pkg/logging"
 	"github.com/joeblew999/goup-util/pkg/screenshot"
 	"github.com/spf13/cobra"
 )
@@ -65,11 +67,11 @@ Examples:
   # Run app and capture screenshot
   goup-util run-and-capture examples/hybrid-dashboard screenshot.png
 
-  # Use App Store preset size
-  goup-util run-and-capture --preset macos-retina examples/hybrid-dashboard screenshot.png
+  # Load a specific URL (writes temporary app.json)
+  goup-util run-and-capture --url https://example.com examples/gio-plugin-webviewer screenshot.png
 
-  # Custom size
-  goup-util run-and-capture --width 1280 --height 800 examples/hybrid-dashboard screenshot.png`,
+  # Use App Store preset size
+  goup-util run-and-capture --preset macos-retina examples/hybrid-dashboard screenshot.png`,
 	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		appDir := args[0]
@@ -81,6 +83,18 @@ Examples:
 		height, _ := cmd.Flags().GetInt("height")
 		quality, _ := cmd.Flags().GetInt("quality")
 		waitTime, _ := cmd.Flags().GetInt("wait")
+		urlOverride, _ := cmd.Flags().GetString("url")
+
+		// Initialize structured logger (DEV role — this is goup-util itself)
+		log, err := logging.New(logging.Config{
+			AppName: "run-and-capture",
+			Role:    logging.RoleDev,
+			Console: false, // we still use fmt.Printf for user-facing output
+		})
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "warning: logging init failed: %v\n", err)
+		}
+		defer log.Close()
 
 		// Resolve absolute paths
 		absAppDir, err := filepath.Abs(appDir)
@@ -110,8 +124,38 @@ Examples:
 			height = preset.Height
 		}
 
+		// If --url is set, write a temporary app.json so the app auto-loads the URL
+		var tmpAppJSON string
+		if urlOverride != "" {
+			appJSON := filepath.Join(absAppDir, "app.json")
+			// Read existing app.json to preserve other fields
+			cfg := map[string]interface{}{
+				"url":    urlOverride,
+				"name":   "Screenshot",
+				"width":  1200,
+				"height": 800,
+			}
+			if data, err := os.ReadFile(appJSON); err == nil {
+				json.Unmarshal(data, &cfg)
+				cfg["url"] = urlOverride // Override URL
+			}
+			data, _ := json.MarshalIndent(cfg, "", "    ")
+
+			// If app.json exists, back it up; if not, mark for removal
+			if _, err := os.Stat(appJSON); err == nil {
+				tmpAppJSON = appJSON + ".screenshot-backup"
+				os.Rename(appJSON, tmpAppJSON)
+			} else {
+				tmpAppJSON = "remove" // marker to remove after
+			}
+			os.WriteFile(appJSON, data, 0644)
+			fmt.Printf("URL override: %s\n", urlOverride)
+			log.Event("url_override", "url", urlOverride)
+		}
+
 		// Build the app first to get a direct binary
 		fmt.Printf("Building app in %s...\n", absAppDir)
+		log.Event("build_start", "app_dir", absAppDir)
 		binaryPath := filepath.Join(absAppDir, "app-temp")
 		cmdBuild := exec.Command("go", "build", "-o", binaryPath, ".")
 		cmdBuild.Dir = absAppDir
@@ -137,6 +181,7 @@ Examples:
 
 		pid := cmdRun.Process.Pid
 		fmt.Printf("✓ Launched app (PID %d)\n", pid)
+		log.Event("app_launched", "pid", pid, "binary", binaryPath)
 
 		// Ensure we kill the app and clean up when done
 		defer func() {
@@ -145,6 +190,16 @@ Examples:
 				fmt.Printf("✓ Stopped app\n")
 			}
 			os.Remove(binaryPath)
+			// Restore or remove temporary app.json
+			if tmpAppJSON != "" {
+				appJSON := filepath.Join(absAppDir, "app.json")
+				if tmpAppJSON == "remove" {
+					os.Remove(appJSON)
+				} else {
+					os.Remove(appJSON)
+					os.Rename(tmpAppJSON, appJSON)
+				}
+			}
 		}()
 
 		// Wait for window to appear - try multiple detection methods
@@ -164,6 +219,7 @@ Examples:
 				windowDetected = true
 				useCoreGraphics = true
 				fmt.Printf("✓ Found window via CoreGraphics\n")
+				log.Event("window_detected", "method", "coregraphics", "pid", pid)
 			}
 		}
 
@@ -204,8 +260,10 @@ Examples:
 		} else {
 			fmt.Printf("✓ Window appeared\n")
 
-			// Give app time to render
-			time.Sleep(1 * time.Second)
+			// Give app time to render and webviews to load content.
+			// The webview auto-navigates on frame 3, then the page
+			// needs time to fully load (DNS, fetch, render).
+			time.Sleep(10 * time.Second)
 
 			// Note: robotgo doesn't have window positioning functions
 			// So we just capture the window as-is
@@ -228,6 +286,12 @@ Examples:
 		}
 
 		fmt.Printf("✓ Screenshot saved: %s\n", absOutput)
+		log.Event("screenshot_saved", "output", absOutput, "method", func() string {
+			if useCoreGraphics {
+				return "coregraphics_region"
+			}
+			return "robotgo"
+		}())
 		return nil
 	},
 }
@@ -238,6 +302,7 @@ func init() {
 	runAndCaptureCmd.Flags().Int("height", 0, "Window height (note: robotgo doesn't support resizing)")
 	runAndCaptureCmd.Flags().IntP("quality", "q", 90, "JPEG quality (1-100)")
 	runAndCaptureCmd.Flags().IntP("wait", "w", 5000, "Max wait time for window in milliseconds")
+	runAndCaptureCmd.Flags().String("url", "", "URL to load in webview apps (writes temporary app.json)")
 
 	rootCmd.AddCommand(runAndCaptureCmd)
 }
