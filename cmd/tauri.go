@@ -60,73 +60,55 @@ func ensureCargoTauri() error {
 	return nil
 }
 
-// ensureAndroidSDK installs Android NDK + platform-tools if not present. Idempotent.
-func ensureAndroidSDK() error {
-	sdkRoot := config.GetSDKDir()
-
-	// NDK
-	ndkPath := filepath.Join(sdkRoot, "ndk-bundle")
-	if _, err := os.Stat(ndkPath); os.IsNotExist(err) {
-		cli.Info("Installing Android NDK...")
-		if err := installNDK(sdkRoot); err != nil {
-			return fmt.Errorf("failed to install NDK: %w", err)
-		}
-		cli.Success("Android NDK installed")
-	}
-
-	// Shared cache for all SDK installs
+// ensureAndroidSDK installs the Android SDK components needed by the caller.
+// Uses the SDK catalog (sdk-android-list.json) and installSdk() for all installs.
+// setupName should be "gio-android" or "tauri-android" from the catalog's setups.
+// Idempotent — installSdk/installWithSdkManager skip already-installed items.
+func ensureAndroidSDK(setupName string) error {
 	cache, err := utils.NewCacheWithDirectories()
 	if err != nil {
 		return fmt.Errorf("failed to create cache: %w", err)
 	}
 
-	// platform-tools (adb)
-	client := adb.New()
-	if !client.Available() {
-		cli.Info("Installing Android platform-tools...")
-		if err := installSdk("platform-tools", cache); err != nil {
-			return fmt.Errorf("failed to install platform-tools: %w", err)
-		}
-		cli.Success("Android platform-tools installed")
+	// Load the setup group from the catalog
+	sdkNames, err := utils.FindSetup(setupName)
+	if err != nil {
+		return fmt.Errorf("unknown setup %q: %w", setupName, err)
 	}
 
-	// Android platform (required by gogio for android builds)
-	platformPath := filepath.Join(sdkRoot, "platforms", "android-31")
-	if _, err := os.Stat(platformPath); os.IsNotExist(err) {
-		cli.Info("Installing Android platform (API 31)...")
-		if err := installSdk("android-31", cache); err != nil {
-			return fmt.Errorf("failed to install Android platform: %w", err)
+	// Install each SDK in the setup group
+	for _, sdkName := range sdkNames {
+		if err := installSdk(sdkName, cache); err != nil {
+			return fmt.Errorf("failed to install %s: %w", sdkName, err)
 		}
-		cli.Success("Android platform installed")
 	}
 
-	// Build tools (required by gogio for android builds)
-	buildToolsPath := filepath.Join(sdkRoot, "build-tools", "31.0.0")
-	if _, err := os.Stat(buildToolsPath); os.IsNotExist(err) {
-		cli.Info("Installing Android build-tools...")
-		if err := installSdk("build-tools-31.0.0", cache); err != nil {
-			return fmt.Errorf("failed to install build-tools: %w", err)
-		}
-		cli.Success("Android build-tools installed")
-	}
-
-	// Create compatibility symlinks for tools that expect standard Android SDK layout
-	// Tauri looks for cmdline-tools/bin/sdkmanager and cmdline-tools/latest/bin/sdkmanager
-	cmdToolsSrc := filepath.Join(sdkRoot, "cmdline-tools", "11.0", "cmdline-tools")
-	if _, err := os.Stat(cmdToolsSrc); err == nil {
-		// cmdline-tools/latest → actual cmdline-tools (Tauri, Android Studio)
-		latestLink := filepath.Join(sdkRoot, "cmdline-tools", "latest")
-		if _, err := os.Lstat(latestLink); os.IsNotExist(err) {
-			os.Symlink(cmdToolsSrc, latestLink)
-		}
-		// cmdline-tools/bin → actual bin (Tauri checks this path directly)
-		binLink := filepath.Join(sdkRoot, "cmdline-tools", "bin")
-		if _, err := os.Lstat(binLink); os.IsNotExist(err) {
-			os.Symlink(filepath.Join(cmdToolsSrc, "bin"), binLink)
-		}
-	}
+	// cmdline-tools compatibility symlinks
+	// Our direct-download cmdline-tools land at cmdline-tools/11.0/cmdline-tools/
+	// but Tauri expects cmdline-tools/bin/ and cmdline-tools/latest/
+	ensureCmdlineToolsSymlinks()
 
 	return nil
+}
+
+// ensureCmdlineToolsSymlinks creates symlinks so external tools (Tauri, Android Studio)
+// can find sdkmanager at the standard paths. Idempotent.
+func ensureCmdlineToolsSymlinks() {
+	sdkRoot := config.GetSDKDir()
+	cmdToolsSrc := filepath.Join(sdkRoot, "cmdline-tools", "11.0", "cmdline-tools")
+	if _, err := os.Stat(cmdToolsSrc); err != nil {
+		return
+	}
+	// cmdline-tools/latest → actual cmdline-tools
+	latestLink := filepath.Join(sdkRoot, "cmdline-tools", "latest")
+	if _, err := os.Lstat(latestLink); os.IsNotExist(err) {
+		os.Symlink(cmdToolsSrc, latestLink)
+	}
+	// cmdline-tools/bin → actual bin (Tauri checks this path)
+	binLink := filepath.Join(sdkRoot, "cmdline-tools", "bin")
+	if _, err := os.Lstat(binLink); os.IsNotExist(err) {
+		os.Symlink(filepath.Join(cmdToolsSrc, "bin"), binLink)
+	}
 }
 
 // ensureCocoapods installs CocoaPods if not present. Idempotent.
@@ -282,9 +264,9 @@ func runCargoTauri(dir string, args ...string) error {
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
 
-	// Set Android SDK env vars so Tauri can find our managed SDK
+	// Set Android SDK env vars so Tauri CLI + Gradle can find our managed SDK
 	sdkRoot := config.GetSDKDir()
-	ndkPath := filepath.Join(sdkRoot, "ndk-bundle")
+	ndkPath := filepath.Join(sdkRoot, "ndk", "27.2.12479018")
 	javaHome := filepath.Join(sdkRoot, "openjdk", "17", "jdk-17.0.11+9", "Contents", "Home")
 	env := os.Environ()
 	env = append(env, "ANDROID_HOME="+sdkRoot)
@@ -293,7 +275,24 @@ func runCargoTauri(dir string, args ...string) error {
 	env = append(env, "JAVA_HOME="+javaHome)
 	cmd.Env = env
 
+	// Write local.properties so Gradle finds the SDK without relying on env vars.
+	// Gradle's daemon may have been started before our env vars were set.
+	ensureLocalProperties(dir, sdkRoot, ndkPath)
+
 	return cmd.Run()
+}
+
+// ensureLocalProperties writes local.properties in the Tauri Android gen dir
+// so Gradle can find sdk.dir and ndk.dir. Idempotent — overwrites each time
+// to ensure paths stay current.
+func ensureLocalProperties(dir, sdkRoot, ndkPath string) {
+	androidDir := filepath.Join(dir, "src-tauri", "gen", "android")
+	if _, err := os.Stat(androidDir); err != nil {
+		return // Android target not initialized yet
+	}
+	content := fmt.Sprintf("# Auto-generated by utm-dev — do not edit\nsdk.dir=%s\nndk.dir=%s\n", sdkRoot, ndkPath)
+	propsPath := filepath.Join(androidDir, "local.properties")
+	os.WriteFile(propsPath, []byte(content), 0644)
 }
 
 // --- Root tauri command ---
@@ -351,7 +350,7 @@ Examples:
 
 		// Step 2: Android SDK + NDK + platform-tools
 		cli.Info("[2/4] Ensuring Android SDK...")
-		if err := ensureAndroidSDK(); err != nil {
+		if err := ensureAndroidSDK("tauri-android"); err != nil {
 			cli.Warn("Android SDK setup issue: %v", err)
 		} else {
 			cli.Success("Android SDK ready")
@@ -499,7 +498,7 @@ func tauriBuildMobile(dir string, platform string, debug bool) error {
 
 	// For Android, ensure SDK is ready
 	if platform == "android" {
-		if err := ensureAndroidSDK(); err != nil {
+		if err := ensureAndroidSDK("tauri-android"); err != nil {
 			return err
 		}
 	}
@@ -564,7 +563,7 @@ Examples:
 			cli.Info("Running Tauri app on iOS simulator...")
 			return runCargoTauri(dir, "ios", "dev")
 		case "android":
-			if err := ensureAndroidSDK(); err != nil {
+			if err := ensureAndroidSDK("tauri-android"); err != nil {
 				return err
 			}
 			cli.Info("Running Tauri app on Android emulator...")
@@ -618,7 +617,7 @@ Examples:
 			}
 			cli.Success("iOS target initialized")
 		case "android":
-			if err := ensureAndroidSDK(); err != nil {
+			if err := ensureAndroidSDK("tauri-android"); err != nil {
 				return err
 			}
 			cli.Info("Initializing Tauri Android target...")
@@ -779,7 +778,7 @@ func screenshotIOS(output string, cleanBar bool) error {
 
 func screenshotAndroid(output string) error {
 	// Ensure adb is installed (idempotent)
-	if err := ensureAndroidSDK(); err != nil {
+	if err := ensureAndroidSDK("tauri-android"); err != nil {
 		return err
 	}
 
@@ -941,7 +940,7 @@ func verifyAndroid(dir, output string, delay int, debug bool) error {
 	if err := ensureCargoTauri(); err != nil {
 		return err
 	}
-	if err := ensureAndroidSDK(); err != nil {
+	if err := ensureAndroidSDK("tauri-android"); err != nil {
 		return err
 	}
 

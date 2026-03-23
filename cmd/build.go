@@ -291,7 +291,7 @@ func buildAndroid(proj *project.GioProject, platform string, opts BuildOptions) 
 	}
 
 	// Ensure Android SDK (NDK + platform-tools) — idempotent
-	if err := ensureAndroidSDK(); err != nil {
+	if err := ensureAndroidSDK("gio-android"); err != nil {
 		cache.RecordBuild(proj.Name, platform, proj.RootDir, apkPath, false)
 		return fmt.Errorf("failed to set up Android SDK: %w", err)
 	}
@@ -558,16 +558,6 @@ func buildLinux(proj *project.GioProject, platform string, opts BuildOptions) er
 
 	fmt.Printf("✓ Built %s for Linux: %s\n", proj.Name, binPath)
 	return nil
-}
-
-// installNDK installs the Android NDK if not present. Uses the SDK catalog.
-func installNDK(sdkRoot string) error {
-	cli.Info("Installing Android NDK...")
-	cache, err := utils.NewCacheWithDirectories()
-	if err != nil {
-		return fmt.Errorf("failed to create cache: %w", err)
-	}
-	return installSdk("ndk-bundle", cache)
 }
 
 func buildAll(proj *project.GioProject, opts BuildOptions) error {

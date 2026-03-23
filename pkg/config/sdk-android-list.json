@@ -15,6 +15,13 @@
         "apiLevel": 31,
         "sdkmanagerName": "platforms;android-31",
         "installPath": "sdks/platforms/android-31"
+      },
+      {
+        "version": "36",
+        "goupName": "android-36",
+        "apiLevel": 36,
+        "sdkmanagerName": "platforms;android-36",
+        "installPath": "sdks/platforms/android-36"
       }
     ],
     "command-line-tools": [
@@ -27,6 +34,12 @@
       }
     ],
     "build-tools": [
+      {
+        "version": "36.0.0",
+        "goupName": "build-tools-36.0.0",
+        "sdkmanagerName": "build-tools;36.0.0",
+        "installPath": "sdks/build-tools/36.0.0"
+      },
       {
         "version": "34.0.0",
         "goupName": "build-tools-34.0.0",
@@ -71,6 +84,12 @@
     ],
     "ndk": [
       {
+        "version": "27.2.12479018",
+        "goupName": "ndk-27",
+        "sdkmanagerName": "ndk;27.2.12479018",
+        "installPath": "sdks/ndk/27.2.12479018"
+      },
+      {
         "goupName": "ndk-bundle",
         "sdkmanagerName": "ndk-bundle",
         "installPath": "sdks/ndk-bundle"
@@ -110,23 +129,41 @@
     ]
   },
   "meta": {
-    "schemaVersion": "1.2",
-    "generatedAt": "2023-11-15T00:00:00Z",
+    "schemaVersion": "1.3",
+    "generatedAt": "2026-03-23T00:00:00Z",
     "buildDefaults": {
-      "minSdk": 21,
-      "targetSdk": 34
+      "minSdk": 24,
+      "targetSdk": 36
     },
     "setups": {
-      "default-android": [
+      "gio-android": [
         "openjdk-17",
         "cmdline-tools-11.0",
         "platform-tools",
         "build-tools-31.0.0",
         "android-31",
-        "ndk-bundle",
-        "system-images-android-31"
+        "ndk-bundle"
+      ],
+      "tauri-android": [
+        "openjdk-17",
+        "cmdline-tools-11.0",
+        "platform-tools",
+        "build-tools-36.0.0",
+        "android-36",
+        "ndk-27"
+      ],
+      "default-android": [
+        "openjdk-17",
+        "cmdline-tools-11.0",
+        "platform-tools",
+        "build-tools-36.0.0",
+        "android-36",
+        "ndk-27",
+        "build-tools-31.0.0",
+        "android-31",
+        "ndk-bundle"
       ]
     },
-    "notes": "For authenticated downloads, implement Apple Developer login in your Go code"
+    "notes": "gio-android: Gio needs NDK 22 (ndk-bundle) + API 31. tauri-android: Tauri v2 needs NDK 27+ and API 36."
   }
 }

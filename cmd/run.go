@@ -99,7 +99,7 @@ Examples:
 
 func launchAndroidApp(apkPath, appName string) error {
 	// Ensure adb is installed (idempotent)
-	if err := ensureAndroidSDK(); err != nil {
+	if err := ensureAndroidSDK("gio-android"); err != nil {
 		return err
 	}
 	client := adb.New()

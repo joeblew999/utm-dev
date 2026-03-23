@@ -15,7 +15,7 @@ func newADBClient() (*adb.Client, error) {
 	if !client.Available() {
 		// Auto-install platform-tools (idempotent)
 		cli.Info("adb not found, installing platform-tools...")
-		if err := ensureAndroidSDK(); err != nil {
+		if err := ensureAndroidSDK("gio-android"); err != nil {
 			return nil, fmt.Errorf("failed to install platform-tools: %w", err)
 		}
 		// Re-check after install
@@ -29,7 +29,7 @@ func newADBClient() (*adb.Client, error) {
 
 // ensureEmulator ensures adb + emulator are installed. Idempotent.
 func ensureEmulator() (*adb.Client, error) {
-	if err := ensureAndroidSDK(); err != nil {
+	if err := ensureAndroidSDK("gio-android"); err != nil {
 		return nil, err
 	}
 	client := adb.New()
