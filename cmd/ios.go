@@ -302,5 +302,6 @@ func init() {
 	iosCmd.AddCommand(iosLogsCmd)
 	iosCmd.AddCommand(iosRuntimesCmd)
 
+	iosCmd.GroupID = "util"
 	rootCmd.AddCommand(iosCmd)
 }

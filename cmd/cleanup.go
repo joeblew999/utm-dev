@@ -100,6 +100,7 @@ func init() {
 	cleanupCmd.AddCommand(cleanupAllCmd)
 	cleanupCmd.AddCommand(cleanupCacheCmd)
 	cleanupCmd.AddCommand(cleanupSDKsCmd)
+	cleanupCmd.GroupID = "util"
 	rootCmd.AddCommand(cleanupCmd)
 
 	// Keep the old command for backward compatibility but mark as deprecated

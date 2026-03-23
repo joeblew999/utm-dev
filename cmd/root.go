@@ -13,29 +13,24 @@ var rootCmd = &cobra.Command{
 	Short: "Build and test cross-platform apps (Tauri desktop + Gio mobile)",
 	Long: `utm-dev - Cross-platform build tooling for Tauri and Gio apps.
 
-Tauri desktop apps tested via UTM VMs on Apple Silicon.
-Gio mobile apps (iOS/Android) built on host Mac.
-SDK management so devs don't pollute their OS.
+Everything is idempotent. Say what you want, it installs what's missing,
+boots what's needed, and builds.
 
-TAURI (desktop + mobile):
-  utm-dev tauri dev examples/tauri-basic           Dev mode with hot reload
+QUICK START:
+  utm-dev tauri setup                              One command, everything installed
   utm-dev tauri build macos examples/tauri-basic    Build macOS .app/.dmg
   utm-dev tauri build windows examples/tauri-basic  Build in Windows UTM VM
-  utm-dev tauri build ios examples/tauri-basic      Build for iOS
-  utm-dev tauri run ios examples/tauri-basic        Run on iOS simulator
+  utm-dev tauri verify ios examples/tauri-basic     Build + launch + screenshot
 
 GIO (mobile):
   utm-dev build android examples/hybrid-dashboard  Build APK
   utm-dev run android examples/hybrid-dashboard    Build + install + launch
 
-UTM VMs:
-  utm-dev utm install windows-11                   Download + import VM
-  utm-dev utm start "Windows 11"                   Start VM
-  utm-dev utm exec "Windows 11" -- whoami          Run command in VM
-
-SDK MANAGEMENT:
-  utm-dev install ndk-bundle                       Install Android NDK
-  utm-dev list                                     List available SDKs`,
+UTILITIES (for debugging / manual control):
+  utm-dev utm start "Windows 11"                   Start a VM manually
+  utm-dev android devices                          List connected devices
+  utm-dev ios devices                              List simulators
+  utm-dev config                                   Show paths and env`,
 }
 
 func Execute() {
@@ -46,12 +41,11 @@ func init() {
 	// Enable suggestions for typos (e.g., "buld" → "build")
 	rootCmd.SuggestionsMinimumDistance = 2
 
-	// Add command groups for better help organization
+	// Add command groups — workflow first, utilities second
 	rootCmd.AddGroup(
-		&cobra.Group{ID: "build", Title: "Build Commands:"},
-		&cobra.Group{ID: "sdk", Title: "SDK Management:"},
-		&cobra.Group{ID: "tools", Title: "Development Tools:"},
+		&cobra.Group{ID: "build", Title: "Build & Run:"},
 		&cobra.Group{ID: "vm", Title: "Virtual Machines:"},
+		&cobra.Group{ID: "util", Title: "Utilities:"},
 		&cobra.Group{ID: "self", Title: "Self Management:"},
 	)
 

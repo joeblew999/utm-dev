@@ -16,6 +16,7 @@ var configCmd = &cobra.Command{
 }
 
 func init() {
+	configCmd.GroupID = "util"
 	rootCmd.AddCommand(configCmd)
 }
 

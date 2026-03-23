@@ -38,7 +38,7 @@ var installCmd = &cobra.Command{
 
 func init() {
 	// Group for help organization
-	installCmd.GroupID = "sdk"
+	installCmd.GroupID = "util"
 
 	rootCmd.AddCommand(installCmd)
 }

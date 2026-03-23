@@ -273,5 +273,6 @@ func init() {
 	androidCmd.AddCommand(androidWebviewCmd)
 	androidCmd.AddCommand(androidEmulatorCmd)
 
+	androidCmd.GroupID = "util"
 	rootCmd.AddCommand(androidCmd)
 }

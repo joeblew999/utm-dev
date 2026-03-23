@@ -17,14 +17,9 @@ var docsCmd = &cobra.Command{
 Outputs markdown files that can be used in README or documentation sites.
 
 Examples:
-  # Generate docs to ./docs/cli/
-  utm-dev docs
-
-  # Generate to custom directory
-  utm-dev docs ./my-docs/
-
-  # Generate man pages
-  utm-dev docs --format man ./man/`,
+  utm-dev self docs
+  utm-dev self docs ./my-docs/
+  utm-dev self docs --format man ./man/`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		outputDir := "docs/cli"
@@ -48,7 +43,7 @@ Examples:
 			}
 		case "man":
 			header := &doc.GenManHeader{
-				Title:   "GOUP-UTIL",
+				Title:   "UTM-DEV",
 				Section: "1",
 			}
 			if err := doc.GenManTree(rootCmd, header, outputDir); err != nil {
@@ -77,8 +72,5 @@ Examples:
 func init() {
 	docsCmd.Flags().StringP("format", "f", "markdown", "Output format: markdown, man, yaml, rst")
 
-	// Group for help organization
-	docsCmd.GroupID = "tools"
-
-	rootCmd.AddCommand(docsCmd)
+	selfCmd.AddCommand(docsCmd)
 }

@@ -39,7 +39,7 @@ func init() {
 
 	// Alias and group
 	listCmd.Aliases = []string{"ls"}
-	listCmd.GroupID = "sdk"
+	listCmd.GroupID = "util"
 
 	rootCmd.AddCommand(listCmd)
 }
