@@ -95,8 +95,12 @@ func GetVMIP(vmName string) (string, error) {
 	return RunUTMCtl("ip-address", vmName)
 }
 
-// ExecInVM executes a command in a VM
+// ExecInVM executes a command in a VM.
+// Tries WinRM first (reliable), falls back to utmctl exec (needs QEMU Guest Agent).
 func ExecInVM(vmName string, command string) error {
+	if IsWinRMAvailable() {
+		return ExecViaWinRM(command)
+	}
 	return RunUTMCtlInteractive("exec", vmName, "--cmd", command)
 }
 
@@ -110,11 +114,14 @@ func DeleteVM(vmName string) error {
 	return RunUTMCtlInteractive("delete", vmName)
 }
 
-// PushFile pushes a file to a VM
+// PushFile pushes a file to a VM.
+// Tries WinRM first, falls back to utmctl file push.
 func PushFile(vmName, localPath, remotePath string) error {
-	utmctl := GetUTMCtlPath()
+	if IsWinRMAvailable() {
+		return PushFileViaWinRM(localPath, remotePath)
+	}
 
-	// Open local file
+	utmctl := GetUTMCtlPath()
 	file, err := os.Open(localPath)
 	if err != nil {
 		return fmt.Errorf("failed to open local file: %w", err)
