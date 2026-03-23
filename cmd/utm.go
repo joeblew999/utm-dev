@@ -29,19 +29,19 @@ Examples:
   utm-dev utm gallery
 
   # Check VM status
-  utm-dev utm status "Windows 11"
+  utm-dev utm status "Windows 11 ARM"
 
   # Execute command in VM
-  utm-dev utm exec "Windows 11" -- build windows examples/hybrid-dashboard
+  utm-dev utm exec "Windows 11 ARM" -- build windows examples/hybrid-dashboard
 
   # Execute Task in VM
-  utm-dev utm task "Windows 11" build:hybrid:windows
+  utm-dev utm task "Windows 11 ARM" build:hybrid:windows
 
   # Pull file from VM
-  utm-dev utm pull "Windows 11" "/path/in/vm/file.txt" ./local/
+  utm-dev utm pull "Windows 11 ARM" "/path/in/vm/file.txt" ./local/
 
   # Push file to VM
-  utm-dev utm push "Windows 11" ./local/file.txt "/path/in/vm/"`,
+  utm-dev utm push "Windows 11 ARM" ./local/file.txt "/path/in/vm/"`,
 }
 
 var utmListCmd = &cobra.Command{
@@ -310,13 +310,13 @@ The command after '--' will be prefixed with 'utm-dev' automatically.
 
 Examples:
   # Build for Windows
-  utm-dev utm exec "Windows 11" -- build windows examples/hybrid-dashboard
+  utm-dev utm exec "Windows 11 ARM" -- build windows examples/hybrid-dashboard
 
   # Generate icons
-  utm-dev utm exec "Windows 11" -- icons examples/hybrid-dashboard
+  utm-dev utm exec "Windows 11 ARM" -- icons examples/hybrid-dashboard
 
   # Check config
-  utm-dev utm exec "Windows 11" -- config`,
+  utm-dev utm exec "Windows 11 ARM" -- config`,
 	Args: cobra.MinimumNArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		vmName := args[0]
@@ -340,8 +340,8 @@ var utmTaskCmd = &cobra.Command{
 This is a convenience wrapper around 'task <taskname>'.
 
 Examples:
-  utm-dev utm task "Windows 11" build:hybrid:windows
-  utm-dev utm task "Windows 11" test:all`,
+  utm-dev utm task "Windows 11 ARM" build:hybrid:windows
+  utm-dev utm task "Windows 11 ARM" test:all`,
 	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		vmName := args[0]
@@ -361,10 +361,10 @@ var utmPullCmd = &cobra.Command{
 
 Examples:
   # Pull MSIX from VM
-  utm-dev utm pull "Windows 11" "C:\\Users\\User\\utm-dev\\examples\\hybrid-dashboard\\.bin\\hybrid-dashboard.msix" ./artifacts/
+  utm-dev utm pull "Windows 11 ARM" "C:\\Users\\User\\utm-dev\\examples\\hybrid-dashboard\\.bin\\hybrid-dashboard.msix" ./artifacts/
 
   # Pull build log
-  utm-dev utm pull "Windows 11" "/tmp/build.log" ./logs/`,
+  utm-dev utm pull "Windows 11 ARM" "/tmp/build.log" ./logs/`,
 	Args: cobra.ExactArgs(3),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		vmName := args[0]
@@ -391,10 +391,10 @@ var utmPushCmd = &cobra.Command{
 
 Examples:
   # Push config file
-  utm-dev utm push "Windows 11" ./config.json "C:\\Users\\User\\config.json"
+  utm-dev utm push "Windows 11 ARM" ./config.json "C:\\Users\\User\\config.json"
 
   # Push test data
-  utm-dev utm push "Windows 11" ./test-data.zip "/tmp/test-data.zip"`,
+  utm-dev utm push "Windows 11 ARM" ./test-data.zip "/tmp/test-data.zip"`,
 	Args: cobra.ExactArgs(3),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		vmName := args[0]
@@ -490,7 +490,7 @@ Examples:
   utm-dev utm export "Debian 13 Trixie" ./debian-template.utm
 
   # Export to specific path
-  utm-dev utm export "Windows 11" ~/vm-templates/windows-dev.utm`,
+  utm-dev utm export "Windows 11 ARM" ~/vm-templates/windows-dev.utm`,
 	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		vmName := args[0]
@@ -549,10 +549,10 @@ The VM must have the QEMU guest agent running.
 
 Examples:
   # Capture screenshot from Windows VM
-  utm-dev utm screenshot "Windows 11" windows-screenshot.png
+  utm-dev utm screenshot "Windows 11 ARM" windows-screenshot.png
 
   # Capture with default filename
-  utm-dev utm screenshot "Windows 11"`,
+  utm-dev utm screenshot "Windows 11 ARM"`,
 	Args: cobra.RangeArgs(1, 2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		vmName := args[0]
@@ -607,10 +607,10 @@ The VM must have the QEMU guest agent running.
 
 Examples:
   # Build and run hybrid-dashboard in Windows VM
-  utm-dev utm run "Windows 11" examples/hybrid-dashboard
+  utm-dev utm run "Windows 11 ARM" examples/hybrid-dashboard
 
   # Build and run webviewer example
-  utm-dev utm run "Windows 11" examples/gio-plugin-webviewer`,
+  utm-dev utm run "Windows 11 ARM" examples/gio-plugin-webviewer`,
 	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		vmName := args[0]
@@ -667,10 +667,10 @@ Use 'utm-dev utm exec <vm> -- self setup' to install the toolchain.
 
 Examples:
   # Build hybrid-dashboard for Windows inside the VM
-  utm-dev utm build "Windows 11" windows examples/hybrid-dashboard
+  utm-dev utm build "Windows 11 ARM" windows examples/hybrid-dashboard
 
   # Build with platform auto-detected from VM OS
-  utm-dev utm build "Windows 11" examples/hybrid-dashboard`,
+  utm-dev utm build "Windows 11 ARM" examples/hybrid-dashboard`,
 	Args: cobra.RangeArgs(2, 3),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		vmName := args[0]
@@ -740,7 +740,7 @@ Examples:
   utm-dev utm port-forward "Debian 13 Trixie" 22 2222 --setup-network
 
   # Forward HTTP
-  utm-dev utm port-forward "Windows 11" 80 8080`,
+  utm-dev utm port-forward "Windows 11 ARM" 80 8080`,
 	Args: cobra.ExactArgs(3),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		vmName := args[0]

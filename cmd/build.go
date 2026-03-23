@@ -231,7 +231,7 @@ func buildMacOS(proj *project.GioProject, platform string, opts BuildOptions) er
 	gogioCmd := exec.Command("gogio", args...)
 	gogioCmd.Dir = proj.RootDir // Run from app directory so its go.mod is used
 	// Set GOWORK=off to avoid workspace interference with example modules
-	gogioCmd.Env = append(os.Environ(), "GOWORK=off")
+	gogioCmd.Env = gogioEnv()
 	gogioCmd.Stdout = os.Stdout
 	gogioCmd.Stderr = os.Stderr
 
@@ -299,8 +299,7 @@ func buildAndroid(proj *project.GioProject, platform string, opts BuildOptions) 
 	ndkPath := filepath.Join(sdkRoot, "ndk-bundle")
 
 	// Set Android environment variables with absolute paths
-	env := os.Environ()
-	env = append(env, "GOWORK=off") // Avoid workspace interference with example modules
+	env := gogioEnv()
 	javaHome := filepath.Join(sdkRoot, "openjdk", "17", "jdk-17.0.11+9", "Contents", "Home")
 	env = append(env, "JAVA_HOME="+javaHome)
 	env = append(env, "ANDROID_SDK_ROOT="+sdkRoot)
@@ -413,7 +412,7 @@ func buildIOS(proj *project.GioProject, platform string, opts BuildOptions, simu
 	gogioCmd := exec.Command("gogio", args...)
 	gogioCmd.Dir = proj.RootDir // Run from app directory so its go.mod is used
 	// Set GOWORK=off to avoid workspace interference with example modules
-	gogioCmd.Env = append(os.Environ(), "GOWORK=off")
+	gogioCmd.Env = gogioEnv()
 	gogioCmd.Stdout = os.Stdout
 	gogioCmd.Stderr = os.Stderr
 
@@ -473,8 +472,7 @@ func buildWindows(proj *project.GioProject, platform string, opts BuildOptions) 
 	}
 
 	// Set Windows environment
-	env := os.Environ()
-	env = append(env, "GOWORK=off") // Avoid workspace interference with example modules
+	env := gogioEnv()
 	env = append(env, "GOOS=windows")
 	env = append(env, "GOARCH=amd64") // Use amd64 for broader Windows compatibility
 
@@ -622,6 +620,20 @@ func generateIcons(appDir, platform string) error {
 
 // Remove the old generateTestIcon function since it's now in the icons package
 // contains() moved to pkg/utils/slice.go
+
+// gogioEnv returns a base environment for gogio subprocesses.
+// Disables Go workspace mode and trusts mise config in example dirs
+// so gogio builds don't fail with "mise.toml is not trusted" errors.
+func gogioEnv() []string {
+	env := os.Environ()
+	env = append(env, "GOWORK=off")
+	// Trust all mise configs under the current project so gogio
+	// can run in example directories without manual `mise trust`.
+	if cwd, err := os.Getwd(); err == nil {
+		env = append(env, "MISE_TRUSTED_CONFIG_PATHS="+cwd)
+	}
+	return env
+}
 
 func init() {
 	buildCmd.Flags().BoolVar(&skipIcons, "skip-icons", false, "Skip icon generation")

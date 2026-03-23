@@ -224,7 +224,19 @@ func ensureIOSSimulator() (*simctl.Client, error) {
 }
 
 // ensureVM ensures UTM is installed, the VM exists, and is started. Idempotent.
-func ensureVM(vmName string) error {
+// galleryKey is the key from vm-gallery.json (e.g. "windows-11-arm").
+func ensureVM(galleryKey string) error {
+	// Load gallery to get the VM name
+	gallery, err := utm.LoadGallery()
+	if err != nil {
+		return fmt.Errorf("failed to load VM gallery: %w", err)
+	}
+	vm, ok := gallery.GetVM(galleryKey)
+	if !ok {
+		return fmt.Errorf("VM '%s' not found in gallery", galleryKey)
+	}
+	vmName := vm.Name
+
 	// Ensure UTM is installed
 	if err := utm.InstallUTM(false); err != nil {
 		return fmt.Errorf("failed to install UTM: %w", err)
@@ -233,13 +245,9 @@ func ensureVM(vmName string) error {
 	// Check if VM exists
 	status, err := utm.GetVMStatus(vmName)
 	if err != nil {
-		// VM doesn't exist — install the box
-		boxKey := "windows-11" // default
-		if vmName == "Ubuntu" {
-			boxKey = "ubuntu"
-		}
+		// VM doesn't exist — install it
 		cli.Info("VM '%s' not found, installing...", vmName)
-		if err := utm.InstallBox(boxKey, false); err != nil {
+		if err := utm.InstallBox(galleryKey, false); err != nil {
 			return fmt.Errorf("failed to install VM '%s': %w", vmName, err)
 		}
 		status, err = utm.GetVMStatus(vmName)
@@ -254,9 +262,11 @@ func ensureVM(vmName string) error {
 		if err := utm.StartVM(vmName); err != nil {
 			return fmt.Errorf("failed to start VM: %w", err)
 		}
-		cli.Info("Waiting for VM to boot...")
-		if err := utm.WaitForWindows("localhost", 5*time.Minute); err != nil {
-			cli.Warn("VM may still be booting (WinRM not responding) — continuing...")
+		if vm.OS == "windows" {
+			cli.Info("Waiting for VM to boot...")
+			if err := utm.WaitForWindows("localhost", 5*time.Minute); err != nil {
+				cli.Warn("VM may still be booting (WinRM not responding) — continuing...")
+			}
 		}
 		cli.Success("VM '%s' running", vmName)
 	}
@@ -376,7 +386,7 @@ Examples:
 		// Step 4: UTM + Windows VM
 		if !skipVM && !mobileOnly {
 			cli.Info("[4/4] Ensuring UTM + Windows VM...")
-			if err := ensureVM("Windows 11"); err != nil {
+			if err := ensureVM("windows-11-arm"); err != nil {
 				cli.Warn("VM setup issue: %v", err)
 			} else {
 				cli.Success("UTM + Windows 11 VM ready")
@@ -444,9 +454,9 @@ Examples:
 		case "macos":
 			return tauriBuildDesktop(dir, debug)
 		case "windows":
-			return tauriBuildViaVM(dir, "Windows 11", debug)
+			return tauriBuildViaVM(dir, "windows-11-arm", debug)
 		case "linux":
-			return tauriBuildViaVM(dir, "Ubuntu", debug)
+			return tauriBuildViaVM(dir, "ubuntu-24-arm", debug)
 		case "ios":
 			return tauriBuildMobile(dir, "ios", debug)
 		case "android":
@@ -473,7 +483,7 @@ func tauriBuildDesktop(dir string, debug bool) error {
 	return nil
 }
 
-func tauriBuildViaVM(dir string, vmName string, debug bool) error {
+func tauriBuildViaVM(dir string, galleryKey string, debug bool) error {
 	absDir, err := filepath.Abs(dir)
 	if err != nil {
 		return fmt.Errorf("failed to resolve path: %w", err)
@@ -481,7 +491,13 @@ func tauriBuildViaVM(dir string, vmName string, debug bool) error {
 	appName := filepath.Base(absDir)
 
 	// Ensure VM is installed + running (idempotent)
-	if err := ensureVM(vmName); err != nil {
+	if err := ensureVM(galleryKey); err != nil {
+		return err
+	}
+
+	// Resolve VM name from gallery
+	vmName, err := resolveVMName(galleryKey)
+	if err != nil {
 		return err
 	}
 
@@ -491,7 +507,7 @@ func tauriBuildViaVM(dir string, vmName string, debug bool) error {
 	}
 
 	// Build inside VM using utm-dev (which handles cargo-tauri setup)
-	cli.Info("Building Tauri app for %s in VM '%s'...", vmName, vmName)
+	cli.Info("Building Tauri app in VM '%s'...", vmName)
 	buildCmd := fmt.Sprintf("cd %s && utm-dev tauri build windows .", appName)
 	if debug {
 		buildCmd = fmt.Sprintf("cd %s && utm-dev tauri build windows . --debug", appName)
@@ -503,6 +519,19 @@ func tauriBuildViaVM(dir string, vmName string, debug bool) error {
 
 	cli.Success("Build complete in VM '%s'", vmName)
 	return nil
+}
+
+// resolveVMName looks up the VM display name from a gallery key.
+func resolveVMName(galleryKey string) (string, error) {
+	gallery, err := utm.LoadGallery()
+	if err != nil {
+		return "", fmt.Errorf("failed to load gallery: %w", err)
+	}
+	vm, ok := gallery.GetVM(galleryKey)
+	if !ok {
+		return "", fmt.Errorf("VM '%s' not found in gallery", galleryKey)
+	}
+	return vm.Name, nil
 }
 
 // ensureVMToolchain ensures utm-dev is installed inside the VM.
@@ -685,11 +714,12 @@ Examples:
 			cli.Info("Running Tauri app on Android emulator...")
 			return runCargoTauri(dir, "android", "dev")
 		case "windows":
-			if err := ensureVM("Windows 11"); err != nil {
+			if err := ensureVM("windows-11-arm"); err != nil {
 				return err
 			}
+			vmName, _ := resolveVMName("windows-11-arm")
 			cli.Info("Running Tauri app in Windows UTM VM...")
-			return utm.ExecInVM("Windows 11", "cargo tauri dev")
+			return utm.ExecInVM(vmName, "cargo tauri dev")
 		default:
 			return fmt.Errorf("unknown platform: %s (valid: macos, ios, android, windows)", platform)
 		}
@@ -820,7 +850,11 @@ Examples:
 		case "macos":
 			return screenshotMacOS(output)
 		case "windows":
-			vmName, _ := cmd.Flags().GetString("vm")
+			galleryKey, _ := cmd.Flags().GetString("vm")
+			vmName, err := resolveVMName(galleryKey)
+			if err != nil {
+				return err
+			}
 			return screenshotVM(vmName, output)
 		case "ios":
 			cleanBar, _ := cmd.Flags().GetBool("clean-status")
@@ -957,8 +991,8 @@ Examples:
 		case "macos":
 			return verifyMacOS(dir, output, delay, debug)
 		case "windows":
-			vmName, _ := cmd.Flags().GetString("vm")
-			return verifyWindows(dir, vmName, output, delay, debug)
+			galleryKey, _ := cmd.Flags().GetString("vm")
+			return verifyWindows(dir, galleryKey, output, delay, debug)
 		case "ios":
 			return verifyIOS(dir, output, delay, cleanBar, debug)
 		case "android":
@@ -995,10 +1029,15 @@ func verifyMacOS(dir, output string, delay int, debug bool) error {
 	return screenshotMacOS(output)
 }
 
-func verifyWindows(dir, vmName, output string, delay int, debug bool) error {
+func verifyWindows(dir, galleryKey, output string, delay int, debug bool) error {
+	vmName, err := resolveVMName(galleryKey)
+	if err != nil {
+		return err
+	}
+
 	// Step 1: Build in VM (ensureVM called inside tauriBuildViaVM)
 	cli.Info("[1/3] Building in VM '%s'...", vmName)
-	if err := tauriBuildViaVM(dir, vmName, debug); err != nil {
+	if err := tauriBuildViaVM(dir, galleryKey, debug); err != nil {
 		return err
 	}
 
@@ -1093,14 +1132,14 @@ func init() {
 	tauriBuildCmd.Flags().Bool("debug", false, "Build in debug mode")
 
 	// Screenshot flags
-	tauriScreenshotCmd.Flags().String("vm", "Windows 11", "VM name for Windows screenshots")
+	tauriScreenshotCmd.Flags().String("vm", "windows-11-arm", "VM gallery key for Windows screenshots")
 	tauriScreenshotCmd.Flags().Bool("clean-status", false, "Clean status bar for iOS (9:41, full battery)")
 
 	// Verify flags
 	tauriVerifyCmd.Flags().Int("delay", 5, "Seconds to wait after launch before screenshot")
 	tauriVerifyCmd.Flags().Bool("clean-status", false, "Clean status bar for iOS App Store screenshots")
 	tauriVerifyCmd.Flags().Bool("debug", false, "Build in debug mode")
-	tauriVerifyCmd.Flags().String("vm", "Windows 11", "VM name for Windows builds")
+	tauriVerifyCmd.Flags().String("vm", "windows-11-arm", "VM gallery key for Windows builds")
 
 	// Setup flags
 	tauriSetupCmd.Flags().Bool("skip-vm", false, "Skip UTM VM setup (large download)")
