@@ -69,6 +69,14 @@ utm-dev tauri init ios examples/tauri-basic
 utm-dev tauri build ios examples/tauri-basic           # sim fallback if no cert
 utm-dev tauri run ios examples/tauri-basic             # launch in simulator
 
+# iOS sim: install + launch + screenshot
+utm-dev ios install examples/tauri-basic/src-tauri/gen/apple/build/arm64-sim/tauri-basic.app
+utm-dev ios launch dev.example.tauri-basic
+utm-dev tauri screenshot ios screenshot.png
+
+# Full verify cycle: build → launch → screenshot
+utm-dev tauri verify ios examples/tauri-basic
+
 # Dev mode
 utm-dev tauri dev examples/tauri-basic
 
@@ -79,12 +87,23 @@ utm-dev tauri icons examples/tauri-basic
 ## Gio apps (desktop, mobile, web)
 
 ```bash
+# Build
 utm-dev gio build android examples/hybrid-dashboard
 utm-dev gio build ios examples/hybrid-dashboard
 utm-dev gio build macos examples/hybrid-dashboard
-utm-dev gio run android examples/hybrid-dashboard      # build + install + launch
+
+# Run (build + install + launch)
+utm-dev gio run android examples/hybrid-dashboard
 utm-dev gio run ios-simulator examples/hybrid-dashboard
+
+# Bundle + package
 utm-dev gio bundle macos examples/hybrid-dashboard     # signed .app bundle
+utm-dev gio package macos examples/hybrid-dashboard    # .tar.gz for distribution
+
+# iOS sim: install + launch + screenshot
+utm-dev ios boot                                       # boot default simulator
+utm-dev ios devices                                    # list simulators
+utm-dev ios screenshot screenshot.png
 ```
 
 ## UTM virtual machines
@@ -129,16 +148,20 @@ utm-dev install ndk                   # Android NDK 27
 utm-dev list                          # show available SDKs
 ```
 
-## Device management
+## Device management (shared by Gio + Tauri)
 
 ```bash
 # Android
 utm-dev android devices               # list connected devices
 utm-dev android emulator              # launch emulator
+utm-dev android screenshot shot.png   # capture from device
 
 # iOS
 utm-dev ios devices                   # list simulators + devices
 utm-dev ios boot                      # boot default simulator
+utm-dev ios install app.app           # install on booted sim
+utm-dev ios launch com.example.app    # launch by bundle ID
+utm-dev ios screenshot shot.png       # capture from sim
 ```
 
 ## Self-management
@@ -151,12 +174,13 @@ utm-dev self upgrade                  # update to latest release
 
 ## Examples
 
-| Example | What it shows |
-|---------|--------------|
-| `examples/tauri-basic` | Minimal Tauri v2 desktop + mobile app |
-| `examples/hybrid-dashboard` | Gio + embedded HTTP server + HTMX + webview |
-| `examples/gio-plugin-webviewer` | Multi-tab browser with webview API |
-| `examples/gio-basic` | Simple pure Gio app |
+| Example | Framework | What it shows |
+|---------|-----------|---------------|
+| `examples/tauri-basic` | Tauri v2 | Webview app — iOS sim, macOS, Windows via UTM |
+| `examples/hybrid-dashboard` | Gio | Embedded HTTP server + WebView + deep linking |
+| `examples/gio-plugin-webviewer` | Gio | Full browser UI with tabs via webviewer plugin |
+| `examples/gio-plugin-hyperlink` | Gio | Opening URLs via hyperlink plugin |
+| `examples/gio-basic` | Gio | Grid rendering with `gioui.org/x/component` |
 
 ## Platform support
 
@@ -168,7 +192,7 @@ utm-dev self upgrade                  # update to latest release
 | Windows | Tested | Cross-compile | UTM VM (WinRM) |
 | Linux | Planned | Cross-compile | UTM VM |
 
-*iOS device builds require a signing cert. Sim builds work without one. Tauri iOS sim blocked on upstream cargo-mobile2 Xcode 26.x fix.
+*iOS device builds require a signing cert. Sim builds work without one (`--target aarch64-sim` added automatically).
 
 ## Development
 
