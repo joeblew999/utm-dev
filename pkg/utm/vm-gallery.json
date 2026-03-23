@@ -28,9 +28,9 @@
       },
       "template": {
         "type": "windows-arm64",
-        "ram": 4096,
-        "disk": 40960,
-        "cpu": 2,
+        "ram": 8192,
+        "disk": 65536,
+        "cpu": 4,
         "gpu": true,
         "sharedDir": true
       },
