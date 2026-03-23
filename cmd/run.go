@@ -98,10 +98,11 @@ Examples:
 }
 
 func launchAndroidApp(apkPath, appName string) error {
-	client := adb.New()
-	if !client.Available() {
-		return fmt.Errorf("adb not found at %s\nInstall with: utm-dev install platform-tools", client.ADBPath())
+	// Ensure adb is installed (idempotent)
+	if err := ensureAndroidSDK(); err != nil {
+		return err
 	}
+	client := adb.New()
 
 	// Ensure a device is connected
 	if !client.HasDevice() {

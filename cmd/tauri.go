@@ -11,6 +11,7 @@ import (
 	"github.com/joeblew999/utm-dev/pkg/cli"
 	"github.com/joeblew999/utm-dev/pkg/config"
 	"github.com/joeblew999/utm-dev/pkg/simctl"
+	"github.com/joeblew999/utm-dev/pkg/utils"
 	"github.com/joeblew999/utm-dev/pkg/utm"
 	"github.com/spf13/cobra"
 )
@@ -21,18 +22,164 @@ func isTauriProject(dir string) bool {
 	return err == nil
 }
 
-// ensureCargoTauri checks that cargo-tauri is installed.
-func ensureCargoTauri() error {
-	if _, err := exec.LookPath("cargo"); err != nil {
-		return fmt.Errorf("cargo not found — install Rust: https://rustup.rs")
+// ensureRust installs Rust via rustup if not present. Idempotent.
+func ensureRust() error {
+	if _, err := exec.LookPath("cargo"); err == nil {
+		return nil
 	}
-	// cargo tauri --version to check if tauri-cli is installed
+	cli.Info("Installing Rust via rustup...")
+	cmd := exec.Command("sh", "-c", "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to install Rust: %w", err)
+	}
+	cli.Success("Rust installed")
+	return nil
+}
+
+// ensureCargoTauri ensures Rust + cargo-tauri are installed. Idempotent.
+func ensureCargoTauri() error {
+	if err := ensureRust(); err != nil {
+		return err
+	}
 	cmd := exec.Command("cargo", "tauri", "--version")
 	cmd.Stdout = nil
 	cmd.Stderr = nil
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("cargo-tauri not found\n\nInstall with:\n  cargo install tauri-cli\n\nOr via mise:\n  mise use cargo:tauri-cli@2")
+	if err := cmd.Run(); err == nil {
+		return nil
 	}
+	cli.Info("Installing cargo-tauri...")
+	install := exec.Command("cargo", "install", "tauri-cli")
+	install.Stdout = os.Stdout
+	install.Stderr = os.Stderr
+	if err := install.Run(); err != nil {
+		return fmt.Errorf("failed to install cargo-tauri: %w", err)
+	}
+	cli.Success("cargo-tauri installed")
+	return nil
+}
+
+// ensureAndroidSDK installs Android NDK + platform-tools if not present. Idempotent.
+func ensureAndroidSDK() error {
+	sdkRoot := config.GetSDKDir()
+
+	// NDK
+	ndkPath := filepath.Join(sdkRoot, "ndk-bundle")
+	if _, err := os.Stat(ndkPath); os.IsNotExist(err) {
+		cli.Info("Installing Android NDK...")
+		if err := installNDK(sdkRoot); err != nil {
+			return fmt.Errorf("failed to install NDK: %w", err)
+		}
+		cli.Success("Android NDK installed")
+	}
+
+	// platform-tools (adb)
+	client := adb.New()
+	if !client.Available() {
+		cli.Info("Installing Android platform-tools...")
+		cache, err := utils.NewCacheWithDirectories()
+		if err != nil {
+			return fmt.Errorf("failed to create cache: %w", err)
+		}
+		if err := installSdk("platform-tools", cache); err != nil {
+			return fmt.Errorf("failed to install platform-tools: %w", err)
+		}
+		cli.Success("Android platform-tools installed")
+	}
+
+	return nil
+}
+
+// ensureIOSSimulator ensures at least one iOS simulator is booted. Idempotent.
+func ensureIOSSimulator() (*simctl.Client, error) {
+	client := simctl.New()
+	if !client.Available() {
+		return nil, fmt.Errorf("xcrun simctl not available — Xcode must be installed from App Store")
+	}
+	if client.HasBooted() {
+		return client, nil
+	}
+
+	// Find an available iPhone simulator and boot it
+	cli.Info("No simulator booted, finding one to boot...")
+	devices, err := client.Devices()
+	if err != nil {
+		return nil, fmt.Errorf("failed to list simulators: %w", err)
+	}
+
+	// Prefer iPhone 16 Pro > iPhone 16 > any iPhone > any device
+	var best *simctl.Device
+	for i := range devices {
+		d := &devices[i]
+		if d.Name == "iPhone 16 Pro" {
+			best = d
+			break
+		}
+		if d.Name == "iPhone 16" && (best == nil || best.Name != "iPhone 16") {
+			best = d
+		}
+		if best == nil && len(d.Name) >= 6 && d.Name[:6] == "iPhone" {
+			best = d
+		}
+		if best == nil {
+			best = d
+		}
+	}
+	if best == nil {
+		return nil, fmt.Errorf("no simulators available — open Xcode to download a simulator runtime")
+	}
+
+	cli.Info("Booting %s (%s)...", best.Name, best.Runtime)
+	if err := client.Boot(best.UDID); err != nil {
+		return nil, fmt.Errorf("failed to boot simulator: %w", err)
+	}
+	// Open the Simulator.app so the user can see it
+	_ = client.OpenSimulatorApp()
+	// Give it a moment to finish booting
+	time.Sleep(3 * time.Second)
+	cli.Success("Simulator %s booted", best.Name)
+	return client, nil
+}
+
+// ensureVM ensures UTM is installed, the VM exists, and is started. Idempotent.
+func ensureVM(vmName string) error {
+	// Ensure UTM is installed
+	if err := utm.InstallUTM(false); err != nil {
+		return fmt.Errorf("failed to install UTM: %w", err)
+	}
+
+	// Check if VM exists
+	status, err := utm.GetVMStatus(vmName)
+	if err != nil {
+		// VM doesn't exist — install the box
+		boxKey := "windows-11" // default
+		if vmName == "Ubuntu" {
+			boxKey = "ubuntu"
+		}
+		cli.Info("VM '%s' not found, installing...", vmName)
+		if err := utm.InstallBox(boxKey, false); err != nil {
+			return fmt.Errorf("failed to install VM '%s': %w", vmName, err)
+		}
+		status, err = utm.GetVMStatus(vmName)
+		if err != nil {
+			return fmt.Errorf("VM '%s' still not found after install: %w", vmName, err)
+		}
+	}
+
+	// Ensure VM is started
+	if status != "started" {
+		cli.Info("Starting VM '%s'...", vmName)
+		if err := utm.StartVM(vmName); err != nil {
+			return fmt.Errorf("failed to start VM: %w", err)
+		}
+		cli.Info("Waiting for VM to boot...")
+		if err := utm.WaitForWindows("localhost", 5*time.Minute); err != nil {
+			cli.Warn("VM may still be booting (WinRM not responding) — continuing...")
+		}
+		cli.Success("VM '%s' running", vmName)
+	}
+
 	return nil
 }
 
@@ -77,14 +224,11 @@ var tauriSetupCmd = &cobra.Command{
 	Short: "Install all prerequisites for Tauri development",
 	Long: `Install everything needed for Tauri cross-platform development.
 
-This sets up:
-  1. Rust toolchain (via rustup)
-  2. cargo-tauri CLI
-  3. Android SDK + NDK (for mobile builds)
-  4. UTM + Windows 11 VM (for Windows desktop builds)
-  5. Xcode check (can't auto-install, but verifies it's there)
+This is idempotent — run it as many times as you want. It only installs
+what's missing.
 
-Run this once on a fresh machine to get everything working.
+Sets up: Rust, cargo-tauri, Android NDK + platform-tools,
+UTM + Windows 11 VM, and checks for Xcode.
 
 Examples:
   utm-dev tauri setup                # Install everything
@@ -96,87 +240,42 @@ Examples:
 
 		cli.Info("Setting up Tauri development environment...")
 
-		// Step 1: Rust
-		cli.Info("[1/5] Checking Rust toolchain...")
-		if _, err := exec.LookPath("cargo"); err != nil {
-			cli.Info("Installing Rust via rustup...")
-			rustup := exec.Command("sh", "-c", "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y")
-			rustup.Stdout = os.Stdout
-			rustup.Stderr = os.Stderr
-			if err := rustup.Run(); err != nil {
-				return fmt.Errorf("failed to install Rust: %w\n\nInstall manually: https://rustup.rs", err)
-			}
-			cli.Success("Rust installed")
+		// Step 1: Rust + cargo-tauri
+		cli.Info("[1/4] Ensuring Rust + cargo-tauri...")
+		if err := ensureCargoTauri(); err != nil {
+			return err
+		}
+		cli.Success("Rust + cargo-tauri ready")
+
+		// Step 2: Android SDK + NDK + platform-tools
+		cli.Info("[2/4] Ensuring Android SDK...")
+		if err := ensureAndroidSDK(); err != nil {
+			cli.Warn("Android SDK setup issue: %v", err)
 		} else {
-			cli.Success("Rust already installed")
+			cli.Success("Android SDK ready")
 		}
 
-		// Step 2: cargo-tauri
-		cli.Info("[2/5] Checking cargo-tauri...")
-		checkCmd := exec.Command("cargo", "tauri", "--version")
-		checkCmd.Stdout = nil
-		checkCmd.Stderr = nil
-		if err := checkCmd.Run(); err != nil {
-			cli.Info("Installing cargo-tauri...")
-			install := exec.Command("cargo", "install", "tauri-cli")
-			install.Stdout = os.Stdout
-			install.Stderr = os.Stderr
-			if err := install.Run(); err != nil {
-				return fmt.Errorf("failed to install cargo-tauri: %w", err)
-			}
-			cli.Success("cargo-tauri installed")
-		} else {
-			cli.Success("cargo-tauri already installed")
-		}
-
-		// Step 3: Android SDK + NDK (for mobile builds)
-		cli.Info("[3/5] Checking Android SDK...")
-		sdkRoot := config.GetSDKDir()
-		ndkPath := filepath.Join(sdkRoot, "ndk-bundle")
-		if _, err := os.Stat(ndkPath); os.IsNotExist(err) {
-			cli.Info("Installing Android NDK...")
-			if err := installNDK(sdkRoot); err != nil {
-				cli.Warn("Android NDK install failed: %v — install manually: utm-dev install ndk-bundle", err)
-			} else {
-				cli.Success("Android NDK installed")
-			}
-		} else {
-			cli.Success("Android NDK already installed")
-		}
-
-		// Step 4: Xcode check (iOS)
-		cli.Info("[4/5] Checking Xcode...")
+		// Step 3: Xcode (can't auto-install, just check)
+		cli.Info("[3/4] Checking Xcode...")
 		if _, err := exec.LookPath("xcrun"); err != nil {
 			cli.Warn("Xcode not found — install from App Store for iOS builds")
 		} else {
 			cli.Success("Xcode available")
 		}
 
-		// Step 5: UTM + Windows VM (for desktop cross-platform testing)
+		// Step 4: UTM + Windows VM
 		if !skipVM && !mobileOnly {
-			cli.Info("[5/5] Checking UTM + Windows VM...")
-			if err := utm.InstallUTM(false); err != nil {
-				cli.Warn("UTM install issue: %v — install manually: utm-dev utm install", err)
+			cli.Info("[4/4] Ensuring UTM + Windows VM...")
+			if err := ensureVM("Windows 11"); err != nil {
+				cli.Warn("VM setup issue: %v", err)
 			} else {
-				cli.Success("UTM ready")
-			}
-
-			cli.Info("Importing Windows 11 VM (this downloads ~6 GB)...")
-			if err := utm.InstallBox("windows-11", false); err != nil {
-				cli.Warn("Windows VM import failed: %v — run later: utm-dev utm install windows-11", err)
-			} else {
-				cli.Success("Windows 11 VM ready")
+				cli.Success("UTM + Windows 11 VM ready")
 			}
 		} else {
-			cli.Info("[5/5] Skipping UTM VM setup (use --skip-vm=false to include)")
+			cli.Info("[4/4] Skipping UTM VM setup")
 		}
 
 		cli.Success("Tauri development environment ready!")
-		cli.Info("")
-		cli.Info("Quick start:")
-		cli.Info("  utm-dev tauri dev examples/tauri-basic           # Dev mode")
-		cli.Info("  utm-dev tauri build macos examples/tauri-basic    # macOS build")
-		cli.Info("  utm-dev tauri verify ios examples/tauri-basic     # Full iOS cycle")
 		return nil
 	},
 }
@@ -206,6 +305,8 @@ var tauriBuildCmd = &cobra.Command{
 	Use:   "build <platform> <app-directory>",
 	Short: "Build Tauri app for a platform",
 	Long: `Build a Tauri application for the specified platform.
+
+All dependencies are installed automatically if missing.
 
 Platforms:
   macos      Build on host Mac → .app + .dmg
@@ -269,44 +370,23 @@ func tauriBuildViaVM(dir string, vmName string, debug bool) error {
 	}
 	appName := filepath.Base(absDir)
 
-	// Step 1: Ensure VM is running
-	cli.Info("Checking VM '%s'...", vmName)
-	status, err := utm.GetVMStatus(vmName)
-	if err != nil {
-		return fmt.Errorf("VM '%s' not found — install with: utm-dev utm install windows-11", vmName)
-	}
-	if status != "started" {
-		cli.Info("Starting VM '%s'...", vmName)
-		if err := utm.StartVM(vmName); err != nil {
-			return fmt.Errorf("failed to start VM: %w", err)
-		}
-		// Wait for Windows to be ready (WinRM responding)
-		cli.Info("Waiting for Windows to boot...")
-		if err := utm.WaitForWindows("localhost", 5*time.Minute); err != nil {
-			cli.Warn("WinRM not responding — VM may still be booting. Continuing anyway...")
-		}
+	// Ensure VM is installed + running (idempotent)
+	if err := ensureVM(vmName); err != nil {
+		return err
 	}
 
-	// Step 2: Build inside VM
-	// The VM should have a shared folder or the project cloned via git.
-	// Use utm exec to run cargo tauri build in the project directory.
+	// Build inside VM
 	cli.Info("Building Tauri app for %s in VM '%s'...", vmName, vmName)
-	cli.Info("Project: %s", absDir)
-
 	buildCmd := fmt.Sprintf("cd %s && cargo tauri build", appName)
 	if debug {
 		buildCmd = fmt.Sprintf("cd %s && cargo tauri build --debug", appName)
 	}
 
 	if err := utm.ExecInVM(vmName, buildCmd); err != nil {
-		return fmt.Errorf("VM build failed: %w\n\nTroubleshooting:\n"+
-			"  1. Ensure Rust + cargo-tauri are installed in the VM\n"+
-			"  2. Ensure the project is synced to the VM (shared folder or git clone)\n"+
-			"  3. Check VM status: utm-dev utm status \"%s\"", err, vmName)
+		return fmt.Errorf("VM build failed: %w\n\nEnsure Rust + cargo-tauri are installed in the VM\nand the project is synced (shared folder or git clone)", err)
 	}
 
 	cli.Success("Build complete in VM '%s'", vmName)
-	cli.Info("Pull artifacts with: utm-dev utm pull \"%s\" <remote-path> ./artifacts/", vmName)
 	return nil
 }
 
@@ -314,6 +394,14 @@ func tauriBuildMobile(dir string, platform string, debug bool) error {
 	if err := ensureCargoTauri(); err != nil {
 		return err
 	}
+
+	// For Android, ensure SDK is ready
+	if platform == "android" {
+		if err := ensureAndroidSDK(); err != nil {
+			return err
+		}
+	}
+
 	cli.Info("Building Tauri app for %s...", platform)
 	args := []string{platform, "build"}
 	if debug {
@@ -332,6 +420,9 @@ var tauriRunCmd = &cobra.Command{
 	Use:   "run <platform> <app-directory>",
 	Short: "Build and run Tauri app on a platform",
 	Long: `Build and run a Tauri application on the specified platform.
+
+All dependencies are installed automatically if missing.
+Simulators/emulators are booted if not running.
 
 Platforms:
   macos          Build and open on host Mac
@@ -360,12 +451,21 @@ Examples:
 			cli.Info("Running Tauri app on macOS...")
 			return runCargoTauri(dir, "dev")
 		case "ios":
+			if _, err := ensureIOSSimulator(); err != nil {
+				return err
+			}
 			cli.Info("Running Tauri app on iOS simulator...")
 			return runCargoTauri(dir, "ios", "dev")
 		case "android":
+			if err := ensureAndroidSDK(); err != nil {
+				return err
+			}
 			cli.Info("Running Tauri app on Android emulator...")
 			return runCargoTauri(dir, "android", "dev")
 		case "windows":
+			if err := ensureVM("Windows 11"); err != nil {
+				return err
+			}
 			cli.Info("Running Tauri app in Windows UTM VM...")
 			return utm.ExecInVM("Windows 11", "cargo tauri dev")
 		default:
@@ -406,13 +506,16 @@ Examples:
 			if err := runCargoTauri(dir, "ios", "init"); err != nil {
 				return fmt.Errorf("iOS init failed: %w", err)
 			}
-			cli.Success("iOS target initialized — run with: utm-dev tauri run ios %s", dir)
+			cli.Success("iOS target initialized")
 		case "android":
+			if err := ensureAndroidSDK(); err != nil {
+				return err
+			}
 			cli.Info("Initializing Tauri Android target...")
 			if err := runCargoTauri(dir, "android", "init"); err != nil {
 				return fmt.Errorf("Android init failed: %w", err)
 			}
-			cli.Success("Android target initialized — run with: utm-dev tauri run android %s", dir)
+			cli.Success("Android target initialized")
 		default:
 			return fmt.Errorf("init only needed for mobile platforms: ios, android")
 		}
@@ -466,6 +569,9 @@ var tauriScreenshotCmd = &cobra.Command{
 	Short: "Capture a screenshot from the running app",
 	Long: `Capture a screenshot from the platform where the app is running.
 
+Automatically boots simulators/emulators if not running.
+Automatically installs tools (adb, etc.) if missing.
+
 Platforms:
   macos      Screenshot the macOS desktop (uses screencapture)
   windows    Screenshot the Windows UTM VM
@@ -513,10 +619,13 @@ func screenshotMacOS(output string) error {
 }
 
 func screenshotVM(vmName, output string) error {
-	// Remote temp path in the VM
+	// Ensure VM is running
+	if err := ensureVM(vmName); err != nil {
+		return err
+	}
+
 	remotePath := "C:\\Users\\User\\utm-dev-screenshot.png"
 
-	// PowerShell screen capture (no utm-dev needed in VM)
 	psScript := fmt.Sprintf(`powershell -Command "Add-Type -AssemblyName System.Windows.Forms; Add-Type -AssemblyName System.Drawing; $bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds; $bmp = New-Object System.Drawing.Bitmap($bounds.Width, $bounds.Height); $graphics = [System.Drawing.Graphics]::FromImage($bmp); $graphics.CopyFromScreen($bounds.Location, [System.Drawing.Point]::Empty, $bounds.Size); $bmp.Save('%s'); $graphics.Dispose(); $bmp.Dispose()"`, remotePath)
 
 	cli.Info("Capturing screenshot in VM '%s'...", vmName)
@@ -529,7 +638,6 @@ func screenshotVM(vmName, output string) error {
 		return fmt.Errorf("failed to pull screenshot: %w", err)
 	}
 
-	// Best-effort cleanup
 	_ = utm.ExecInVM(vmName, fmt.Sprintf("del %s", remotePath))
 
 	cli.Success("Screenshot saved to %s", output)
@@ -537,12 +645,10 @@ func screenshotVM(vmName, output string) error {
 }
 
 func screenshotIOS(output string, cleanBar bool) error {
-	client := simctl.New()
-	if !client.Available() {
-		return fmt.Errorf("xcrun simctl not available — install Xcode command line tools")
-	}
-	if !client.HasBooted() {
-		return fmt.Errorf("no simulator booted — boot one with: utm-dev ios boot \"iPhone 16\"")
+	// Ensure simulator is booted (idempotent)
+	client, err := ensureIOSSimulator()
+	if err != nil {
+		return err
 	}
 
 	if cleanBar {
@@ -562,12 +668,14 @@ func screenshotIOS(output string, cleanBar bool) error {
 }
 
 func screenshotAndroid(output string) error {
-	client := adb.New()
-	if !client.Available() {
-		return fmt.Errorf("adb not found — install with: utm-dev install platform-tools")
+	// Ensure adb is installed (idempotent)
+	if err := ensureAndroidSDK(); err != nil {
+		return err
 	}
+
+	client := adb.New()
 	if !client.HasDevice() {
-		return fmt.Errorf("no Android device connected — start an emulator: utm-dev android emulator start <avd>")
+		return fmt.Errorf("no Android device/emulator connected — start one with: utm-dev android emulator start <avd>")
 	}
 
 	cli.Info("Capturing Android screenshot...")
@@ -585,17 +693,13 @@ var tauriVerifyCmd = &cobra.Command{
 	Short: "Full cycle: build → run → screenshot",
 	Long: `Run the full verification cycle for a Tauri app on a platform.
 
-This command automates the complete build-run-verify workflow:
-  1. Build the app for the target platform
-  2. Launch it on the platform (simulator, emulator, or VM)
-  3. Wait for the app to start
-  4. Capture a screenshot to verify it works
+Everything is automatic — dependencies are installed, simulators booted,
+VMs started, builds run, and screenshots captured.
 
-Platforms:
-  macos      Build + open + screenshot on host Mac
-  windows    Build + run + screenshot in Windows UTM VM
-  ios        Build + install + launch + screenshot on iOS simulator
-  android    Build + install + launch + screenshot on Android emulator
+  1. Ensure all platform dependencies
+  2. Build the app
+  3. Launch it (simulator, emulator, or VM)
+  4. Capture a screenshot
 
 Output: screenshots saved to <app-dir>/.screenshots/<platform>.png
 
@@ -641,24 +745,23 @@ Examples:
 }
 
 func verifyMacOS(dir, output string, delay int, debug bool) error {
-	// Step 1: Build
+	// Step 1: Build (ensureCargoTauri called inside)
 	cli.Info("[1/3] Building for macOS...")
 	if err := tauriBuildDesktop(dir, debug); err != nil {
 		return err
 	}
 
-	// Step 2: Launch — find and open the built .app
+	// Step 2: Launch
 	cli.Info("[2/3] Launching app...")
 	appName := filepath.Base(dir)
 	appPath := filepath.Join(dir, "src-tauri", "target", "release", "bundle", "macos", appName+".app")
 	if _, err := os.Stat(appPath); os.IsNotExist(err) {
-		// Try with product name from tauri.conf.json
 		appPath = filepath.Join(dir, "src-tauri", "target", "release", "bundle", "macos")
 		cli.Warn("Looking for .app bundle in %s", appPath)
 	}
 	launchCmd := exec.Command("open", appPath)
 	if err := launchCmd.Run(); err != nil {
-		cli.Warn("Could not auto-launch: %v — take screenshot manually", err)
+		cli.Warn("Could not auto-launch: %v", err)
 	}
 
 	// Step 3: Wait + screenshot
@@ -668,7 +771,7 @@ func verifyMacOS(dir, output string, delay int, debug bool) error {
 }
 
 func verifyWindows(dir, vmName, output string, delay int, debug bool) error {
-	// Step 1: Build in VM
+	// Step 1: Build in VM (ensureVM called inside tauriBuildViaVM)
 	cli.Info("[1/3] Building in VM '%s'...", vmName)
 	if err := tauriBuildViaVM(dir, vmName, debug); err != nil {
 		return err
@@ -682,14 +785,18 @@ func verifyWindows(dir, vmName, output string, delay int, debug bool) error {
 		cli.Warn("Could not auto-launch in VM: %v", err)
 	}
 
-	// Step 3: Wait + screenshot
+	// Step 3: Wait + screenshot (ensureVM already done)
 	cli.Info("[3/3] Waiting %ds for app to start...", delay)
 	time.Sleep(time.Duration(delay) * time.Second)
 	return screenshotVM(vmName, output)
 }
 
 func verifyIOS(dir, output string, delay int, cleanBar bool, debug bool) error {
+	// Ensure deps (idempotent)
 	if err := ensureCargoTauri(); err != nil {
+		return err
+	}
+	if _, err := ensureIOSSimulator(); err != nil {
 		return err
 	}
 
@@ -699,9 +806,8 @@ func verifyIOS(dir, output string, delay int, cleanBar bool, debug bool) error {
 		return err
 	}
 
-	// Step 2: Run on simulator — cargo tauri ios dev builds and launches
+	// Step 2: Run on simulator (blocks)
 	cli.Info("[2/3] Installing and launching on iOS simulator...")
-	// Use a goroutine to run cargo tauri ios dev (it blocks), then screenshot after delay
 	errCh := make(chan error, 1)
 	go func() {
 		errCh <- runCargoTauri(dir, "ios", "dev")
@@ -717,12 +823,15 @@ func verifyIOS(dir, output string, delay int, cleanBar bool, debug bool) error {
 
 	cli.Success("Verification complete — screenshot: %s", output)
 	cli.Info("iOS dev server still running (Ctrl+C to stop)")
-	// Wait for the dev server to be killed
 	return <-errCh
 }
 
 func verifyAndroid(dir, output string, delay int, debug bool) error {
+	// Ensure deps (idempotent)
 	if err := ensureCargoTauri(); err != nil {
+		return err
+	}
+	if err := ensureAndroidSDK(); err != nil {
 		return err
 	}
 
@@ -732,7 +841,7 @@ func verifyAndroid(dir, output string, delay int, debug bool) error {
 		return err
 	}
 
-	// Step 2: Run on emulator
+	// Step 2: Run on emulator (blocks)
 	cli.Info("[2/3] Installing and launching on Android emulator...")
 	errCh := make(chan error, 1)
 	go func() {

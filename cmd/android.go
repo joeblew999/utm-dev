@@ -5,13 +5,48 @@ import (
 	"os"
 
 	"github.com/joeblew999/utm-dev/pkg/adb"
+	"github.com/joeblew999/utm-dev/pkg/cli"
+	"github.com/joeblew999/utm-dev/pkg/utils"
 	"github.com/spf13/cobra"
 )
 
 func newADBClient() (*adb.Client, error) {
 	client := adb.New()
 	if !client.Available() {
-		return nil, fmt.Errorf("adb not found at %s\nInstall with: utm-dev install platform-tools", client.ADBPath())
+		// Auto-install platform-tools (idempotent)
+		cli.Info("adb not found, installing platform-tools...")
+		if err := ensureAndroidSDK(); err != nil {
+			return nil, fmt.Errorf("failed to install platform-tools: %w", err)
+		}
+		// Re-check after install
+		client = adb.New()
+		if !client.Available() {
+			return nil, fmt.Errorf("adb still not found at %s after install", client.ADBPath())
+		}
+	}
+	return client, nil
+}
+
+// ensureEmulator ensures adb + emulator are installed. Idempotent.
+func ensureEmulator() (*adb.Client, error) {
+	if err := ensureAndroidSDK(); err != nil {
+		return nil, err
+	}
+	client := adb.New()
+	if !client.EmulatorAvailable() {
+		cli.Info("Emulator not found, installing...")
+		cache, err := utils.NewCacheWithDirectories()
+		if err != nil {
+			return nil, fmt.Errorf("failed to create cache: %w", err)
+		}
+		if err := installSdk("emulator", cache); err != nil {
+			return nil, fmt.Errorf("failed to install emulator: %w", err)
+		}
+		cli.Success("Emulator installed")
+		client = adb.New()
+		if !client.EmulatorAvailable() {
+			return nil, fmt.Errorf("emulator still not found at %s after install", client.EmulatorPath())
+		}
 	}
 	return client, nil
 }
@@ -174,9 +209,9 @@ var androidEmulatorListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List available Android emulators (AVDs)",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client := adb.New()
-		if !client.EmulatorAvailable() {
-			return fmt.Errorf("emulator not found at %s\nInstall with: utm-dev install emulator", client.EmulatorPath())
+		client, err := ensureEmulator()
+		if err != nil {
+			return err
 		}
 		avds, err := client.EmulatorList()
 		if err != nil {
@@ -200,9 +235,9 @@ var androidEmulatorStartCmd = &cobra.Command{
 	Short: "Start an Android emulator",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client := adb.New()
-		if !client.EmulatorAvailable() {
-			return fmt.Errorf("emulator not found at %s\nInstall with: utm-dev install emulator", client.EmulatorPath())
+		client, err := ensureEmulator()
+		if err != nil {
+			return err
 		}
 		avdName := args[0]
 		fmt.Printf("Starting emulator %s...\n", avdName)
