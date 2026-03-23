@@ -1,6 +1,6 @@
 # utm-dev
 
-CLI for cross-platform build tooling: Tauri desktop apps (tested via UTM VMs on Apple Silicon) + Gio mobile apps (iOS/Android on host Mac). Manages SDK installation, device/simulator control, and packaging.
+CLI for cross-platform build tooling: Tauri desktop apps (via UTM VMs on Apple Silicon) + Gio mobile apps (iOS/Android on host Mac). Manages SDK installation, device/simulator control, and packaging so devs don't pollute their OS.
 
 ![Status](https://img.shields.io/badge/status-alpha-orange)
 ![Go Version](https://img.shields.io/badge/go-1.25%2B-blue)
@@ -8,33 +8,49 @@ CLI for cross-platform build tooling: Tauri desktop apps (tested via UTM VMs on 
 ## Install
 
 ```bash
+# Via mise (recommended — used by plat-trunk)
+# In your mise.toml:
+"github:joeblew999/utm-dev" = "latest"
+
 # From source
 go build -o utm-dev .
+```
 
-# Or download from releases
-# https://github.com/joeblew999/utm-dev/releases/latest
+## Quick start
+
+```bash
+# Build a Tauri app for macOS
+utm-dev tauri build macos examples/tauri-basic
+
+# Build a Gio app for Android
+utm-dev gio build android examples/hybrid-dashboard
+
+# Build for Windows via UTM VM (from Mac)
+utm-dev utm up windows-11-arm                              # install + start + wait
+utm-dev utm exec "Windows 11 ARM" whoami                   # run any command
+utm-dev utm build "Windows 11 ARM" windows examples/tauri-basic
+utm-dev utm down "Windows 11 ARM"                          # stop VM
 ```
 
 ## Tauri apps (desktop + mobile)
 
-Build and run Tauri v2 apps across all platforms.
-
 ```bash
-# Dev mode with hot reload
-utm-dev tauri dev examples/tauri-basic
+# Setup (installs Rust, cargo-tauri, Android SDK/NDK — idempotent)
+utm-dev tauri setup
 
 # Desktop builds
-utm-dev tauri build macos examples/tauri-basic      # .app + .dmg on host
-utm-dev tauri build windows examples/tauri-basic     # .msi + .exe via UTM VM
-utm-dev tauri build linux examples/tauri-basic       # .deb via UTM VM
+utm-dev tauri build macos examples/tauri-basic        # .app + .dmg
+utm-dev tauri build windows examples/tauri-basic      # via UTM VM
 
 # Mobile builds (on host Mac)
-utm-dev tauri init ios examples/tauri-basic           # One-time setup
-utm-dev tauri build ios examples/tauri-basic
-utm-dev tauri run ios examples/tauri-basic            # Run on simulator
-utm-dev tauri init android examples/tauri-basic
-utm-dev tauri build android examples/tauri-basic
-utm-dev tauri run android examples/tauri-basic        # Run on emulator
+utm-dev tauri init android examples/tauri-basic       # one-time scaffolding
+utm-dev tauri build android examples/tauri-basic      # APK/AAB
+utm-dev tauri init ios examples/tauri-basic
+utm-dev tauri build ios examples/tauri-basic           # sim fallback if no cert
+utm-dev tauri run ios examples/tauri-basic             # launch in simulator
+
+# Dev mode
+utm-dev tauri dev examples/tauri-basic
 
 # Icons
 utm-dev tauri icons examples/tauri-basic
@@ -42,44 +58,75 @@ utm-dev tauri icons examples/tauri-basic
 
 ## Gio apps (desktop, mobile, web)
 
-Build Gio/webview hybrid apps for all platforms.
-
 ```bash
 utm-dev gio build android examples/hybrid-dashboard
 utm-dev gio build ios examples/hybrid-dashboard
-utm-dev gio run android examples/hybrid-dashboard    # Build + install + launch
+utm-dev gio build macos examples/hybrid-dashboard
+utm-dev gio run android examples/hybrid-dashboard      # build + install + launch
 utm-dev gio run ios-simulator examples/hybrid-dashboard
-utm-dev gio bundle macos examples/hybrid-dashboard   # Signed .app bundle
-utm-dev gio package android examples/hybrid-dashboard
+utm-dev gio bundle macos examples/hybrid-dashboard     # signed .app bundle
 ```
 
 ## UTM virtual machines
 
-Automate Windows 11 ARM VMs on Apple Silicon for desktop cross-platform testing.
+Control Windows 11 ARM VMs on Apple Silicon. Uses WinRM (pre-installed in vagrant boxes) for reliable command execution.
 
 ```bash
-utm-dev utm install windows-11      # Download + import pre-built VM
-utm-dev utm start "Windows 11"      # Start VM
-utm-dev utm exec "Windows 11" -- whoami
-utm-dev utm stop "Windows 11"
+# Full lifecycle (idempotent)
+utm-dev utm up windows-11-arm         # install UTM + download VM + start + wait for WinRM
+utm-dev utm exec "Windows 11 ARM" whoami
+utm-dev utm exec "Windows 11 ARM" powershell -Command "Get-Date"
+utm-dev utm down "Windows 11 ARM"
+
+# Individual commands
+utm-dev utm install                   # install UTM app
+utm-dev utm install windows-11-arm    # download + import pre-built VM
+utm-dev utm gallery                   # list available VMs
+utm-dev utm start "Windows 11 ARM"
+utm-dev utm status "Windows 11 ARM"
+utm-dev utm stop "Windows 11 ARM"
+
+# File transfer
+utm-dev utm push "Windows 11 ARM" ./local.txt "C:\Users\vagrant\local.txt"
+utm-dev utm pull "Windows 11 ARM" "C:\Users\vagrant\out.txt" ./out.txt
+
+# Build inside VM
+utm-dev utm build "Windows 11 ARM" windows examples/tauri-basic
+
+# Network
+utm-dev utm fix-network "Windows 11 ARM"   # setup RDP + WinRM port forwards
+utm-dev utm doctor                          # check UTM installation
 ```
+
+**VM credentials:** vagrant / vagrant
+**Ports:** RDP localhost:3389, WinRM localhost:5985
 
 ## SDK management
 
-Install Android NDK, platform-tools, etc. without polluting your OS.
+```bash
+utm-dev install android-sdk           # Android SDK + build-tools
+utm-dev install ndk                   # Android NDK 27
+utm-dev list                          # show available SDKs
+```
+
+## Device management
 
 ```bash
-utm-dev install ndk-bundle          # Android NDK
-utm-dev install android-sdk         # Android SDK
-utm-dev list                        # Show available SDKs
+# Android
+utm-dev android devices               # list connected devices
+utm-dev android emulator              # launch emulator
+
+# iOS
+utm-dev ios devices                   # list simulators + devices
+utm-dev ios boot                      # boot default simulator
 ```
 
 ## Self-management
 
 ```bash
-utm-dev self version | jq .         # Show version (JSON)
-utm-dev self build                  # Cross-compile utm-dev
-utm-dev self upgrade                # Update to latest release
+utm-dev self version | jq .           # version info (JSON)
+utm-dev self build                    # cross-compile utm-dev
+utm-dev self upgrade                  # update to latest release
 ```
 
 ## Examples
@@ -96,16 +143,19 @@ utm-dev self upgrade                # Update to latest release
 | Platform | Tauri | Gio | How |
 |----------|-------|-----|-----|
 | macOS | Tested | Tested | Host Mac |
-| iOS | Experimental | Tested | Host Mac (Xcode) |
-| Android | Experimental | Tested | Host Mac (NDK) |
-| Windows | Tested | Cross-compile | UTM VM |
+| iOS | Sim only* | Tested | Host Mac (Xcode) |
+| Android | Tested | Tested | Host Mac (NDK) |
+| Windows | Tested | Cross-compile | UTM VM (WinRM) |
 | Linux | Planned | Cross-compile | UTM VM |
+
+*iOS device builds require a signing cert. Sim builds work without one. Tauri iOS sim blocked on upstream cargo-mobile2 Xcode 26.x fix.
 
 ## Development
 
 ```bash
 mise run build    # go build -o .bin/utm-dev .
 mise run test     # go test ./...
+mise run ci       # test + self build --obfuscate
 ```
 
 ## Gio version pinning
