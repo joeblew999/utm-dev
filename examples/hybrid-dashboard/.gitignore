@@ -1,16 +1,14 @@
 # Build artifacts
 .bin/
 .build/
-
-# Compiled binaries (go build output)
-main
-gio-plugin-webviewer
-
 *.exe
 *.app
 *.apk
 *.ipa
 *.msix
+
+# Compiled binaries (go build output)
+hybrid-dashboard
 
 # Generated icons and assets
 icon.png

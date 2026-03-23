@@ -1,16 +1,15 @@
 # Build artifacts
 .bin/
 .build/
-
-# Compiled binaries (go build output)
-main
-gio-plugin-webviewer
-
 *.exe
 *.app
 *.apk
 *.ipa
 *.msix
+
+# Compiled binaries (go build output)
+example-gio-app
+gio-basic
 
 # Generated icons and assets
 icon.png
