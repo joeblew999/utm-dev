@@ -47,9 +47,36 @@ func ensureRust() error {
 	return nil
 }
 
-// ensureCargoTauri ensures Rust + cargo-tauri are installed. Idempotent.
+// ensureMSVC installs Visual Studio Build Tools on Windows if link.exe is missing. Idempotent.
+func ensureMSVC() error {
+	if runtime.GOOS != "windows" {
+		return nil
+	}
+	// Check if vswhere exists (VS Build Tools installed)
+	vswhere := `C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe`
+	if _, err := os.Stat(vswhere); err == nil {
+		return nil
+	}
+	cli.Info("Installing Visual Studio Build Tools (C++ workload)...")
+	cli.Info("This is a one-time ~2GB download — please be patient")
+	cmd := exec.Command("powershell", "-Command",
+		`Invoke-WebRequest -Uri "https://aka.ms/vs/17/release/vs_BuildTools.exe" -OutFile "$env:TEMP\vs_BuildTools.exe"; `+
+			`Start-Process -Wait -FilePath "$env:TEMP\vs_BuildTools.exe" -ArgumentList "--quiet","--wait","--norestart","--nocache","--add","Microsoft.VisualStudio.Workload.VCTools","--includeRecommended"`)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to install VS Build Tools: %w", err)
+	}
+	cli.Success("Visual Studio Build Tools installed")
+	return nil
+}
+
+// ensureCargoTauri ensures Rust + MSVC (Windows) + cargo-tauri are installed. Idempotent.
 func ensureCargoTauri() error {
 	if err := ensureRust(); err != nil {
+		return err
+	}
+	if err := ensureMSVC(); err != nil {
 		return err
 	}
 	cmd := exec.Command("cargo", "tauri", "--version")
