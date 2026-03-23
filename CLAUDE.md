@@ -12,23 +12,32 @@ mise run ci       # test + self build --obfuscate
 mise run release  # go run . self release minor
 ```
 
-## Two systems — don't mix
+## Three systems — don't mix
 
-- `pkg/self/` + `cmd/self.go` — builds/upgrades utm-dev itself (JSON output only)
-- Everything else — builds user Gio/Tauri apps and manages UTM VMs
+- `utm-dev tauri` — Tauri apps (Rust, desktop + mobile)
+- `utm-dev gio` — Gio apps (Go, desktop + mobile + web)
+- `utm-dev self` — builds/upgrades utm-dev itself (JSON output only)
 
 ## Key commands
 
 ```bash
 # Tauri (desktop + mobile)
-utm-dev tauri dev|build|run|init <platform> <dir>
-utm-dev tauri build windows <dir>   # builds inside UTM VM
+utm-dev tauri setup                              # install everything
+utm-dev tauri build macos|windows|ios|android <dir>
+utm-dev tauri verify ios <dir>                   # build + launch + screenshot
 
 # Gio (mobile)
-utm-dev build macos|ios|android|windows <dir>
+utm-dev gio build android|ios|macos <dir>
+utm-dev gio run android|ios-simulator <dir>
+utm-dev gio bundle macos <dir>
 
 # UTM VMs
 utm-dev utm install|start|exec|stop "Windows 11"
+
+# Utilities
+utm-dev android devices|emulator|screenshot
+utm-dev ios devices|boot|screenshot
+utm-dev config
 
 # Self
 utm-dev self version | jq .

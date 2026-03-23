@@ -161,8 +161,5 @@ func packageWindows(appDir, appName string) error {
 }
 
 func init() {
-	// Group for help organization
-	packageCmd.GroupID = "build"
-
-	rootCmd.AddCommand(packageCmd)
+	gioCmd.AddCommand(packageCmd)
 }

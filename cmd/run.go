@@ -169,8 +169,5 @@ func init() {
 	runCmd.Flags().Bool("skip-icons", false, "Skip icon generation")
 	runCmd.Flags().String("schemes", "", "Deep linking URI schemes")
 
-	// Group for help organization
-	runCmd.GroupID = "build"
-
-	rootCmd.AddCommand(runCmd)
+	gioCmd.AddCommand(runCmd)
 }

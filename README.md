@@ -40,16 +40,17 @@ utm-dev tauri run android examples/tauri-basic        # Run on emulator
 utm-dev tauri icons examples/tauri-basic
 ```
 
-## Gio apps (mobile)
+## Gio apps (desktop, mobile, web)
 
-Build Gio/webview hybrid apps for iOS and Android.
+Build Gio/webview hybrid apps for all platforms.
 
 ```bash
-utm-dev build android examples/hybrid-dashboard
-utm-dev build ios examples/hybrid-dashboard
-utm-dev run android examples/hybrid-dashboard    # Build + install + launch
-utm-dev run ios-simulator examples/hybrid-dashboard
-utm-dev icons macos examples/hybrid-dashboard
+utm-dev gio build android examples/hybrid-dashboard
+utm-dev gio build ios examples/hybrid-dashboard
+utm-dev gio run android examples/hybrid-dashboard    # Build + install + launch
+utm-dev gio run ios-simulator examples/hybrid-dashboard
+utm-dev gio bundle macos examples/hybrid-dashboard   # Signed .app bundle
+utm-dev gio package android examples/hybrid-dashboard
 ```
 
 ## UTM virtual machines

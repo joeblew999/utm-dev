@@ -16,21 +16,22 @@ var rootCmd = &cobra.Command{
 Everything is idempotent. Say what you want, it installs what's missing,
 boots what's needed, and builds.
 
-QUICK START:
+TAURI (desktop + mobile, Rust):
   utm-dev tauri setup                              One command, everything installed
   utm-dev tauri build macos examples/tauri-basic    Build macOS .app/.dmg
   utm-dev tauri build windows examples/tauri-basic  Build in Windows UTM VM
   utm-dev tauri verify ios examples/tauri-basic     Build + launch + screenshot
 
-GIO (mobile):
-  utm-dev build android examples/hybrid-dashboard  Build APK
-  utm-dev run android examples/hybrid-dashboard    Build + install + launch
+GIO (desktop + mobile + web, Go):
+  utm-dev gio build android examples/hybrid-dashboard
+  utm-dev gio run ios-simulator examples/hybrid-dashboard
+  utm-dev gio bundle macos examples/hybrid-dashboard
 
-UTILITIES (for debugging / manual control):
-  utm-dev utm start "Windows 11"                   Start a VM manually
-  utm-dev android devices                          List connected devices
+UTILITIES (debugging / manual control):
+  utm-dev utm start "Windows 11"                   Manage VMs
+  utm-dev android devices                          List devices
   utm-dev ios devices                              List simulators
-  utm-dev config                                   Show paths and env`,
+  utm-dev config                                   Show paths`,
 }
 
 func Execute() {

@@ -644,23 +644,18 @@ func init() {
 	buildCmd.Flags().String("queries", "", "Android app package queries (comma-separated, e.g., 'com.google.android.apps.maps')")
 	buildCmd.Flags().String("signkey", "", "Signing key: keystore path (Android), Keychain key name (macOS), or provisioning profile (iOS/macOS)")
 
-	// Command group for help organization
-	buildCmd.GroupID = "build"
-
 	// Tab completion for platform argument
 	buildCmd.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		if len(args) == 0 {
-			// First arg: platform
 			return getPlatformCompletion(cmd, args, toComplete)
 		}
 		if len(args) == 1 {
-			// Second arg: app directory
 			return getExampleCompletion(cmd, args, toComplete)
 		}
 		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
 
-	rootCmd.AddCommand(buildCmd)
+	gioCmd.AddCommand(buildCmd)
 }
 
 var skipIcons bool
