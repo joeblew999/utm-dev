@@ -1,5 +1,3 @@
-use tauri::Manager;
-
 #[tauri::command]
 fn greet(name: &str) -> String {
     format!("Hello, {}! From Tauri.", name)
@@ -9,9 +7,12 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![greet])
-        .setup(|app| {
+        .setup(|_app| {
             #[cfg(debug_assertions)]
-            app.get_webview_window("main").unwrap().open_devtools();
+            {
+                use tauri::Manager;
+                _app.get_webview_window("main").unwrap().open_devtools();
+            }
             Ok(())
         })
         .run(tauri::generate_context!())
