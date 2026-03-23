@@ -1,9 +1,29 @@
 # utm-dev
 
-CLI for cross-platform build tooling: Tauri desktop apps (via UTM VMs on Apple Silicon) + Gio mobile apps (iOS/Android on host Mac). Manages SDK installation, device/simulator control, and packaging so devs don't pollute their OS.
+Cross-platform build tooling that actually works.
 
 ![Status](https://img.shields.io/badge/status-alpha-orange)
 ![Go Version](https://img.shields.io/badge/go-1.25%2B-blue)
+
+## Why
+
+Building cross-platform apps is a nightmare. Every dev hits the same wall:
+
+- **Android**: download Android Studio, install 5 SDKs, set 8 environment variables, pray Gradle finds the NDK
+- **iOS**: Xcode works but only on Mac, simulator setup is manual, signing is confusing
+- **Windows**: if you're on Mac, you can't build natively. Cross-compilation breaks with CGO. VMs are manual and painful
+- **Linux**: same VM problem as Windows
+
+Every project re-invents this setup. Every new team member spends a day fighting toolchains. CI configs are 200 lines of environment setup.
+
+**utm-dev fixes this.** One command installs everything. One command builds for any platform. SDKs go in an isolated directory (not polluting your system). Windows/Linux builds run in automated UTM VMs on Apple Silicon. Everything is idempotent — run it twice, nothing breaks.
+
+```bash
+utm-dev tauri setup                    # installs Rust, Android SDK, NDK — done
+utm-dev tauri build android myapp      # just works
+utm-dev utm up windows-11-arm          # Windows VM, fully automated
+utm-dev utm exec "Windows 11 ARM" utm-dev tauri build windows myapp
+```
 
 ## Install
 
