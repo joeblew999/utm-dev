@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 
 	"github.com/joeblew999/utm-dev/pkg/buildcache"
+	"github.com/joeblew999/utm-dev/pkg/cli"
 	"github.com/joeblew999/utm-dev/pkg/config"
 	"github.com/joeblew999/utm-dev/pkg/constants"
 	"github.com/joeblew999/utm-dev/pkg/icons"
-	"github.com/joeblew999/utm-dev/pkg/installer"
 	"github.com/joeblew999/utm-dev/pkg/project"
 	"github.com/joeblew999/utm-dev/pkg/utils"
 	"github.com/spf13/cobra"
@@ -140,11 +140,26 @@ Examples:
 	},
 }
 
-// ensureGogio checks that gogio is available and provides install instructions if not.
+// ensureGogio installs gogio if not available. Idempotent.
+// Requires Go to already be installed (we don't install Go for people).
 func ensureGogio() error {
-	if _, err := exec.LookPath("gogio"); err != nil {
-		return fmt.Errorf("gogio not found in PATH\n\nInstall it with:\n  go install gioui.org/cmd/gogio@latest\n\nThen ensure $GOPATH/bin (or $GOBIN) is in your PATH")
+	if _, err := exec.LookPath("gogio"); err == nil {
+		return nil
 	}
+	if _, err := exec.LookPath("go"); err != nil {
+		return fmt.Errorf("Go not found in PATH — install Go first: https://go.dev/dl/")
+	}
+	cli.Info("Installing gogio...")
+	install := exec.Command("go", "install", "gioui.org/cmd/gogio@latest")
+	install.Stdout = os.Stdout
+	install.Stderr = os.Stderr
+	if err := install.Run(); err != nil {
+		return fmt.Errorf("failed to install gogio: %w", err)
+	}
+	if _, err := exec.LookPath("gogio"); err != nil {
+		return fmt.Errorf("gogio installed but not in PATH — ensure $GOPATH/bin is in your PATH")
+	}
+	cli.Success("gogio installed")
 	return nil
 }
 
@@ -275,19 +290,13 @@ func buildAndroid(proj *project.GioProject, platform string, opts BuildOptions) 
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
-	// Use OS-specific SDK directory only
-	sdkRoot := config.GetSDKDir()
-
-	// Check for required Android components
-	ndkPath := filepath.Join(sdkRoot, "ndk-bundle")
-	if _, err := os.Stat(ndkPath); os.IsNotExist(err) {
-		fmt.Printf("⚠️  Android NDK not found. Installing...\n")
-		// Auto-install NDK
-		if err := installNDK(sdkRoot); err != nil {
-			cache.RecordBuild(proj.Name, platform, proj.RootDir, apkPath, false)
-			return fmt.Errorf("failed to install NDK: %w", err)
-		}
+	// Ensure Android SDK (NDK + platform-tools) — idempotent
+	if err := ensureAndroidSDK(); err != nil {
+		cache.RecordBuild(proj.Name, platform, proj.RootDir, apkPath, false)
+		return fmt.Errorf("failed to set up Android SDK: %w", err)
 	}
+	sdkRoot := config.GetSDKDir()
+	ndkPath := filepath.Join(sdkRoot, "ndk-bundle")
 
 	// Set Android environment variables with absolute paths
 	env := os.Environ()
@@ -551,23 +560,14 @@ func buildLinux(proj *project.GioProject, platform string, opts BuildOptions) er
 	return nil
 }
 
-// installNDK installs the Android NDK if not present
+// installNDK installs the Android NDK if not present. Uses the SDK catalog.
 func installNDK(sdkRoot string) error {
-	fmt.Printf("📦 Installing Android NDK...\n")
-	
-	// Use the installer package to install NDK
-	ndkSDK := &installer.SDK{
-		Name:        "Android NDK",
-		Version:     "latest",
-		InstallPath: "ndk-bundle",
-	}
-	
-	cache, err := installer.NewCache(filepath.Join(config.GetCacheDir(), "cache.json"))
+	cli.Info("Installing Android NDK...")
+	cache, err := utils.NewCacheWithDirectories()
 	if err != nil {
 		return fmt.Errorf("failed to create cache: %w", err)
 	}
-	
-	return installer.Install(ndkSDK, cache)
+	return installSdk("ndk-bundle", cache)
 }
 
 func buildAll(proj *project.GioProject, opts BuildOptions) error {
