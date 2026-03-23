@@ -1,43 +1,44 @@
 # tauri-basic
 
-Minimal Tauri v2 example with embedded frontend. Builds and runs on iOS Simulator without a signing cert.
+Minimal Tauri v2 app with embedded frontend. Builds for iOS Simulator without a signing cert, macOS desktop, and Windows via UTM VM.
 
-## iOS Simulator (no cert needed)
+## Running
 
-```bash
-# Build — auto-detects no cert, targets simulator
-utm-dev tauri build ios .
-
-# Install on booted simulator
-utm-dev ios install src-tauri/gen/apple/build/arm64-sim/tauri-basic.app
-
-# Launch
-utm-dev ios launch dev.example.tauri-basic
-
-# Screenshot
-utm-dev ios screenshot screenshot.png
-```
-
-## Desktop
+From the project root (with utm-dev built):
 
 ```bash
-# Dev mode (hot reload)
-utm-dev tauri dev .
+# iOS simulator (no signing cert needed)
+.bin/utm-dev tauri build ios examples/tauri-basic
+.bin/utm-dev ios install examples/tauri-basic/src-tauri/gen/apple/build/arm64-sim/tauri-basic.app
+.bin/utm-dev ios launch dev.example.tauri-basic
 
-# Build macOS bundle
-utm-dev tauri build macos .
+# macOS desktop
+.bin/utm-dev tauri build macos examples/tauri-basic
 
 # Windows via UTM VM
+.bin/utm-dev tauri build windows examples/tauri-basic
+```
+
+From this directory (with utm-dev installed via plat-trunk):
+
+```bash
+utm-dev tauri build ios .
+utm-dev tauri build macos .
 utm-dev tauri build windows .
 ```
 
-## Prerequisites
+## How iOS sim build works
 
-Installed automatically by `utm-dev tauri setup`:
-- Rust + `cargo-tauri`
-- Xcode + iOS Simulator runtime
-- CocoaPods (iOS)
-- `xcodegen` (iOS)
+When no `APPLE_DEVELOPMENT_TEAM` env var is set and no `developmentTeam` is in `tauri.conf.json`, `utm-dev tauri build ios` automatically adds `--target aarch64-sim` to build for the iOS Simulator instead of a physical device.
+
+## Project structure
+
+```
+ui/index.html              Frontend (embedded into binary at build time)
+src-tauri/tauri.conf.json   Tauri config (frontendDist, windows, bundle)
+src-tauri/src/lib.rs        Rust backend with greet command
+src-tauri/src/main.rs       Desktop entry point
+```
 
 ## Screenshot
 
