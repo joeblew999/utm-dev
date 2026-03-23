@@ -1,36 +1,44 @@
 # tauri-basic
 
-Minimal Tauri v2 example. Opens a webview pointing at `http://localhost:3000`
-and exposes a `greet` command from Rust to the frontend.
+Minimal Tauri v2 example with embedded frontend. Builds and runs on iOS Simulator without a signing cert.
 
-## Usage
+## iOS Simulator (no cert needed)
 
-```sh
-# Dev mode (needs a frontend running on :3000)
-mise run dev
+```bash
+# Build — auto-detects no cert, targets simulator
+utm-dev tauri build ios .
 
-# Build desktop bundle
-mise run build          # → .app/.dmg on macOS, .msi/.exe on Windows
+# Install on booted simulator
+utm-dev ios install src-tauri/gen/apple/build/arm64-sim/tauri-basic.app
 
-# iOS (macOS only)
-mise run ios:init       # first time only
-mise run ios            # run on simulator
+# Launch
+utm-dev ios launch dev.example.tauri-basic
 
-# Windows via UTM
-mise run windows        # build + run in Windows 11 VM
+# Screenshot
+utm-dev ios screenshot screenshot.png
+```
+
+## Desktop
+
+```bash
+# Dev mode (hot reload)
+utm-dev tauri dev .
+
+# Build macOS bundle
+utm-dev tauri build macos .
+
+# Windows via UTM VM
+utm-dev tauri build windows .
 ```
 
 ## Prerequisites
 
-Installed automatically by the parent repo's `mise install`:
-- `cargo:tauri-cli@2` — macOS + Windows
-- `xcodegen` — macOS only (iOS target)
-- `ruby` + CocoaPods — macOS only (iOS target)
+Installed automatically by `utm-dev tauri setup`:
+- Rust + `cargo-tauri`
+- Xcode + iOS Simulator runtime
+- CocoaPods (iOS)
+- `xcodegen` (iOS)
 
-## Icons
+## Screenshot
 
-Drop a square PNG at `src-tauri/icons/icon-source.png` then:
-
-```sh
-mise run icons
-```
+![iOS Simulator](.screenshots/ios-simulator.png)
