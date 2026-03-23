@@ -317,29 +317,13 @@ Examples:
 
   # Check config
   utm-dev utm exec "Windows 11" -- config`,
-	Args: cobra.MinimumNArgs(1),
+	Args: cobra.MinimumNArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 2 {
-			return fmt.Errorf("usage: utm-dev utm exec <vm-name> -- <command> [args...]")
-		}
-
 		vmName := args[0]
 
-		// Find the -- separator
-		dashIndex := -1
-		for i, arg := range args {
-			if arg == "--" {
-				dashIndex = i
-				break
-			}
-		}
-
-		if dashIndex == -1 || dashIndex == len(args)-1 {
-			return fmt.Errorf("missing command after '--'")
-		}
-
-		// Build utm-dev command
-		goupCommand := append([]string{"utm-dev"}, args[dashIndex+1:]...)
+		// Cobra strips '--', so everything after vm-name is the command.
+		// Prefix with utm-dev automatically.
+		goupCommand := append([]string{"utm-dev"}, args[1:]...)
 		cmdStr := strings.Join(goupCommand, " ")
 
 		fmt.Printf("Executing in VM '%s': %s\n\n", vmName, cmdStr)
