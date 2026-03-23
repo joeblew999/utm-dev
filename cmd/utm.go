@@ -302,29 +302,21 @@ var utmIPCmd = &cobra.Command{
 }
 
 var utmExecCmd = &cobra.Command{
-	Use:   "exec <vm-name> -- <command> [args...]",
-	Short: "Execute a utm-dev command in the VM",
-	Long: `Execute a utm-dev command in the VM.
-
-The command after '--' will be prefixed with 'utm-dev' automatically.
+	Use:   "exec <vm-name> <command> [args...]",
+	Short: "Execute a command in the VM",
+	Long: `Execute an arbitrary command in the VM via WinRM (Windows) or QEMU guest agent.
 
 Examples:
-  # Build for Windows
-  utm-dev utm exec "Windows 11 ARM" -- build windows examples/hybrid-dashboard
+  # Run any command
+  utm-dev utm exec "Windows 11 ARM" whoami
+  utm-dev utm exec "Windows 11 ARM" powershell -Command "Get-Date"
 
-  # Generate icons
-  utm-dev utm exec "Windows 11 ARM" -- icons examples/hybrid-dashboard
-
-  # Check config
-  utm-dev utm exec "Windows 11 ARM" -- config`,
+  # Run utm-dev inside the VM
+  utm-dev utm exec "Windows 11 ARM" utm-dev build windows examples/hybrid-dashboard`,
 	Args: cobra.MinimumNArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		vmName := args[0]
-
-		// Cobra strips '--', so everything after vm-name is the command.
-		// Prefix with utm-dev automatically.
-		goupCommand := append([]string{"utm-dev"}, args[1:]...)
-		cmdStr := strings.Join(goupCommand, " ")
+		cmdStr := strings.Join(args[1:], " ")
 
 		fmt.Printf("Executing in VM '%s': %s\n\n", vmName, cmdStr)
 

@@ -258,12 +258,20 @@ func ensureVM(galleryKey string) error {
 
 	// Ensure VM is started
 	if status != "started" {
+		// Set up port forwarding while VM is stopped (idempotent)
+		if vm.OS == "windows" {
+			cli.Info("Ensuring WinRM/RDP port forwarding...")
+			if err := utm.SetupWindowsPortForwards(vmName); err != nil {
+				cli.Warn("Port forwarding setup issue: %v (may already be configured)", err)
+			}
+		}
+
 		cli.Info("Starting VM '%s'...", vmName)
 		if err := utm.StartVM(vmName); err != nil {
 			return fmt.Errorf("failed to start VM: %w", err)
 		}
 		if vm.OS == "windows" {
-			cli.Info("Waiting for VM to boot...")
+			cli.Info("Waiting for Windows to boot (WinRM)...")
 			if err := utm.WaitForWindows("localhost", 5*time.Minute); err != nil {
 				cli.Warn("VM may still be booting (WinRM not responding) — continuing...")
 			}
