@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	"github.com/joeblew999/utm-dev/pkg/adb"
@@ -29,7 +30,14 @@ func ensureRust() error {
 		return nil
 	}
 	cli.Info("Installing Rust via rustup...")
-	cmd := exec.Command("sh", "-c", "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y")
+	var cmd *exec.Cmd
+	if runtime.GOOS == "windows" {
+		// Windows: download and run rustup-init.exe
+		cmd = exec.Command("powershell", "-Command",
+			`Invoke-WebRequest -Uri "https://win.rustup.rs/aarch64" -OutFile "$env:TEMP\rustup-init.exe"; & "$env:TEMP\rustup-init.exe" -y`)
+	} else {
+		cmd = exec.Command("sh", "-c", "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y")
+	}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
@@ -477,19 +485,84 @@ func tauriBuildViaVM(dir string, vmName string, debug bool) error {
 		return err
 	}
 
-	// Build inside VM
+	// Bootstrap utm-dev inside VM (idempotent)
+	if err := ensureVMToolchain(vmName); err != nil {
+		return err
+	}
+
+	// Build inside VM using utm-dev (which handles cargo-tauri setup)
 	cli.Info("Building Tauri app for %s in VM '%s'...", vmName, vmName)
-	buildCmd := fmt.Sprintf("cd %s && cargo tauri build", appName)
+	buildCmd := fmt.Sprintf("cd %s && utm-dev tauri build windows .", appName)
 	if debug {
-		buildCmd = fmt.Sprintf("cd %s && cargo tauri build --debug", appName)
+		buildCmd = fmt.Sprintf("cd %s && utm-dev tauri build windows . --debug", appName)
 	}
 
 	if err := utm.ExecInVM(vmName, buildCmd); err != nil {
-		return fmt.Errorf("VM build failed: %w\n\nEnsure Rust + cargo-tauri are installed in the VM\nand the project is synced (shared folder or git clone)", err)
+		return fmt.Errorf("VM build failed: %w", err)
 	}
 
 	cli.Success("Build complete in VM '%s'", vmName)
 	return nil
+}
+
+// ensureVMToolchain ensures utm-dev is installed inside the VM.
+// utm-dev inside the VM handles installing Rust, cargo-tauri, etc. idempotently.
+func ensureVMToolchain(vmName string) error {
+	// Check if utm-dev is already available in the VM
+	if err := utm.ExecInVM(vmName, "utm-dev self version"); err == nil {
+		return nil // Already installed
+	}
+
+	cli.Info("Bootstrapping utm-dev inside VM '%s'...", vmName)
+
+	// Cross-compile utm-dev for Windows ARM
+	windowsBinary, err := crossCompileForVM()
+	if err != nil {
+		return fmt.Errorf("failed to cross-compile utm-dev: %w", err)
+	}
+
+	// Push binary into VM
+	remotePath := `C:\Users\User\utm-dev.exe`
+	cli.Info("Pushing utm-dev to VM...")
+	if err := utm.PushFile(vmName, windowsBinary, remotePath); err != nil {
+		return fmt.Errorf("failed to push utm-dev to VM: %w", err)
+	}
+
+	// Install: copy to a PATH location
+	installCmd := fmt.Sprintf(`copy "%s" "C:\Windows\utm-dev.exe"`, remotePath)
+	if err := utm.ExecInVM(vmName, installCmd); err != nil {
+		// Fallback: just use from user profile
+		cli.Warn("Could not install to system path, using user profile location")
+	}
+
+	// Verify
+	if err := utm.ExecInVM(vmName, "utm-dev self version"); err != nil {
+		return fmt.Errorf("utm-dev verification failed in VM: %w", err)
+	}
+
+	cli.Success("utm-dev bootstrapped in VM '%s'", vmName)
+	return nil
+}
+
+// crossCompileForVM builds utm-dev for Windows ARM64.
+func crossCompileForVM() (string, error) {
+	outPath := filepath.Join(".bin", "utm-dev-windows-arm64.exe")
+
+	// Skip if already built (idempotent)
+	if _, err := os.Stat(outPath); err == nil {
+		return outPath, nil
+	}
+
+	cli.Info("Cross-compiling utm-dev for Windows ARM64...")
+	cmd := exec.Command("go", "build", "-o", outPath, ".")
+	cmd.Env = append(os.Environ(), "GOOS=windows", "GOARCH=arm64", "CGO_ENABLED=0")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return "", fmt.Errorf("cross-compile failed: %w", err)
+	}
+
+	return outPath, nil
 }
 
 func tauriBuildMobile(dir string, platform string, debug bool) error {
