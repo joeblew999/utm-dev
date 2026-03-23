@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
@@ -503,6 +504,13 @@ func tauriBuildMobile(dir string, platform string, debug bool) error {
 		}
 	}
 
+	// For iOS, ensure cocoapods
+	if platform == "ios" {
+		if err := ensureCocoapods(); err != nil {
+			return err
+		}
+	}
+
 	// Auto-init if platform target hasn't been set up yet
 	if err := ensureTauriMobileInit(dir, platform); err != nil {
 		return err
@@ -513,11 +521,33 @@ func tauriBuildMobile(dir string, platform string, debug bool) error {
 	if debug {
 		args = append(args, "--debug")
 	}
+
+	// iOS: build for simulator if no signing cert available
+	if platform == "ios" {
+		if os.Getenv("APPLE_DEVELOPMENT_TEAM") == "" && !hasXcodeSigningTeam(dir) {
+			cli.Info("No code signing cert found — building for iOS simulator (aarch64-sim)")
+			args = append(args, "--target", "aarch64-sim")
+		}
+	}
+
 	if err := runCargoTauri(dir, args...); err != nil {
 		return fmt.Errorf("tauri %s build failed: %w", platform, err)
 	}
 	cli.Success("%s build complete", platform)
 	return nil
+}
+
+// hasXcodeSigningTeam checks if tauri.conf.json has a developmentTeam configured.
+func hasXcodeSigningTeam(dir string) bool {
+	confPath := filepath.Join(dir, "src-tauri", "tauri.conf.json")
+	data, err := os.ReadFile(confPath)
+	if err != nil {
+		return false
+	}
+	// Quick check — if developmentTeam appears with a non-empty value
+	return bytes.Contains(data, []byte(`"developmentTeam"`)) &&
+		!bytes.Contains(data, []byte(`"developmentTeam": ""`)) &&
+		!bytes.Contains(data, []byte(`"developmentTeam":""`))
 }
 
 // --- tauri run ---
@@ -557,8 +587,21 @@ Examples:
 			cli.Info("Running Tauri app on macOS...")
 			return runCargoTauri(dir, "dev")
 		case "ios":
-			if _, err := ensureIOSSimulator(); err != nil {
+			sim, err := ensureIOSSimulator()
+			if err != nil {
 				return err
+			}
+			if err := ensureCocoapods(); err != nil {
+				return err
+			}
+			if err := ensureTauriMobileInit(dir, "ios"); err != nil {
+				return err
+			}
+			// Pass booted simulator name so Tauri doesn't prompt interactively
+			booted, _ := sim.BootedDevices()
+			if len(booted) > 0 {
+				cli.Info("Running Tauri app on iOS simulator (%s)...", booted[0].Name)
+				return runCargoTauri(dir, "ios", "dev", booted[0].Name)
 			}
 			cli.Info("Running Tauri app on iOS simulator...")
 			return runCargoTauri(dir, "ios", "dev")
