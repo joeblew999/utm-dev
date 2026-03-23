@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -1095,7 +1096,8 @@ func verifyIOS(dir, output string, delay int, cleanBar bool, debug bool) error {
 	if err := ensureCargoTauri(); err != nil {
 		return err
 	}
-	if _, err := ensureIOSSimulator(); err != nil {
+	client, err := ensureIOSSimulator()
+	if err != nil {
 		return err
 	}
 
@@ -1105,12 +1107,23 @@ func verifyIOS(dir, output string, delay int, cleanBar bool, debug bool) error {
 		return err
 	}
 
-	// Step 2: Run on simulator (blocks)
+	// Step 2: Install + launch the built .app on simulator
 	cli.Info("[2/3] Installing and launching on iOS simulator...")
-	errCh := make(chan error, 1)
-	go func() {
-		errCh <- runCargoTauri(dir, "ios", "dev")
-	}()
+	appName := filepath.Base(dir)
+	appPath := filepath.Join(dir, "src-tauri", "gen", "apple", "build", "arm64-sim", appName+".app")
+	if _, err := os.Stat(appPath); os.IsNotExist(err) {
+		return fmt.Errorf("built app not found: %s", appPath)
+	}
+
+	if err := client.Install(appPath); err != nil {
+		return fmt.Errorf("install on simulator failed: %w", err)
+	}
+
+	// Read bundle ID from tauri.conf.json
+	bundleID := tauriBundleID(dir)
+	if err := client.Launch(bundleID); err != nil {
+		cli.Warn("Could not auto-launch: %v", err)
+	}
 
 	// Step 3: Wait + screenshot
 	cli.Info("[3/3] Waiting %ds for app to start...", delay)
@@ -1121,8 +1134,23 @@ func verifyIOS(dir, output string, delay int, cleanBar bool, debug bool) error {
 	}
 
 	cli.Success("Verification complete — screenshot: %s", output)
-	cli.Info("iOS dev server still running (Ctrl+C to stop)")
-	return <-errCh
+	return nil
+}
+
+// tauriBundleID reads the identifier from tauri.conf.json.
+func tauriBundleID(dir string) string {
+	confPath := filepath.Join(dir, "src-tauri", "tauri.conf.json")
+	data, err := os.ReadFile(confPath)
+	if err != nil {
+		return filepath.Base(dir)
+	}
+	var conf struct {
+		Identifier string `json:"identifier"`
+	}
+	if err := json.Unmarshal(data, &conf); err != nil || conf.Identifier == "" {
+		return filepath.Base(dir)
+	}
+	return conf.Identifier
 }
 
 func verifyAndroid(dir, output string, delay int, debug bool) error {
