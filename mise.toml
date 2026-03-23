@@ -1,43 +1,17 @@
-# mise.toml — tool version pins + tasks for utm-dev
+# mise.toml — utm-dev development
 #
-# Install: https://mise.jdx.dev
-# Usage:   mise install   (installs all tools)
-#          mise run build
+# This is the root config for developing utm-dev itself.
+# Tasks live in .mise/tasks/ and are picked up automatically.
 #
-# Go is managed here — no system Go required.
+# For using utm-dev in YOUR project, see README.md.
 
 [tools]
-go = "1.25"  # Go runtime — https://go.dev
-
-# ── Tauri (desktop + mobile builds, OS-gated) ────────────────────────────────
-# These are needed to develop/test utm-dev itself (tauri-basic example).
-# End users get these via `utm-dev tauri setup`.
 "cargo:tauri-cli" = {version = "2",      os = ["macos", "windows"]}
 xcodegen          = {version = "latest", os = ["macos"]}
 ruby              = {version = "3.3",    os = ["macos"]}
+java              = "temurin-17.0.18+8"
 
-# ── Tasks ────────────────────────────────────────────────────────────────────
-# Kept minimal — utm-dev IS the CLI. Use `utm-dev <subcommand>` directly.
-
-[tasks.build]
-description = "Build utm-dev binary for local dev"
-run = "go build -o .bin/utm-dev ."
-
-[tasks.test]
-description = "Run tests"
-run = "go test ./..."
-
-[tasks.ci]
-description = "Full CI gate — test + build all platforms"
-run = [
-    "go test ./...",
-    "go run . self build --obfuscate",
-]
-
-[tasks.release]
-description = "Tag and push to trigger GitHub Actions release (patch|minor|major|vX.Y.Z)"
-run = "go run . self release ${1:-minor}"
-
-[tasks.clean]
-description = "Remove build artifacts"
-run = "rm -rf .bin .dist"
+[env]
+ANDROID_HOME = "{{env.HOME}}/.android-sdk"
+NDK_HOME = "{{env.HOME}}/.android-sdk/ndk/27.2.12479018"
+JAVA_HOME = "{{env.HOME}}/.local/share/mise/installs/java/temurin-17.0.18+8"

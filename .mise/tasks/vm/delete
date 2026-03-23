@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+set -eu
+
+#MISE description="Delete VM and/or UTM: vm:delete vm | utm | all"
+
+PROJECT_DIR="$(pwd)"
+LOGDIR="${PROJECT_DIR}/.mise/logs"
+STATEFILE="${PROJECT_DIR}/.mise/state/vm.env"
+UTMCTL="/Applications/UTM.app/Contents/MacOS/utmctl"
+
+mkdir -p "${LOGDIR}"
+exec > >(tee -a "${LOGDIR}/vm-delete.log") 2>&1
+echo "── $(date '+%Y-%m-%d %H:%M:%S') ──"
+
+[ $# -eq 0 ] && { echo "Usage: mise vm:delete vm|utm|all"; exit 1; }
+
+# Load state if available
+[ -f "${STATEFILE}" ] && source "${STATEFILE}" 2>/dev/null || true
+
+delete_vm() {
+  [ -x "${UTMCTL}" ] || { echo "✓ UTM not installed, no VM"; return; }
+
+  # Ensure UTM is running so utmctl works
+  if ! ${UTMCTL} list >/dev/null 2>&1; then
+    open -g /Applications/UTM.app
+    for i in $(seq 1 15); do
+      ${UTMCTL} list >/dev/null 2>&1 && break
+      sleep 1
+    done
+  fi
+
+  local vms
+  vms=$(${UTMCTL} list 2>/dev/null | awk 'NR>1 && NF>0') || true
+  [ -z "${vms}" ] && { echo "✓ No VMs"; return; }
+  echo "${vms}" | while read -r uuid status rest; do
+    [ -z "${uuid}" ] && continue
+    if [ "${status}" = "started" ]; then
+      echo "→ Stopping '${rest}'..."
+      ${UTMCTL} stop "${rest}" 2>/dev/null || true
+      sleep 5
+    fi
+    echo "→ Deleting '${rest}'..."
+    ${UTMCTL} delete "${rest}" 2>/dev/null || {
+      osascript -e "tell application \"UTM\" to delete virtual machine id \"${uuid}\"" 2>/dev/null || true
+    }
+    echo "✓ Deleted '${rest}'"
+  done
+  rm -f "${STATEFILE}"
+}
+
+delete_utm() {
+  echo "→ Quitting UTM..."
+  osascript -e 'tell application "UTM" to quit' 2>/dev/null || true
+  killall -9 UTM 2>/dev/null || true
+  sleep 2
+  echo "→ Uninstalling UTM..."
+  HOMEBREW_NO_AUTO_UPDATE=1 brew uninstall --cask utm </dev/null 2>/dev/null || rm -rf /Applications/UTM.app 2>/dev/null || true
+  echo "✓ UTM uninstalled"
+}
+
+clean_data() {
+  echo "→ Cleaning UTM app data (preserving box cache)..."
+  rm -rf "$HOME/Library/Containers/com.utmapp.UTM" 2>/dev/null || true
+  rm -rf "$HOME/Library/Group Containers/"*.com.utmapp.UTM 2>/dev/null || true
+  rm -f "${STATEFILE}"
+  echo "✓ App data cleaned (box cache kept at ~/.cache/utm-dev/)"
+}
+
+case "$1" in
+  vm)    delete_vm ;;
+  utm)   delete_vm; delete_utm ;;
+  all)   delete_vm; delete_utm; clean_data ;;
+  *)     echo "Usage: mise vm:delete vm|utm|all"; exit 1 ;;
+esac
+
+echo "Rebuild: mise vm:up"

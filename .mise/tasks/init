@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+set -eu
+
+#MISE description="Add utm-dev tools and env to your project's mise.toml"
+#MISE alias="i"
+
+# Adds the [tools] and [env] blocks needed for Tauri cross-platform builds.
+# Idempotent — safe to run multiple times.
+
+MISE_TOML="$(pwd)/mise.toml"
+
+if [ ! -f "${MISE_TOML}" ]; then
+  echo "✗ No mise.toml found in $(pwd)"
+  echo "  Create one first, or run from your project root."
+  exit 1
+fi
+
+# Check if we already added our blocks
+if grep -q "# utm-dev tools" "${MISE_TOML}" 2>/dev/null; then
+  echo "✓ Already initialised"
+  exit 0
+fi
+
+cat >> "${MISE_TOML}" <<'TOMLEOF'
+
+# utm-dev tools — added by mise run init
+[tools]
+"cargo:tauri-cli" = {version = "2",      os = ["macos", "windows"]}
+xcodegen          = {version = "latest", os = ["macos"]}
+ruby              = {version = "3.3",    os = ["macos"]}
+java              = "temurin-17.0.18+8"
+
+# utm-dev env — Android SDK paths (installed by mise run setup)
+[env]
+ANDROID_HOME = "{{env.HOME}}/.android-sdk"
+NDK_HOME = "{{env.HOME}}/.android-sdk/ndk/27.2.12479018"
+JAVA_HOME = "{{env.HOME}}/.local/share/mise/installs/java/temurin-17.0.18+8"
+TOMLEOF
+
+echo "✓ Added [tools] and [env] to ${MISE_TOML}"
+echo ""
+echo "Next:"
+echo "  mise install      # Install tools"
+echo "  mise run setup    # Install SDKs"

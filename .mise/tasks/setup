@@ -1,0 +1,183 @@
+#!/usr/bin/env bash
+set -eu
+
+#MISE description="Install all prerequisites for Tauri development"
+#MISE alias="s"
+
+PROJECT_DIR="$(pwd)"
+LOGDIR="${PROJECT_DIR}/.mise/logs"
+mkdir -p "${LOGDIR}"
+exec > >(tee -a "${LOGDIR}/setup.log") 2>&1
+echo "── $(date '+%Y-%m-%d %H:%M:%S') ──"
+
+# ── Setup: install everything needed to build Tauri apps ──────────────────────
+# Stages:
+#   1. Host tools   — Rust, cargo-tauri, Xcode check
+#   2. Mobile SDKs  — Android SDK, NDK, platform-tools, build-tools, JDK
+#   3. Rust targets — Android cross-compilation targets
+#   4. iOS deps     — CocoaPods
+#
+# Every step is idempotent. Run it 100 times, nothing breaks.
+
+JAVA_VERSION="temurin-17.0.18+8"
+NDK_VERSION="27.2.12479018"
+BUILD_TOOLS_VERSION="35.0.0"
+PLATFORM_VERSION="android-35"
+CMDLINE_TOOLS_URL="https://dl.google.com/android/repository/commandlinetools-mac-14742923_latest.zip"
+ANDROID_HOME="${ANDROID_HOME:-$HOME/.android-sdk}"
+
+echo "═══ utm-dev setup ═══"
+echo ""
+
+# ── Stage 1: Host tools ──────────────────────────────────────────────────────
+
+echo "── Stage 1: Host tools ──"
+
+# Rust
+if command -v cargo &>/dev/null; then
+  echo "✓ Rust $(cargo --version | awk '{print $2}')"
+else
+  echo "→ Installing Rust..."
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+  source "$HOME/.cargo/env"
+  echo "✓ Rust installed"
+fi
+
+# cargo-tauri (mise handles this via [tools] "cargo:tauri-cli" but verify)
+if cargo tauri --version &>/dev/null; then
+  echo "✓ cargo-tauri $(cargo tauri --version 2>/dev/null | awk '{print $2}')"
+else
+  echo "→ Installing cargo-tauri..."
+  cargo install tauri-cli
+  echo "✓ cargo-tauri installed"
+fi
+
+# Xcode
+if xcode-select -p &>/dev/null; then
+  echo "✓ Xcode ($(xcode-select -p))"
+else
+  echo "✗ Xcode not found."
+  echo "  Install from: https://apps.apple.com/app/xcode/id497799835"
+  echo "  Then run: sudo xcode-select --switch /Applications/Xcode.app"
+  exit 1
+fi
+
+echo ""
+
+# ── Stage 2: Mobile SDKs ─────────────────────────────────────────────────────
+
+echo "── Stage 2: Mobile SDKs ──"
+
+# Java (via mise)
+if mise where java &>/dev/null; then
+  echo "✓ Java ($(mise where java))"
+else
+  echo "→ Installing Java ${JAVA_VERSION} via mise..."
+  mise use --global java@${JAVA_VERSION}
+  echo "✓ Java installed"
+fi
+
+# Android SDK cmdline-tools
+SDKMANAGER="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
+if [ -x "${SDKMANAGER}" ]; then
+  echo "✓ Android cmdline-tools (${ANDROID_HOME})"
+else
+  echo "→ Installing Android cmdline-tools to ${ANDROID_HOME}..."
+  mkdir -p "${ANDROID_HOME}"
+  TMPZIP="$(mktemp).zip"
+  curl -sSfL -o "${TMPZIP}" "${CMDLINE_TOOLS_URL}"
+  unzip -qo "${TMPZIP}" -d "${ANDROID_HOME}/cmdline-tools-tmp"
+  mkdir -p "${ANDROID_HOME}/cmdline-tools"
+  rm -rf "${ANDROID_HOME}/cmdline-tools/latest"
+  mv "${ANDROID_HOME}/cmdline-tools-tmp/cmdline-tools" "${ANDROID_HOME}/cmdline-tools/latest"
+  rmdir "${ANDROID_HOME}/cmdline-tools-tmp"
+  rm -f "${TMPZIP}"
+  echo "✓ Android cmdline-tools installed"
+fi
+
+# Set up paths
+JAVA_HOME="$(mise where java)"
+export ANDROID_HOME JAVA_HOME
+export PATH="${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${PATH}"
+
+# Accept licenses
+echo "→ Accepting Android SDK licenses..."
+yes 2>/dev/null | sdkmanager --licenses --sdk_root="${ANDROID_HOME}" >/dev/null 2>&1 || true
+
+# Platform + build-tools
+if [ -d "${ANDROID_HOME}/platforms/${PLATFORM_VERSION}" ]; then
+  echo "✓ Android platform ${PLATFORM_VERSION}"
+else
+  echo "→ Installing Android platform ${PLATFORM_VERSION}..."
+  sdkmanager --sdk_root="${ANDROID_HOME}" "platforms;${PLATFORM_VERSION}"
+  echo "✓ Android platform installed"
+fi
+
+if [ -d "${ANDROID_HOME}/build-tools/${BUILD_TOOLS_VERSION}" ]; then
+  echo "✓ Android build-tools ${BUILD_TOOLS_VERSION}"
+else
+  echo "→ Installing Android build-tools ${BUILD_TOOLS_VERSION}..."
+  sdkmanager --sdk_root="${ANDROID_HOME}" "build-tools;${BUILD_TOOLS_VERSION}"
+  echo "✓ Android build-tools installed"
+fi
+
+# Platform tools (adb)
+if [ -d "${ANDROID_HOME}/platform-tools" ]; then
+  echo "✓ Android platform-tools (adb)"
+else
+  echo "→ Installing Android platform-tools..."
+  sdkmanager --sdk_root="${ANDROID_HOME}" "platform-tools"
+  echo "✓ Android platform-tools installed"
+fi
+
+# NDK (check for source.properties, not just the directory — partial installs leave empty dirs)
+if [ -f "${ANDROID_HOME}/ndk/${NDK_VERSION}/source.properties" ]; then
+  echo "✓ Android NDK ${NDK_VERSION}"
+else
+  rm -rf "${ANDROID_HOME}/ndk/${NDK_VERSION}" 2>/dev/null || true
+  echo "→ Installing Android NDK ${NDK_VERSION}..."
+  sdkmanager --sdk_root="${ANDROID_HOME}" "ndk;${NDK_VERSION}"
+  echo "✓ Android NDK installed"
+fi
+
+echo ""
+
+# ── Stage 3: Rust targets ────────────────────────────────────────────────────
+
+echo "── Stage 3: Rust Android targets ──"
+
+TARGETS="aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android"
+for target in $TARGETS; do
+  if rustup target list --installed | grep -q "$target"; then
+    echo "✓ ${target}"
+  else
+    echo "→ Adding ${target}..."
+    rustup target add "$target"
+    echo "✓ ${target} added"
+  fi
+done
+
+echo ""
+
+# ── Stage 4: iOS deps ────────────────────────────────────────────────────────
+
+echo "── Stage 4: iOS deps ──"
+
+if command -v pod &>/dev/null; then
+  echo "✓ CocoaPods $(pod --version)"
+else
+  echo "→ Installing CocoaPods..."
+  gem install cocoapods
+  echo "✓ CocoaPods installed"
+fi
+
+echo ""
+
+# ── Summary ───────────────────────────────────────────────────────────────────
+
+echo "═══ Setup complete ═══"
+echo ""
+echo "Environment variables (set in mise.toml):"
+echo "  ANDROID_HOME=${ANDROID_HOME}"
+echo "  NDK_HOME=${ANDROID_HOME}/ndk/${NDK_VERSION}"
+echo "  JAVA_HOME=${JAVA_HOME}"

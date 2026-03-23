@@ -1,41 +1,52 @@
-# mise.toml — tauri-basic example runner
+# mise.toml — tauri-basic example
 #
-# Prerequisites (installed by parent repo's mise.toml):
-#   cargo:tauri-cli@2   macOS + Windows
-#   xcodegen            macOS only (iOS target)
-#   ruby + cocoapods    macOS only (iOS target)
-#
-# Usage:
-#   mise run dev          Desktop dev mode (macOS or Windows)
-#   mise run build        Build desktop bundle (.dmg / .msi)
-#   mise run ios          iOS dev on simulator (macOS only)
-#   mise run ios:init     First-time iOS setup (macOS only)
-#   mise run windows      Build in Windows UTM VM
+# Getting started:
+#   mise run init             Add tools + env (one time)
+#   mise install              Install tools
+#   mise run setup            Install Tauri dev prereqs
+#   mise run dev              macOS desktop dev mode
+#   mise run ios              iOS simulator
+#   mise run android          Android emulator
+
+# Pull in utm-dev tasks (init, setup, vm:up, vm:down, vm:exec, vm:delete)
+[task_config]
+includes = ["git::https://github.com/joeblew999/utm-dev.git//.mise/tasks?ref=main"]
+
+# ── Added by: mise run init ──────────────────────────────────────────────────
+
+# utm-dev tools — added by mise run init
+[tools]
+"cargo:tauri-cli" = {version = "2",      os = ["macos", "windows"]}
+xcodegen          = {version = "latest", os = ["macos"]}
+ruby              = {version = "3.3",    os = ["macos"]}
+java              = "temurin-17.0.18+8"
+
+# utm-dev env — Android SDK paths (installed by mise run setup)
+[env]
+ANDROID_HOME = "{{env.HOME}}/.android-sdk"
+NDK_HOME = "{{env.HOME}}/.android-sdk/ndk/27.2.12479018"
+JAVA_HOME = "{{env.HOME}}/.local/share/mise/installs/java/temurin-17.0.18+8"
+
+# ── App tasks ────────────────────────────────────────────────────────────────
 
 [tasks.dev]
-description = "Run Tauri desktop app in dev mode"
+description = "Run macOS desktop app in dev mode"
 run = "cargo tauri dev"
 
 [tasks.build]
-description = "Build Tauri desktop bundle (.app/.dmg on macOS, .msi/.exe on Windows)"
+description = "Build macOS desktop bundle (.app/.dmg)"
 run = "cargo tauri build"
 
-[tasks."ios:init"]
-description = "One-time iOS target initialisation (macOS only)"
-run = "cargo tauri ios init"
-
 [tasks.ios]
-description = "Run on iOS simulator (macOS only — requires ios:init first)"
-run = "cargo tauri ios dev"
+description = "Run on iOS simulator (initialises on first run)"
+run = """
+cargo tauri ios init 2>/dev/null || true
+cargo tauri ios dev
+"""
 
-[tasks."ios:build"]
-description = "Build iOS app bundle (macOS only)"
-run = "cargo tauri ios build"
-
-[tasks.windows]
-description = "Build and run desktop app in Windows UTM VM"
-run = "utm-dev utm run 'Windows 11' ."
-
-[tasks.icons]
-description = "Regenerate all platform icons from src-tauri/icons/icon-source.png"
-run = "cargo tauri icon src-tauri/icons/icon-source.png"
+[tasks.android]
+description = "Run on Android emulator (initialises on first run)"
+run = """
+cargo tauri android init 2>/dev/null || true
+cargo tauri android dev
+"""

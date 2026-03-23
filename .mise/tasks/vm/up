@@ -1,0 +1,286 @@
+#!/usr/bin/env bash
+set -eu
+
+#MISE description="Install UTM + download Windows VM + start + wait"
+#MISE alias="vm-up"
+
+# Fully unattended — works from nothing, no prompts, no GUI interaction.
+# Works both locally and when pulled as a remote mise task include.
+
+# PROJECT_DIR = caller's project root (mise runs tasks from project root)
+PROJECT_DIR="$(pwd)"
+LOGDIR="${PROJECT_DIR}/.mise/logs"
+STATEFILE="${PROJECT_DIR}/.mise/state/vm.env"
+
+mkdir -p "${LOGDIR}" "$(dirname "${STATEFILE}")"
+LOG="${LOGDIR}/vm-up.log"
+exec > >(tee -a "${LOG}") 2>&1
+echo "── $(date '+%Y-%m-%d %H:%M:%S') ──"
+
+# Config
+BOX_NAME="windows-11"
+SSH_PORT=2222
+RDP_PORT=3389
+WINRM_PORT=5985
+VM_USER="vagrant"
+VM_PASS="vagrant"
+UTMCTL="/Applications/UTM.app/Contents/MacOS/utmctl"
+
+VM_UUID=""
+VM_DISPLAY_NAME=""
+[ -f "${STATEFILE}" ] && source "${STATEFILE}" 2>/dev/null || true
+
+# ── Helpers ──────────────────────────────────────────────────────────────────
+
+die()  { echo "✗ $*" >&2; exit 1; }
+info() { echo "→ $*"; }
+ok()   { echo "✓ $*"; }
+
+save_state() {
+  cat > "${STATEFILE}" <<STATEEOF
+VM_UUID="${VM_UUID}"
+VM_DISPLAY_NAME="${VM_DISPLAY_NAME}"
+STATEEOF
+}
+
+cleanup() {
+  local pids=""
+  pids=$(jobs -p 2>/dev/null) || true
+  [ -n "${pids}" ] && kill ${pids} 2>/dev/null || true
+  rm -f "${HOME}/.cache/utm-dev/"*.partial 2>/dev/null || true
+}
+trap cleanup EXIT
+
+wait_for_utmctl() {
+  local max=${1:-30}
+  for i in $(seq 1 "${max}"); do
+    ${UTMCTL} list >/dev/null 2>&1 && return 0
+    sleep 1
+  done
+  return 1
+}
+
+get_first_vm() {
+  ${UTMCTL} list 2>/dev/null | awk 'NR>1 && NF>0 {print; exit}'
+}
+
+# ── 0. Kill any existing UTM to start clean ──────────────────────────────────
+
+osascript -e 'tell application "UTM" to quit' 2>/dev/null || true
+killall UTM 2>/dev/null || true
+sleep 1
+
+# ── 1. Install UTM ──────────────────────────────────────────────────────────
+
+if [ -x "${UTMCTL}" ]; then
+  ok "UTM installed"
+else
+  info "Installing UTM via brew..."
+  HOMEBREW_NO_AUTO_UPDATE=1 brew install --cask utm </dev/null
+  [ -x "${UTMCTL}" ] || die "UTM install failed"
+  ok "UTM installed"
+fi
+
+# Suppress What's New dialog before first launch
+UTM_VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" \
+  /Applications/UTM.app/Contents/Info.plist 2>/dev/null) || UTM_VERSION=""
+if [ -n "${UTM_VERSION}" ]; then
+  CONTAINER_PREFS="$HOME/Library/Containers/com.utmapp.UTM/Data/Library/Preferences"
+  mkdir -p "${CONTAINER_PREFS}"
+  defaults write "${CONTAINER_PREFS}/com.utmapp.UTM" ReleaseNotesLastVersion -string "${UTM_VERSION}"
+  ok "Suppressed What's New dialog (v${UTM_VERSION})"
+fi
+
+# Launch UTM in background (use full path — Launch Services may not index after fresh brew install)
+open -g /Applications/UTM.app
+info "Waiting for UTM..."
+wait_for_utmctl 30 || die "UTM did not become ready after 30s"
+ok "UTM ready"
+
+# ── 2. Find or download + import VM ─────────────────────────────────────────
+
+VM_EXISTS=false
+
+# Check by saved UUID
+if [ -n "${VM_UUID}" ]; then
+  if ${UTMCTL} list 2>/dev/null | grep -q "${VM_UUID}"; then
+    VM_EXISTS=true
+    ok "VM exists (${VM_DISPLAY_NAME:-unknown})"
+  fi
+fi
+
+# Check by scanning
+if [ "${VM_EXISTS}" = "false" ]; then
+  VM_LINE=$(get_first_vm)
+  if [ -n "${VM_LINE}" ]; then
+    VM_UUID=$(echo "${VM_LINE}" | awk '{print $1}')
+    VM_DISPLAY_NAME=$(echo "${VM_LINE}" | awk '{for(i=3;i<=NF;i++) printf "%s ", $i}' | sed 's/[[:space:]]*$//')
+    VM_EXISTS=true
+    save_state
+    ok "VM exists (${VM_DISPLAY_NAME})"
+  fi
+fi
+
+# Download and import
+if [ "${VM_EXISTS}" = "false" ]; then
+  BOX_CACHE_DIR="${HOME}/.cache/utm-dev"
+  BOX_ARCH="arm64"
+  mkdir -p "${BOX_CACHE_DIR}"
+
+  info "Fetching box version..."
+  BOX_VERSIONS_API="https://api.cloud.hashicorp.com/vagrant/2022-09-30/registry/utm/box/${BOX_NAME}/versions"
+  VERSIONS_JSON=$(curl -sSf "${BOX_VERSIONS_API}") || die "Cannot reach Vagrant API"
+  BOX_VERSION=$(echo "${VERSIONS_JSON}" | grep -o '"name":"[^"]*' | grep -o '[^"]*$' | head -n 1)
+  [ -z "${BOX_VERSION}" ] && die "Cannot parse box version"
+  info "Latest box version: ${BOX_VERSION}"
+
+  BOX_FILE="${BOX_CACHE_DIR}/${BOX_NAME}_${BOX_VERSION}_${BOX_ARCH}.box"
+
+  if [ -f "${BOX_FILE}" ]; then
+    ok "Box cached (skipping download)"
+  else
+    rm -f "${BOX_CACHE_DIR}/${BOX_NAME}_"*.box 2>/dev/null || true
+    info "Downloading box (~6 GB) — this takes a while..."
+    BOX_API="https://api.cloud.hashicorp.com/vagrant/2022-09-30/registry/utm/box/${BOX_NAME}/version/${BOX_VERSION}/provider/utm/architecture/${BOX_ARCH}/download"
+    DOWNLOAD_JSON=$(curl -sSf "${BOX_API}") || die "Cannot fetch download URL"
+    BOX_URL=$(echo "${DOWNLOAD_JSON}" | grep -o '"url":"[^"]*' | grep -o '[^"]*$')
+    [ -z "${BOX_URL}" ] && die "Cannot parse download URL"
+    curl -fL --progress-bar -o "${BOX_FILE}.partial" "${BOX_URL}" || die "Download failed"
+    BOX_SIZE=$(stat -f%z "${BOX_FILE}.partial" 2>/dev/null || echo 0)
+    [ "${BOX_SIZE}" -lt 1000000000 ] && { rm -f "${BOX_FILE}.partial"; die "Download too small (${BOX_SIZE} bytes)"; }
+    mv "${BOX_FILE}.partial" "${BOX_FILE}"
+    ok "Box downloaded (${BOX_VERSION})"
+  fi
+
+  info "Extracting box..."
+  TMPDIR_BOX=$(mktemp -d)
+  tar -xf "${BOX_FILE}" -C "${TMPDIR_BOX}"
+  UTM_FOLDER=$(find "${TMPDIR_BOX}" -type d -name "*.utm" | head -n 1)
+  [ -z "${UTM_FOLDER}" ] && { rm -rf "${TMPDIR_BOX}"; die "No .utm folder in box"; }
+
+  info "Importing VM into UTM..."
+  osascript -e "tell application \"UTM\" to import new virtual machine from POSIX file \"${UTM_FOLDER}\"" \
+    || { rm -rf "${TMPDIR_BOX}"; die "Import failed"; }
+  rm -rf "${TMPDIR_BOX}"
+
+  # Wait for import to register
+  info "Waiting for import..."
+  VM_LINE=""
+  for i in $(seq 1 15); do
+    VM_LINE=$(get_first_vm)
+    [ -n "${VM_LINE}" ] && break
+    sleep 2
+  done
+  [ -z "${VM_LINE}" ] && die "Import failed — no VM found after 30s"
+  VM_UUID=$(echo "${VM_LINE}" | awk '{print $1}')
+  VM_DISPLAY_NAME=$(echo "${VM_LINE}" | awk '{for(i=3;i<=NF;i++) printf "%s ", $i}' | sed 's/[[:space:]]*$//')
+  save_state
+  ok "VM imported (${VM_DISPLAY_NAME})"
+fi
+
+# ── 3. Configure network ────────────────────────────────────────────────────
+# Uses AppleScript to read config, set port forwards on emulated NIC, write back.
+# Approach from vagrant_utm plugin — read/mutate/update, not construct from scratch.
+
+VM_STATUS=$(${UTMCTL} list 2>/dev/null | awk -v id="${VM_UUID}" '$1==id {print $2}')
+if [ "${VM_STATUS}" = "started" ]; then
+  info "Stopping VM to configure network..."
+  ${UTMCTL} stop "${VM_DISPLAY_NAME}" 2>/dev/null || true
+  sleep 8
+fi
+
+# Find the emulated NIC index
+EMULATED_INDEX=$(osascript -e "
+  tell application \"UTM\"
+    set vm to virtual machine id \"${VM_UUID}\"
+    set cfg to configuration of vm
+    set nis to network interfaces of cfg
+    repeat with ni in nis
+      if mode of ni is emulated then
+        return index of ni
+      end if
+    end repeat
+    return -1
+  end tell
+" 2>/dev/null) || EMULATED_INDEX="-1"
+
+[ "${EMULATED_INDEX}" = "-1" ] && die "No emulated network interface found on VM"
+
+info "Configuring port forwards on NIC index ${EMULATED_INDEX}..."
+# Inline AppleScript — based on vagrant_utm's approach: read config, mutate, write back.
+# No external file dependency so this works as a remote mise task include.
+osascript - "${VM_UUID}" \
+  --index "${EMULATED_INDEX}" "TcPp,,22,127.0.0.1,${SSH_PORT}" \
+  --index "${EMULATED_INDEX}" "TcPp,,3389,127.0.0.1,${RDP_PORT}" \
+  --index "${EMULATED_INDEX}" "TcPp,,5985,127.0.0.1,${WINRM_PORT}" \
+  <<'APPLESCRIPT' || die "Failed to configure port forwards"
+on run argv
+  set vmID to item 1 of argv
+  set portForwardRules to {}
+  repeat with i from 2 to count of argv by 3
+    set indexNumber to (item (i + 1) of argv) as integer
+    set ruleArg to item (i + 2) of argv
+    set AppleScript's text item delimiters to ","
+    set ruleComponents to text items of ruleArg
+    set portForwardRule to {indexVal:indexNumber, protocolVal:item 1 of ruleComponents, guestAddress:item 2 of ruleComponents, guestPort:item 3 of ruleComponents, hostAddress:item 4 of ruleComponents, hostPort:item 5 of ruleComponents}
+    set end of portForwardRules to portForwardRule
+  end repeat
+  tell application "UTM"
+    set vm to virtual machine id vmID
+    set config to configuration of vm
+    set networkInterfaces to network interfaces of config
+    repeat with anInterface in networkInterfaces
+      set netIfIndex to index of anInterface
+      if mode of anInterface is emulated then
+        set port forwards of anInterface to {}
+      end if
+      repeat with portForwardRule in portForwardRules
+        if (indexVal of portForwardRule) as integer is netIfIndex then
+          set portForwards to port forwards of anInterface
+          set newPortForward to {protocol:(protocolVal of portForwardRule), guest address:(guestAddress of portForwardRule), guest port:(guestPort of portForwardRule), host address:(hostAddress of portForwardRule), host port:(hostPort of portForwardRule)}
+          copy newPortForward to the end of portForwards
+          set port forwards of anInterface to portForwards
+        end if
+      end repeat
+    end repeat
+    update configuration of vm with config
+  end tell
+end run
+APPLESCRIPT
+ok "Network: SSH:${SSH_PORT} RDP:${RDP_PORT} WinRM:${WINRM_PORT}"
+
+# ── 4. Start VM ─────────────────────────────────────────────────────────────
+
+info "Starting VM..."
+STARTED=false
+for attempt in 1 2 3; do
+  if ${UTMCTL} start "${VM_DISPLAY_NAME}" 2>/dev/null; then
+    STARTED=true
+    ok "VM started"
+    break
+  fi
+  echo "  retry ${attempt}/3..."
+  sleep 5
+done
+[ "${STARTED}" = "false" ] && die "Failed to start VM after 3 attempts"
+
+# ── 5. Wait for Windows boot ────────────────────────────────────────────────
+
+info "Waiting for Windows to boot (up to 5 min)..."
+TIMEOUT=300
+ELAPSED=0
+while [ $ELAPSED -lt $TIMEOUT ]; do
+  if curl -s --connect-timeout 2 "http://127.0.0.1:${WINRM_PORT}/wsman" >/dev/null 2>&1; then
+    ok "Windows ready (${ELAPSED}s)"
+    break
+  fi
+  sleep 5
+  ELAPSED=$((ELAPSED + 5))
+  [ $((ELAPSED % 30)) -eq 0 ] && echo "  still booting... (${ELAPSED}s)"
+done
+[ $ELAPSED -ge $TIMEOUT ] && die "Timeout waiting for Windows (${TIMEOUT}s)"
+
+echo ""
+ok "Done"
+echo "  RDP: localhost:${RDP_PORT} (${VM_USER}/${VM_PASS})"
+echo "  SSH: ssh -p ${SSH_PORT} ${VM_USER}@127.0.0.1"

@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+set -eu
+
+#MISE description="Run a command inside the Windows VM via SSH"
+#MISE alias="vm-exec"
+
+PROJECT_DIR="$(pwd)"
+LOGDIR="${PROJECT_DIR}/.mise/logs"
+mkdir -p "${LOGDIR}"
+exec > >(tee -a "${LOGDIR}/vm-exec.log") 2>&1
+echo "── $(date '+%Y-%m-%d %H:%M:%S') ──"
+
+SSH_PORT=2222
+VM_USER="vagrant"
+
+if [ $# -eq 0 ]; then
+  echo "Usage: mise vm:exec <command>"
+  echo "  mise vm:exec 'whoami'"
+  echo "  mise vm:exec 'cargo --version'"
+  exit 1
+fi
+
+if ! ssh -o ConnectTimeout=3 -o StrictHostKeyChecking=no -o BatchMode=yes -p ${SSH_PORT} ${VM_USER}@127.0.0.1 "echo" 2>/dev/null; then
+  echo "✗ Cannot connect (port ${SSH_PORT})"
+  echo "  VM running?   mise vm:up"
+  echo "  SSH enabled?  See vm:up output"
+  exit 1
+fi
+
+echo "→ $*"
+ssh -o StrictHostKeyChecking=no -p ${SSH_PORT} ${VM_USER}@127.0.0.1 "$*"

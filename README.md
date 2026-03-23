@@ -1,223 +1,60 @@
 # utm-dev
 
-Cross-platform build tooling that actually works.
+Help devs not go crazy.
 
-![Status](https://img.shields.io/badge/status-alpha-orange)
-![Go Version](https://img.shields.io/badge/go-1.25%2B-blue)
+Building [Tauri](https://tauri.app/) apps for macOS + iOS + Android + Windows from a single Mac is a nightmare — Rust, Android SDK, NDK, CocoaPods, Xcode, and a Windows machine. utm-dev handles all of it.
 
-## Why
+**Your Mac does 3 out of 4 platforms natively.** utm-dev sets up a Windows 11 ARM VM via [UTM](https://mac.getutm.app/) for the 4th.
 
-Building cross-platform apps is a nightmare. Every dev hits the same wall:
+## Add to your project
 
-- **Android**: download Android Studio, install 5 SDKs, set 8 environment variables, pray Gradle finds the NDK
-- **iOS**: Xcode works but only on Mac, simulator setup is manual, signing is confusing
-- **Windows**: if you're on Mac, you can't build natively. Cross-compilation breaks with CGO. VMs are manual and painful
-- **Linux**: same VM problem as Windows
+Add this to your `mise.toml`:
 
-Every project re-invents this setup. Every new team member spends a day fighting toolchains. CI configs are 200 lines of environment setup.
-
-**utm-dev fixes this.** One command installs everything. One command builds for any platform. SDKs go in an isolated directory (not polluting your system). Windows/Linux builds run in automated UTM VMs on Apple Silicon. Everything is idempotent — run it twice, nothing breaks.
-
-```bash
-utm-dev tauri setup                    # installs Rust, Android SDK, NDK — done
-utm-dev tauri build android myapp      # just works
-utm-dev utm up windows-11-arm          # Windows VM, fully automated
-utm-dev utm exec "Windows 11 ARM" utm-dev tauri build windows myapp
+```toml
+[task_config]
+includes = ["git::https://github.com/joeblew999/utm-dev.git//.mise/tasks?ref=main"]
 ```
 
-## Install
+Then:
 
 ```bash
-# Via mise (recommended — used by plat-trunk)
-# In your mise.toml:
-"github:joeblew999/utm-dev" = "latest"
-
-# From source
-go build -o utm-dev .
+mise run init      # Adds tools + env to your mise.toml (one time)
+mise install       # Install tools
+mise run setup     # Install SDKs + targets (idempotent)
+mise run vm:up     # Windows VM (idempotent)
 ```
 
-## Quick start
+That's it. `init` configures your project, `setup` installs everything, `vm:up` gives you Windows.
+
+## What you can build
+
+| Platform | How |
+|---|---|
+| macOS | `cargo tauri build` — .app + .dmg |
+| iOS simulator | `cargo tauri ios build --target aarch64-sim` — .app |
+| iOS device | `cargo tauri ios build` — needs Apple Developer signing |
+| Android | `cargo tauri android build` — .apk + .aab |
+| Windows | RDP into VM (`localhost:3389`, vagrant/vagrant), build there |
+
+macOS, iOS, and Android build natively on your Mac after `mise run setup`.
+
+Windows builds inside the UTM VM after `mise run vm:up`. Automated Windows builds (SSH bootstrap, code sync) are coming — for now, RDP in and build manually.
+
+## Teardown
 
 ```bash
-# Build a Tauri app for macOS
-utm-dev tauri build macos examples/tauri-basic
-
-# Build a Gio app for Android
-utm-dev gio build android examples/hybrid-dashboard
-
-# Build for Windows via UTM VM (from Mac)
-utm-dev utm up windows-11-arm                              # install + start + wait
-utm-dev utm exec "Windows 11 ARM" whoami                   # run any command
-utm-dev utm build "Windows 11 ARM" windows examples/tauri-basic
-utm-dev utm down "Windows 11 ARM"                          # stop VM
+mise run vm:down          # Stop the VM
+mise run vm:delete vm     # Delete the VM (keeps cached 6 GB download)
+mise run vm:delete all    # Nuclear option (still keeps cached download)
 ```
 
-## Tauri apps (desktop + mobile)
+## Prerequisites
 
-```bash
-# Setup (installs Rust, cargo-tauri, Android SDK/NDK — idempotent)
-utm-dev tauri setup
-
-# Desktop builds
-utm-dev tauri build macos examples/tauri-basic        # .app + .dmg
-utm-dev tauri build windows examples/tauri-basic      # via UTM VM
-
-# Mobile builds (on host Mac)
-utm-dev tauri init android examples/tauri-basic       # one-time scaffolding
-utm-dev tauri build android examples/tauri-basic      # APK/AAB
-utm-dev tauri init ios examples/tauri-basic
-utm-dev tauri build ios examples/tauri-basic           # sim fallback if no cert
-utm-dev tauri run ios examples/tauri-basic             # launch in simulator
-
-# iOS sim: install + launch + screenshot
-utm-dev ios install examples/tauri-basic/src-tauri/gen/apple/build/arm64-sim/tauri-basic.app
-utm-dev ios launch dev.example.tauri-basic
-utm-dev tauri screenshot ios screenshot.png
-
-# Full verify cycle: build → launch → screenshot
-utm-dev tauri verify ios examples/tauri-basic
-
-# Dev mode
-utm-dev tauri dev examples/tauri-basic
-
-# Icons
-utm-dev tauri icons examples/tauri-basic
-```
-
-## Gio apps (desktop, mobile, web)
-
-```bash
-# Build
-utm-dev gio build android examples/hybrid-dashboard
-utm-dev gio build ios examples/hybrid-dashboard
-utm-dev gio build macos examples/hybrid-dashboard
-
-# Run (build + install + launch)
-utm-dev gio run android examples/hybrid-dashboard
-utm-dev gio run ios-simulator examples/hybrid-dashboard
-
-# Bundle + package
-utm-dev gio bundle macos examples/hybrid-dashboard     # signed .app bundle
-utm-dev gio package macos examples/hybrid-dashboard    # .tar.gz for distribution
-
-# iOS sim: install + launch + screenshot
-utm-dev ios boot                                       # boot default simulator
-utm-dev ios devices                                    # list simulators
-utm-dev ios screenshot screenshot.png
-```
-
-## UTM virtual machines
-
-Control Windows 11 ARM VMs on Apple Silicon. Uses WinRM (pre-installed in vagrant boxes) for reliable command execution.
-
-```bash
-# Full lifecycle (idempotent)
-utm-dev utm up windows-11-arm         # install UTM + download VM + start + wait for WinRM
-utm-dev utm exec "Windows 11 ARM" whoami
-utm-dev utm exec "Windows 11 ARM" powershell -Command "Get-Date"
-utm-dev utm down "Windows 11 ARM"
-
-# Individual commands
-utm-dev utm install                   # install UTM app
-utm-dev utm install windows-11-arm    # download + import pre-built VM
-utm-dev utm gallery                   # list available VMs
-utm-dev utm start "Windows 11 ARM"
-utm-dev utm status "Windows 11 ARM"
-utm-dev utm stop "Windows 11 ARM"
-
-# File transfer
-utm-dev utm push "Windows 11 ARM" ./local.txt "C:\Users\vagrant\local.txt"
-utm-dev utm pull "Windows 11 ARM" "C:\Users\vagrant\out.txt" ./out.txt
-
-# Build inside VM
-utm-dev utm build "Windows 11 ARM" windows examples/tauri-basic
-
-# Network
-utm-dev utm fix-network "Windows 11 ARM"   # setup RDP + WinRM port forwards
-utm-dev utm doctor                          # check UTM installation
-```
-
-**VM credentials:** vagrant / vagrant
-**Ports:** RDP localhost:3389, WinRM localhost:5985
-
-## SDK management
-
-```bash
-utm-dev install android-sdk           # Android SDK + build-tools
-utm-dev install ndk                   # Android NDK 27
-utm-dev list                          # show available SDKs
-```
-
-## Device management (shared by Gio + Tauri)
-
-```bash
-# Android
-utm-dev android devices               # list connected devices
-utm-dev android emulator              # launch emulator
-utm-dev android screenshot shot.png   # capture from device
-
-# iOS
-utm-dev ios devices                   # list simulators + devices
-utm-dev ios boot                      # boot default simulator
-utm-dev ios install app.app           # install on booted sim
-utm-dev ios launch com.example.app    # launch by bundle ID
-utm-dev ios screenshot shot.png       # capture from sim
-```
-
-## Self-management
-
-```bash
-utm-dev self version | jq .           # version info (JSON)
-utm-dev self build                    # cross-compile utm-dev
-utm-dev self upgrade                  # update to latest release
-```
+- macOS on Apple Silicon
+- [mise](https://mise.jdx.dev) — `curl https://mise.run | sh`
+- [Homebrew](https://brew.sh)
+- Xcode (from App Store)
 
 ## Examples
 
-| Example | Framework | What it shows |
-|---------|-----------|---------------|
-| `examples/tauri-basic` | Tauri v2 | Webview app — iOS sim, macOS, Windows via UTM |
-| `examples/hybrid-dashboard` | Gio | Embedded HTTP server + WebView + deep linking |
-| `examples/gio-plugin-webviewer` | Gio | Full browser UI with tabs via webviewer plugin |
-| `examples/gio-plugin-hyperlink` | Gio | Opening URLs via hyperlink plugin |
-| `examples/gio-basic` | Gio | Grid rendering with `gioui.org/x/component` |
-
-## Platform support
-
-| Platform | Tauri | Gio | How |
-|----------|-------|-----|-----|
-| macOS | Tested | Tested | Host Mac |
-| iOS | Sim only* | Tested | Host Mac (Xcode) |
-| Android | Tested | Tested | Host Mac (NDK) |
-| Windows | Tested | Cross-compile | UTM VM (WinRM) |
-| Linux | Planned | Cross-compile | UTM VM |
-
-*iOS device builds require a signing cert. Sim builds work without one (`--target aarch64-sim` added automatically).
-
-## Development
-
-```bash
-mise run build    # go build -o .bin/utm-dev .
-mise run test     # go test ./...
-mise run ci       # test + self build --obfuscate
-```
-
-## Gio version pinning
-
-Never use `@latest` — causes panics:
-
-```bash
-go get gioui.org@7bcb315ee174
-go get github.com/gioui-plugins/gio-plugins@v0.9.1
-```
-
-## Credits
-
-- [Tauri](https://tauri.app) — Rust-based cross-platform app framework
-- [Gio UI](https://gioui.org) — pure Go immediate-mode UI
-- [gio-plugins](https://github.com/gioui-plugins/gio-plugins) — native webview, file picker, etc.
-- [UTM](https://mac.getutm.app) — virtual machines for Apple Silicon
-
-## License
-
-[Check LICENSE file]
+See [`examples/tauri-basic/`](examples/tauri-basic/) — a working Tauri app with per-platform build tasks.
