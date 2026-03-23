@@ -2,8 +2,6 @@ module example-gio-app
 
 go 1.24.4
 
-replace gioui.org => ../../.src/gio
-
 require (
 	gioui.org v0.9.1-0.20251215212054-7bcb315ee174
 	gioui.org/x v0.9.0

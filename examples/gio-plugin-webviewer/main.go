@@ -285,22 +285,8 @@ func main() {
 	DefaultURL = cfg.URL
 	fmt.Printf("Loading %s (%s)\n", cfg.Name, cfg.URL)
 
-	// Initialize structured logger (APP role — this is a user app)
-	log, err := logging.New(logging.Config{
-		AppName: cfg.Name,
-		Role:    logging.RoleApp,
-	})
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "warning: logging init failed: %v\n", err)
-	}
-	defer log.Close()
-
-	plat := logging.DetectPlatform()
-	log.Info("app starting",
-		"url", cfg.URL,
-		"platform", plat.DisplayName(),
-		"canSelfUpdate", plat.CanSelfUpdate(),
-	)
+	log := &simpleLogger{}
+	fmt.Printf("app starting: url=%s platform=%s\n", cfg.URL, runtime.GOOS)
 
 	// Check for updates in the background (non-blocking)
 	if cfg.Update.Repo != "" && cfg.Update.Asset != "" {
@@ -380,8 +366,15 @@ type Browsers struct {
 	navigateSent bool            // NavigateCmd has been sent
 	startTime    time.Time       // when first frame was rendered
 	window       *app.Window     // for calling Invalidate directly
-	log          *logging.Logger // structured runtime logger
+	log          *simpleLogger // structured runtime logger
 }
+
+// simpleLogger replaces the deleted pkg/logging with minimal fmt-based logging.
+type simpleLogger struct{}
+
+func (l *simpleLogger) Close() error                       { return nil }
+func (l *simpleLogger) Info(msg string, kv ...interface{})  { fmt.Println(append([]interface{}{msg}, kv...)...) }
+func (l *simpleLogger) Event(msg string, kv ...interface{}) { fmt.Println(append([]interface{}{msg}, kv...)...) }
 
 func NewBrowser() *Browsers {
 	b := &Browsers{}

@@ -2,10 +2,6 @@ module gio-plugin-hyperlink
 
 go 1.24.4
 
-replace gioui.org => ../../.src/gio
-
-replace github.com/gioui-plugins/gio-plugins => ../../.src/gio-plugins
-
 require (
 	gioui.org v0.9.1-0.20251215212054-7bcb315ee174
 	github.com/gioui-plugins/gio-plugins v0.9.1
