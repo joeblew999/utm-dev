@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/joeblew999/utm-dev/pkg/cli"
 )
 
 // CreateVMOptions contains options for VM creation
@@ -76,9 +78,7 @@ func createVMAutomated(vmKey string, vm *VMEntry, isoPath, shareDir string, disk
 		return fmt.Errorf("failed to get UTM version: %w\nMake sure UTM is installed. Run 'utm-dev utm install' to install it", err)
 	}
 
-	if opts.Verbose {
-		fmt.Printf("UTM version: %s\n", version)
-	}
+	cli.Debug("UTM version: %s", version)
 
 	// Launch UTM if not running
 	if err := LaunchUTM(); err != nil {
@@ -96,13 +96,13 @@ func createVMAutomated(vmKey string, vm *VMEntry, isoPath, shareDir string, disk
 		if !opts.Force {
 			return fmt.Errorf("VM '%s' already exists. Use --force to recreate", vmName)
 		}
-		fmt.Printf("Removing existing VM '%s'...\n", vmName)
+		cli.Info("Removing existing VM '%s'...", vmName)
 		if err := DeleteVMFromUTM(vmName); err != nil {
-			fmt.Printf("Warning: failed to delete existing VM: %v\n", err)
+			cli.Warn("failed to delete existing VM: %v", err)
 		}
 	}
 
-	fmt.Printf("Creating VM '%s'...\n", vmName)
+	cli.Info("Creating VM '%s'...", vmName)
 
 	// Step 1: Create VM
 	createCmd := []string{
@@ -112,9 +112,7 @@ func createVMAutomated(vmKey string, vm *VMEntry, isoPath, shareDir string, disk
 		"--arch", string(arch),
 	}
 
-	if opts.Verbose {
-		fmt.Printf("  Running: %s\n", strings.Join(createCmd, " "))
-	}
+	cli.Debug("  Running: %s", strings.Join(createCmd, " "))
 
 	output, err := ExecuteOsaScript(createCmd...)
 	if err != nil {
@@ -126,12 +124,10 @@ func createVMAutomated(vmKey string, vm *VMEntry, isoPath, shareDir string, disk
 		return fmt.Errorf("failed to get VM ID: %w (output: %s)", err, output)
 	}
 
-	if opts.Verbose {
-		fmt.Printf("  VM ID: %s\n", vmID)
-	}
+	cli.Debug("  VM ID: %s", vmID)
 
 	// Step 2: Customize VM (CPU, RAM, UEFI)
-	fmt.Printf("Configuring hardware (CPU=%d, RAM=%dMB)...\n", vm.Template.CPU, vm.Template.RAM)
+	cli.Info("Configuring hardware (CPU=%d, RAM=%dMB)...", vm.Template.CPU, vm.Template.RAM)
 
 	customizeCmd := []string{
 		"customize_vm.applescript", vmID,
@@ -148,9 +144,7 @@ func createVMAutomated(vmKey string, vm *VMEntry, isoPath, shareDir string, disk
 		customizeCmd = append(customizeCmd, "--use-hypervisor", strconv.FormatBool(useHypervisor))
 	}
 
-	if opts.Verbose {
-		fmt.Printf("  Running: %s\n", strings.Join(customizeCmd, " "))
-	}
+	cli.Debug("  Running: %s", strings.Join(customizeCmd, " "))
 
 	if _, err := ExecuteOsaScript(customizeCmd...); err != nil {
 		// Cleanup on failure
@@ -159,7 +153,7 @@ func createVMAutomated(vmKey string, vm *VMEntry, isoPath, shareDir string, disk
 	}
 
 	// Step 3: Add disk drive
-	fmt.Printf("Adding disk (%d GB)...\n", diskSizeMB/1024)
+	cli.Info("Adding disk (%d GB)...", diskSizeMB/1024)
 
 	// Windows needs nvme — no virtio-blk driver in the Windows installer
 	diskInterface := "virtio"
@@ -173,9 +167,7 @@ func createVMAutomated(vmKey string, vm *VMEntry, isoPath, shareDir string, disk
 		"--size", strconv.Itoa(diskSizeMB),
 	}
 
-	if opts.Verbose {
-		fmt.Printf("  Running: %s\n", strings.Join(addDriveCmd, " "))
-	}
+	cli.Debug("  Running: %s", strings.Join(addDriveCmd, " "))
 
 	if _, err := ExecuteOsaScript(addDriveCmd...); err != nil {
 		DeleteVMFromUTM(vmName)
@@ -183,7 +175,7 @@ func createVMAutomated(vmKey string, vm *VMEntry, isoPath, shareDir string, disk
 	}
 
 	// Step 4: Attach ISO
-	fmt.Printf("Attaching ISO...\n")
+	cli.Info("Attaching ISO...")
 
 	// Use USB interface for ISO (widely compatible)
 	isoControllerCode, _ := GetControllerEnumCode("usb")
@@ -193,9 +185,7 @@ func createVMAutomated(vmKey string, vm *VMEntry, isoPath, shareDir string, disk
 		"--source", isoPath,
 	}
 
-	if opts.Verbose {
-		fmt.Printf("  Running: %s\n", strings.Join(attachISOCmd, " "))
-	}
+	cli.Debug("  Running: %s", strings.Join(attachISOCmd, " "))
 
 	if _, err := ExecuteOsaScript(attachISOCmd...); err != nil {
 		DeleteVMFromUTM(vmName)
@@ -203,32 +193,30 @@ func createVMAutomated(vmKey string, vm *VMEntry, isoPath, shareDir string, disk
 	}
 
 	// Step 5: Add network interface (shared network for internet access)
-	fmt.Printf("Configuring network...\n")
+	cli.Info("Configuring network...")
 
 	networkCode, _ := GetNetworkModeEnumCode("shared")
 	addNetworkCmd := []string{
 		"add_network_interface.applescript", vmID, networkCode,
 	}
 
-	if opts.Verbose {
-		fmt.Printf("  Running: %s\n", strings.Join(addNetworkCmd, " "))
-	}
+	cli.Debug("  Running: %s", strings.Join(addNetworkCmd, " "))
 
 	if _, err := ExecuteOsaScript(addNetworkCmd...); err != nil {
 		// Network is optional, just warn
-		fmt.Printf("Warning: failed to add network interface: %v\n", err)
+		cli.Warn("failed to add network interface: %v", err)
 	}
 
-	fmt.Printf("\n✅ VM '%s' created successfully!\n", vmName)
-	fmt.Printf("\nNext steps:\n")
-	fmt.Printf("  1. Start the VM:  utm-dev utm start \"%s\"\n", vmName)
-	fmt.Printf("  2. Complete OS installation in the VM window\n")
-	fmt.Printf("  3. After installation, eject the ISO from UTM settings\n")
-	fmt.Printf("\nShared folder: %s\n", shareDir)
+	cli.Success("VM '%s' created successfully!", vmName)
+	cli.Info("\nNext steps:")
+	cli.Info("  1. Start the VM:  utm-dev utm start \"%s\"", vmName)
+	cli.Info("  2. Complete OS installation in the VM window")
+	cli.Info("  3. After installation, eject the ISO from UTM settings")
+	cli.Info("\nShared folder: %s", shareDir)
 	if vm.OS == "windows" {
-		fmt.Printf("  Access in guest: \\\\mac\\share (auto-mounted via SPICE WebDAV)\n")
+		cli.Info("  Access in guest: \\\\mac\\share (auto-mounted via SPICE WebDAV)")
 	} else {
-		fmt.Printf("  Mount in guest: sudo mount -t virtiofs share /mnt/share\n")
+		cli.Info("  Mount in guest: sudo mount -t virtiofs share /mnt/share")
 	}
 
 	return nil
@@ -238,57 +226,57 @@ func createVMAutomated(vmKey string, vm *VMEntry, isoPath, shareDir string, disk
 func showManualInstructions(vmKey string, vm *VMEntry, isoPath, shareDir string, diskSizeMB int) error {
 	paths := GetPaths()
 
-	fmt.Printf("VM Setup for '%s'\n", vmKey)
-	fmt.Printf("══════════════════════════════════════════════════════════\n\n")
+	cli.Info("VM Setup for '%s'", vmKey)
+	cli.Info("══════════════════════════════════════════════════════════")
 
-	fmt.Printf("Specs from gallery:\n")
-	fmt.Printf("  Name: %s\n", vm.Name)
-	fmt.Printf("  RAM:  %d MB\n", vm.Template.RAM)
-	fmt.Printf("  CPU:  %d cores\n", vm.Template.CPU)
-	fmt.Printf("  Disk: %d GB\n", diskSizeMB/1024)
+	cli.Info("\nSpecs from gallery:")
+	cli.Info("  Name: %s", vm.Name)
+	cli.Info("  RAM:  %d MB", vm.Template.RAM)
+	cli.Info("  CPU:  %d cores", vm.Template.CPU)
+	cli.Info("  Disk: %d GB", diskSizeMB/1024)
 	fmt.Println()
 
-	fmt.Printf("Files prepared:\n")
-	fmt.Printf("  ISO:   %s\n", isoPath)
-	fmt.Printf("  Share: %s\n", shareDir)
+	cli.Info("Files prepared:")
+	cli.Info("  ISO:   %s", isoPath)
+	cli.Info("  Share: %s", shareDir)
 	fmt.Println()
 
 	// Open UTM
-	fmt.Println("Opening UTM...")
+	cli.Info("Opening UTM...")
 	LaunchUTM()
 
 	fmt.Println()
-	fmt.Printf("Create VM in UTM:\n")
-	fmt.Printf("══════════════════════════════════════════════════════════\n")
-	fmt.Printf("1. Click + (Create New Virtual Machine)\n")
+	cli.Info("Create VM in UTM:")
+	cli.Info("══════════════════════════════════════════════════════════")
+	cli.Info("1. Click + (Create New Virtual Machine)")
 	if vm.OS == "windows" {
-		fmt.Printf("2. Select: Virtualize → Windows\n")
-		fmt.Printf("3. Boot ISO: Browse to:\n")
-		fmt.Printf("   %s\n", isoPath)
-		fmt.Printf("4. Hardware: RAM=%d MB, CPU=%d cores\n", vm.Template.RAM, vm.Template.CPU)
-		fmt.Printf("5. Storage: %d GB\n", diskSizeMB/1024)
-		fmt.Printf("6. Shared Directory: Enable and set to:\n")
-		fmt.Printf("   %s\n", shareDir)
-		fmt.Printf("7. Name: %s\n", vm.Name)
-		fmt.Printf("8. Save and Start\n")
+		cli.Info("2. Select: Virtualize → Windows")
+		cli.Info("3. Boot ISO: Browse to:")
+		cli.Info("   %s", isoPath)
+		cli.Info("4. Hardware: RAM=%d MB, CPU=%d cores", vm.Template.RAM, vm.Template.CPU)
+		cli.Info("5. Storage: %d GB", diskSizeMB/1024)
+		cli.Info("6. Shared Directory: Enable and set to:")
+		cli.Info("   %s", shareDir)
+		cli.Info("7. Name: %s", vm.Name)
+		cli.Info("8. Save and Start")
 		fmt.Println()
-		fmt.Printf("After OS installation, access shared files at:\n")
-		fmt.Printf("  Host:  %s\n", shareDir)
-		fmt.Printf("  Guest: \\\\mac\\share (auto-mounted via SPICE WebDAV)\n")
+		cli.Info("After OS installation, access shared files at:")
+		cli.Info("  Host:  %s", shareDir)
+		cli.Info("  Guest: \\\\mac\\share (auto-mounted via SPICE WebDAV)")
 	} else {
-		fmt.Printf("2. Select: Virtualize → Linux\n")
-		fmt.Printf("3. Boot ISO: Browse to:\n")
-		fmt.Printf("   %s\n", isoPath)
-		fmt.Printf("4. Hardware: RAM=%d MB, CPU=%d cores\n", vm.Template.RAM, vm.Template.CPU)
-		fmt.Printf("5. Storage: %d GB\n", diskSizeMB/1024)
-		fmt.Printf("6. Shared Directory: Enable and set to:\n")
-		fmt.Printf("   %s\n", shareDir)
-		fmt.Printf("7. Name: %s\n", vm.Name)
-		fmt.Printf("8. Save and Start\n")
+		cli.Info("2. Select: Virtualize → Linux")
+		cli.Info("3. Boot ISO: Browse to:")
+		cli.Info("   %s", isoPath)
+		cli.Info("4. Hardware: RAM=%d MB, CPU=%d cores", vm.Template.RAM, vm.Template.CPU)
+		cli.Info("5. Storage: %d GB", diskSizeMB/1024)
+		cli.Info("6. Shared Directory: Enable and set to:")
+		cli.Info("   %s", shareDir)
+		cli.Info("7. Name: %s", vm.Name)
+		cli.Info("8. Save and Start")
 		fmt.Println()
-		fmt.Printf("After OS installation, access shared files at:\n")
-		fmt.Printf("  Host:  %s\n", shareDir)
-		fmt.Printf("  Guest: /mnt/share (mount with: sudo mount -t virtiofs share /mnt/share)\n")
+		cli.Info("After OS installation, access shared files at:")
+		cli.Info("  Host:  %s", shareDir)
+		cli.Info("  Guest: /mnt/share (mount with: sudo mount -t virtiofs share /mnt/share)")
 	}
 
 	_ = paths // unused but kept for consistency

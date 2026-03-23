@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/joeblew999/utm-dev/pkg/cli"
 )
 
 // MigrationResult represents the result of a migration operation
@@ -37,8 +39,8 @@ func MigrateUTMApp() (*MigrationResult, error) {
 	// Check if global already exists
 	globalCtl := filepath.Join(paths.App, "Contents/MacOS/utmctl")
 	if _, err := os.Stat(globalCtl); err == nil {
-		fmt.Printf("UTM.app already exists at global location %s\n", paths.App)
-		fmt.Println("Removing legacy installation...")
+		cli.Info("UTM.app already exists at global location %s", paths.App)
+		cli.Info("Removing legacy installation...")
 		os.RemoveAll(legacy.App)
 		result.Skipped = true
 		return result, nil
@@ -50,12 +52,12 @@ func MigrateUTMApp() (*MigrationResult, error) {
 		return result, err
 	}
 
-	fmt.Printf("Migrating UTM.app from %s to %s...\n", legacy.App, paths.App)
+	cli.Info("Migrating UTM.app from %s to %s...", legacy.App, paths.App)
 
 	// Try rename first (fastest if same filesystem)
 	if err := os.Rename(legacy.App, paths.App); err != nil {
 		// Cross-device, need to copy
-		fmt.Println("Cross-device move, copying...")
+		cli.Info("Cross-device move, copying...")
 		if err := copyDirRecursive(legacy.App, paths.App); err != nil {
 			result.Error = err
 			return result, err
@@ -114,14 +116,14 @@ func MigrateISOs() ([]MigrationResult, error) {
 
 		// Check if already exists at global location
 		if _, err := os.Stat(globalPath); err == nil {
-			fmt.Printf("ISO %s already exists at global location, removing legacy...\n", entry.Name())
+			cli.Info("ISO %s already exists at global location, removing legacy...", entry.Name())
 			os.Remove(legacyPath)
 			result.Skipped = true
 			results = append(results, result)
 			continue
 		}
 
-		fmt.Printf("Migrating %s...\n", entry.Name())
+		cli.Info("Migrating %s...", entry.Name())
 
 		// Try rename first
 		if err := os.Rename(legacyPath, globalPath); err != nil {
@@ -158,31 +160,31 @@ func MigrateISOs() ([]MigrationResult, error) {
 
 // MigrateAll performs full migration from legacy to global paths
 func MigrateAll() error {
-	fmt.Println("=== UTM Migration ===")
+	cli.Info("=== UTM Migration ===")
 	fmt.Println()
-	fmt.Printf("Legacy paths:  .bin/UTM.app, .data/utm/iso/\n")
+	cli.Info("Legacy paths:  .bin/UTM.app, .data/utm/iso/")
 	paths := GetPaths()
-	fmt.Printf("Global paths:  %s, %s\n", paths.App, paths.ISO)
+	cli.Info("Global paths:  %s, %s", paths.App, paths.ISO)
 	fmt.Println()
 
 	// Migrate UTM app
-	fmt.Println("Checking UTM.app...")
+	cli.Info("Checking UTM.app...")
 	appResult, err := MigrateUTMApp()
 	if err != nil {
 		return fmt.Errorf("failed to migrate UTM.app: %w", err)
 	}
 	if appResult.Migrated {
-		fmt.Printf("  ✓ Migrated to %s\n", appResult.Destination)
+		cli.Success("Migrated to %s", appResult.Destination)
 	} else if appResult.Skipped {
-		fmt.Println("  Skipped (already at global location or not found locally)")
+		cli.Info("  Skipped (already at global location or not found locally)")
 	} else if appResult.Error != nil {
-		fmt.Printf("  ✗ Error: %v\n", appResult.Error)
+		cli.Error("Migration error: %v", appResult.Error)
 	}
 
 	fmt.Println()
 
 	// Migrate ISOs
-	fmt.Println("Checking ISOs...")
+	cli.Info("Checking ISOs...")
 	isoResults, err := MigrateISOs()
 	if err != nil {
 		return fmt.Errorf("failed to migrate ISOs: %w", err)
@@ -192,19 +194,19 @@ func MigrateAll() error {
 	for _, r := range isoResults {
 		if r.Migrated {
 			migrated++
-			fmt.Printf("  ✓ Migrated: %s\n", filepath.Base(r.Source))
+			cli.Success("Migrated: %s", filepath.Base(r.Source))
 		} else if r.Error != nil {
-			fmt.Printf("  ✗ Error migrating %s: %v\n", filepath.Base(r.Source), r.Error)
+			cli.Error("Error migrating %s: %v", filepath.Base(r.Source), r.Error)
 		}
 	}
 	if migrated == 0 && len(isoResults) == 0 {
-		fmt.Println("  No ISOs to migrate")
+		cli.Info("  No ISOs to migrate")
 	}
 
 	fmt.Println()
-	fmt.Println("Migration complete!")
+	cli.Success("Migration complete!")
 	fmt.Println()
-	fmt.Println("Verify with: utm-dev utm paths")
+	cli.Info("Verify with: utm-dev utm paths")
 
 	return nil
 }

@@ -3,29 +3,39 @@ package cmd
 import (
 	"os"
 
+	"github.com/joeblew999/utm-dev/pkg/cli"
 	"github.com/joeblew999/utm-dev/pkg/schema"
 	"github.com/spf13/cobra"
 )
 
 var rootCmd = &cobra.Command{
 	Use:   "utm-dev",
-	Short: "Build cross-platform hybrid apps with Go",
-	Long: `utm-dev - Build cross-platform hybrid applications using Go and Gio UI.
+	Short: "Build and test cross-platform apps (Tauri desktop + Gio mobile)",
+	Long: `utm-dev - Cross-platform build tooling for Tauri and Gio apps.
 
-Write HTML/CSS once → Deploy everywhere: Web, iOS, Android, Desktop
+Tauri desktop apps tested via UTM VMs on Apple Silicon.
+Gio mobile apps (iOS/Android) built on host Mac.
+SDK management so devs don't pollute their OS.
 
-QUICK START:
-  utm-dev build macos examples/hybrid-dashboard   Build for macOS
-  utm-dev run macos examples/hybrid-dashboard     Build and run
-  utm-dev icons examples/hybrid-dashboard         Generate icons
+TAURI (desktop + mobile):
+  utm-dev tauri dev examples/tauri-basic           Dev mode with hot reload
+  utm-dev tauri build macos examples/tauri-basic    Build macOS .app/.dmg
+  utm-dev tauri build windows examples/tauri-basic  Build in Windows UTM VM
+  utm-dev tauri build ios examples/tauri-basic      Build for iOS
+  utm-dev tauri run ios examples/tauri-basic        Run on iOS simulator
+
+GIO (mobile):
+  utm-dev build android examples/hybrid-dashboard  Build APK
+  utm-dev run android examples/hybrid-dashboard    Build + install + launch
+
+UTM VMs:
+  utm-dev utm install windows-11                   Download + import VM
+  utm-dev utm start "Windows 11"                   Start VM
+  utm-dev utm exec "Windows 11" -- whoami          Run command in VM
 
 SDK MANAGEMENT:
-  utm-dev install ndk-bundle                      Install Android NDK
-  utm-dev list                                    List available SDKs
-
-DOCUMENTATION:
-  utm-dev docs                                    Generate CLI docs
-  https://github.com/joeblew999/utm-dev`,
+  utm-dev install ndk-bundle                       Install Android NDK
+  utm-dev list                                     List available SDKs`,
 }
 
 func Execute() {
@@ -48,6 +58,18 @@ func init() {
 	// Enable shell completion descriptions
 	rootCmd.CompletionOptions.DisableDefaultCmd = false
 	rootCmd.CompletionOptions.HiddenDefaultCmd = false
+
+	// Verbosity flags
+	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Show debug output")
+	rootCmd.PersistentFlags().BoolP("quiet", "q", false, "Suppress info/success output")
+	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+		if v, _ := cmd.Flags().GetBool("verbose"); v {
+			cli.SetVerbose(true)
+		}
+		if q, _ := cmd.Flags().GetBool("quiet"); q {
+			cli.SetQuiet(true)
+		}
+	}
 
 	// Version flag
 	rootCmd.Version = getVersion()

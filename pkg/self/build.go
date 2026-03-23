@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/joeblew999/utm-dev/pkg/cli"
 	"github.com/joeblew999/utm-dev/pkg/installer"
 	"github.com/joeblew999/utm-dev/pkg/self/output"
 	"github.com/joeblew999/utm-dev/pkg/utils"
@@ -39,7 +40,7 @@ func Build(opts BuildOptions) error {
 	// Check if garble is needed and install if missing
 	if opts.Obfuscate {
 		if !installer.IsGarbleInstalled() {
-			fmt.Println("📥 Garble not found, installing...")
+			cli.Info("Garble not found, installing...")
 
 			// Create cache for garble installation
 			cache, err := utils.NewCacheWithDirectories()
@@ -53,7 +54,7 @@ func Build(opts BuildOptions) error {
 
 			result.GarbleInstalled = true
 		}
-		fmt.Println("🔒 Building with garble obfuscation...")
+		cli.Info("Building with garble obfuscation...")
 	}
 
 	// Build for all supported architectures
@@ -133,7 +134,7 @@ func Build(opts BuildOptions) error {
 	}
 
 	result.OutputDir = distDir
-	fmt.Printf("✅ Release artifacts prepared in: %s\n", distDir)
+	cli.Success("Release artifacts prepared in: %s", distDir)
 
 	output.OK("self build", result)
 	return nil

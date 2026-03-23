@@ -9,6 +9,8 @@ import (
 	"strings"
 	"text/template"
 	"time"
+
+	"github.com/joeblew999/utm-dev/pkg/cli"
 )
 
 //go:embed templates/macos-info.plist.tmpl
@@ -83,7 +85,7 @@ func CreateMacOSBundle(config MacOSBundleConfig) error {
 	macOSDir := filepath.Join(contentsDir, "MacOS")
 	resourcesDir := filepath.Join(contentsDir, "Resources")
 
-	fmt.Printf("📦 Creating macOS app bundle: %s\n", appBundlePath)
+	cli.Info("Creating macOS app bundle: %s", appBundlePath)
 
 	// Create directories
 	if err := os.MkdirAll(macOSDir, 0755); err != nil {
@@ -102,16 +104,16 @@ func CreateMacOSBundle(config MacOSBundleConfig) error {
 		return fmt.Errorf("failed to make binary executable: %w", err)
 	}
 
-	fmt.Printf("  ✓ Binary copied to %s\n", executablePath)
+	cli.Success("Binary copied to %s", executablePath)
 
 	// Copy icon if available
 	if config.IconPath != "" {
 		if _, err := os.Stat(config.IconPath); err == nil {
 			iconDst := filepath.Join(resourcesDir, "AppIcon.icns")
 			if err := copyFile(config.IconPath, iconDst); err != nil {
-				fmt.Printf("  ⚠️  Failed to copy icon: %v\n", err)
+				cli.Warn("Failed to copy icon: %v", err)
 			} else {
-				fmt.Printf("  ✓ Icon copied to %s\n", iconDst)
+				cli.Success("Icon copied to %s", iconDst)
 			}
 		}
 	}
@@ -122,7 +124,7 @@ func CreateMacOSBundle(config MacOSBundleConfig) error {
 		return fmt.Errorf("failed to generate Info.plist: %w", err)
 	}
 
-	fmt.Printf("  ✓ Info.plist created\n")
+	cli.Success("Info.plist created")
 
 	// Generate entitlements if needed
 	var entitlementsPath string
@@ -131,7 +133,7 @@ func CreateMacOSBundle(config MacOSBundleConfig) error {
 		if err := generateEntitlements(entitlementsPath); err != nil {
 			return fmt.Errorf("failed to generate entitlements: %w", err)
 		}
-		fmt.Printf("  ✓ Entitlements.plist created\n")
+		cli.Success("Entitlements.plist created")
 	}
 
 	// Code signing
@@ -139,8 +141,8 @@ func CreateMacOSBundle(config MacOSBundleConfig) error {
 		return fmt.Errorf("failed to sign bundle: %w", err)
 	}
 
-	fmt.Printf("✅ macOS app bundle created successfully\n")
-	fmt.Printf("📍 Location: %s\n", appBundlePath)
+	cli.Success("macOS app bundle created successfully")
+	cli.Info("Location: %s", appBundlePath)
 
 	return nil
 }
@@ -181,15 +183,15 @@ func generateEntitlements(path string) error {
 func signBundle(bundlePath, identity, entitlementsPath string) error {
 	// Detect signing identity if not provided
 	if identity == "" {
-		fmt.Println("🔐 Checking for code signing certificate...")
+		cli.Info("Checking for code signing certificate...")
 		detectedIdentity := detectSigningIdentity()
 
 		if detectedIdentity == "" {
-			fmt.Println("⚠️  No code signing certificate found")
-			fmt.Println("   Using ad-hoc signature (suitable for local testing)")
+			cli.Warn("No code signing certificate found")
+			cli.Info("   Using ad-hoc signature (suitable for local testing)")
 			identity = "-" // Ad-hoc signature
 		} else {
-			fmt.Printf("✓ Found signing identity: %s\n", detectedIdentity)
+			cli.Success("Found signing identity: %s", detectedIdentity)
 			identity = detectedIdentity
 		}
 	}
@@ -209,7 +211,7 @@ func signBundle(bundlePath, identity, entitlementsPath string) error {
 
 	args = append(args, bundlePath)
 
-	fmt.Printf("🔏 Signing app bundle...\n")
+	cli.Info("Signing app bundle...")
 	cmd := exec.Command("codesign", args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -217,13 +219,13 @@ func signBundle(bundlePath, identity, entitlementsPath string) error {
 	}
 
 	// Verify signature
-	fmt.Println("🔍 Verifying signature...")
+	cli.Info("Verifying signature...")
 	verifyCmd := exec.Command("codesign", "--verify", "--deep", "--strict", bundlePath)
 	if output, err := verifyCmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("signature verification failed: %w\nOutput: %s", err, output)
 	}
 
-	fmt.Println("  ✓ App bundle signed successfully")
+	cli.Success("App bundle signed successfully")
 
 	return nil
 }

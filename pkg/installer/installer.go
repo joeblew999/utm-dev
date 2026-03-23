@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/joeblew999/utm-dev/pkg/cli"
 	"github.com/joeblew999/utm-dev/pkg/config"
 	"github.com/schollz/progressbar/v3"
 )
@@ -30,7 +31,7 @@ type SDK struct {
 func Install(sdk *SDK, cache *Cache) error {
 	// Check if the SDK is already cached
 	if cache.IsCached(sdk) {
-		fmt.Printf("%s %s is already installed and up-to-date.\n", sdk.Name, sdk.Version)
+		cli.Info("%s %s is already installed and up-to-date.", sdk.Name, sdk.Version)
 		return nil
 	}
 
@@ -44,14 +45,14 @@ func Install(sdk *SDK, cache *Cache) error {
 	if _, err := os.Stat(dest); err == nil {
 		// Verify it's actually complete by checking for expected files
 		if isSDKComplete(dest, sdk.Name) {
-			fmt.Printf("✅ %s %s is already installed at %s\n", sdk.Name, sdk.Version, dest)
+			cli.Success("%s %s is already installed at %s", sdk.Name, sdk.Version, dest)
 			cache.Add(sdk)
 			if err := cache.Save(); err != nil {
 				return fmt.Errorf("failed to save cache: %w", err)
 			}
 			return nil
 		}
-		fmt.Printf("⚠️  %s found but appears incomplete, reinstalling...\n", sdk.Name)
+		cli.Warn("%s found but appears incomplete, reinstalling...", sdk.Name)
 		os.RemoveAll(dest)
 	}
 
@@ -60,7 +61,7 @@ func Install(sdk *SDK, cache *Cache) error {
 		return fmt.Errorf("cannot automatically install SDK %s. Please install it manually (e.g., by installing or updating Xcode) and ensure it is available at %s", sdk.Name, dest)
 	}
 
-	fmt.Printf("📥 Downloading %s %s...\n", sdk.Name, sdk.Version)
+	cli.Info("Downloading %s %s...", sdk.Name, sdk.Version)
 
 	// Create a temporary file with the correct extension from the URL
 	fileExt := filepath.Ext(sdk.URL)
@@ -81,19 +82,19 @@ func Install(sdk *SDK, cache *Cache) error {
 	maxRetries := 3
 	var resp *http.Response
 	for attempt := 1; attempt <= maxRetries; attempt++ {
-		fmt.Printf("🔄 Download attempt %d/%d...\n", attempt, maxRetries)
-		
+		cli.Info("Download attempt %d/%d...", attempt, maxRetries)
+
 		resp, err = client.Do(req)
 		if err == nil && resp.StatusCode == http.StatusOK {
 			break
 		}
-		
+
 		if attempt < maxRetries {
 			if resp != nil {
 				resp.Body.Close()
 			}
 			backoff := time.Duration(attempt) * time.Second
-			fmt.Printf("⏳ Retrying in %v...\n", backoff)
+			cli.Warn("Retrying in %v...", backoff)
 			time.Sleep(backoff)
 		} else {
 			if resp != nil {
@@ -153,9 +154,9 @@ func Install(sdk *SDK, cache *Cache) error {
 	if expectedChecksum != "" && calculatedChecksum != expectedChecksum {
 		return fmt.Errorf("checksum mismatch: expected %s, got %s", expectedChecksum, calculatedChecksum)
 	}
-	fmt.Println("✅ Checksum verified.")
+	cli.Success("Checksum verified.")
 
-	fmt.Printf("📦 Downloaded %s %s (%.1f MB)\n", sdk.Name, sdk.Version, float64(contentLength)/1024/1024)
+	cli.Info("Downloaded %s %s (%.1f MB)", sdk.Name, sdk.Version, float64(contentLength)/1024/1024)
 
 	// The destination is already resolved, so we don't need to call ResolveInstallPath again.
 
@@ -164,11 +165,11 @@ func Install(sdk *SDK, cache *Cache) error {
 		return fmt.Errorf("failed to create destination directory: %w", err)
 	}
 
-	fmt.Printf("📂 Extracting to %s...\n", dest)
+	cli.Info("Extracting to %s...", dest)
 	if err := Extract(tmpFile.Name(), dest); err != nil {
 		return fmt.Errorf("failed to extract SDK: %w", err)
 	}
-	fmt.Println("✅ Extraction complete.")
+	cli.Success("Extraction complete.")
 
 	// Add to cache and save
 	cache.Add(sdk)
@@ -176,18 +177,18 @@ func Install(sdk *SDK, cache *Cache) error {
 		return fmt.Errorf("failed to save cache: %w", err)
 	}
 
-	fmt.Printf("Successfully installed %s %s to %s\n", sdk.Name, sdk.Version, dest)
+	cli.Success("Successfully installed %s %s to %s", sdk.Name, sdk.Version, dest)
 
 	// If OpenJDK was installed, print instructions for setting JAVA_HOME
 	if strings.Contains(sdk.Name, "openjdk") {
-		fmt.Println("\n---------------------------------------------------------------------")
-		fmt.Println("IMPORTANT: To use this JDK for Android development with Gio,")
-		fmt.Println("you need to set the JAVA_HOME environment variable.")
-		fmt.Println("\nFor your current shell session, run:")
-		fmt.Printf("export JAVA_HOME=\"%s\"\n", dest)
-		fmt.Println("\nTo make this change permanent, add the line above to your")
-		fmt.Println("shell profile file (e.g., ~/.zshrc, ~/.bash_profile).")
-		fmt.Println("---------------------------------------------------------------------")
+		cli.Info("\n---------------------------------------------------------------------")
+		cli.Info("IMPORTANT: To use this JDK for Android development with Gio,")
+		cli.Info("you need to set the JAVA_HOME environment variable.")
+		cli.Info("\nFor your current shell session, run:")
+		cli.Info("export JAVA_HOME=\"%s\"", dest)
+		cli.Info("\nTo make this change permanent, add the line above to your")
+		cli.Info("shell profile file (e.g., ~/.zshrc, ~/.bash_profile).")
+		cli.Info("---------------------------------------------------------------------")
 	}
 
 	return nil
@@ -241,54 +242,54 @@ func isSDKComplete(dest, sdkName string) bool {
 
 // InstallAndroidSDK installs Android SDK components using sdkmanager with proper path handling
 func InstallAndroidSDK(sdkName, sdkManagerName, sdkRoot string) error {
-	fmt.Printf("📦 Installing %s via Android SDK Manager...\n", sdkName)
-	
+	cli.Info("Installing %s via Android SDK Manager...", sdkName)
+
 	// Ensure paths are properly formatted for Java
 	sdkRoot = filepath.Clean(sdkRoot)
 	cmdlineToolsPath := filepath.Join(sdkRoot, "cmdline-tools", "11.0", "cmdline-tools", "bin")
 	javaHome := filepath.Join(sdkRoot, "openjdk", "17", "jdk-17.0.11+9", "Contents", "Home")
-	
+
 	// Check if sdkmanager exists
 	sdkManagerPath := filepath.Join(cmdlineToolsPath, "sdkmanager")
 	if _, err := os.Stat(sdkManagerPath); os.IsNotExist(err) {
 		return fmt.Errorf("sdkmanager not found at %s", sdkManagerPath)
 	}
-	
+
 	// Set up environment with proper path handling
 	env := os.Environ()
 	env = append(env, "JAVA_HOME="+javaHome)
 	env = append(env, "ANDROID_SDK_ROOT="+sdkRoot)
 	env = append(env, "ANDROID_HOME="+sdkRoot)
-	
+
 	// Add tools to PATH
 	pathEnv := "PATH=" + cmdlineToolsPath + string(os.PathListSeparator) + os.Getenv("PATH")
 	env = append(env, pathEnv)
-	
+
 	// Create command with proper argument handling
 	cmd := exec.Command(sdkManagerPath, sdkManagerName, "--sdk_root="+sdkRoot)
 	cmd.Env = env
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	
+
 	// Add retry logic
 	maxRetries := 3
 	for attempt := 1; attempt <= maxRetries; attempt++ {
-		fmt.Printf("🔄 Attempt %d/%d...\n", attempt, maxRetries)
-		
+		cli.Info("Attempt %d/%d...", attempt, maxRetries)
+
 		err := cmd.Run()
 		if err == nil {
-			fmt.Printf("✅ Successfully installed %s\n", sdkName)
+			cli.Success("Successfully installed %s", sdkName)
 			return nil
 		}
-		
+
 		if attempt < maxRetries {
-			fmt.Printf("❌ Attempt %d failed: %v\n", attempt, err)
+			cli.Error("Attempt %d failed: %v", attempt, err)
 			time.Sleep(time.Duration(attempt) * time.Second)
 		} else {
 			return fmt.Errorf("failed to install %s after %d attempts: %w", sdkName, maxRetries, err)
 		}
 	}
-	
+
 	return nil
 }
 

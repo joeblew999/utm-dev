@@ -13,6 +13,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/joeblew999/utm-dev/pkg/cli"
 )
 
 const hcpVagrantBase = "https://api.cloud.hashicorp.com/vagrant/2022-09-30/registry"
@@ -51,7 +53,7 @@ func InstallBox(vmKey string, force bool) error {
 
 	// Check cache
 	if !force && IsISOCached(vmKey) {
-		fmt.Printf("Box '%s' already imported\n", vm.Box.Name)
+		cli.Info("Box '%s' already imported", vm.Box.Name)
 		return nil
 	}
 
@@ -63,7 +65,7 @@ func InstallBox(vmKey string, force bool) error {
 		return fmt.Errorf("failed to launch UTM: %w", err)
 	}
 
-	fmt.Printf("Downloading and importing %s via getbox.sh (~%.1f GB)...\n",
+	cli.Info("Downloading and importing %s via getbox.sh (~%.1f GB)...",
 		vm.Box.Name, float64(vm.Box.Size)/1024/1024/1024)
 
 	// Use getbox.sh — the upstream script that is known to work correctly
@@ -77,21 +79,21 @@ func InstallBox(vmKey string, force bool) error {
 
 	// Set up port forwards for Windows
 	if vm.OS == "windows" {
-		fmt.Printf("Configuring network and port forwards...\n")
+		cli.Info("Configuring network and port forwards...")
 		if err := SetupWindowsPortForwards(vm.Name); err != nil {
-			fmt.Printf("Warning: failed to configure port forwards: %v\n", err)
-			fmt.Printf("Fix manually: utm-dev utm fix-network \"%s\"\n", vm.Name)
+			cli.Warn("failed to configure port forwards: %v", err)
+			cli.Info("Fix manually: utm-dev utm fix-network \"%s\"", vm.Name)
 		}
 	}
 
 	if err := AddISOToCache(vmKey); err != nil {
-		fmt.Printf("Warning: failed to update cache: %v\n", err)
+		cli.Warn("failed to update cache: %v", err)
 	}
 
-	fmt.Printf("\n✅ '%s' imported into UTM successfully!\n", vm.Name)
-	fmt.Printf("Start it with: utm-dev utm up %s\n", vmKey)
-	fmt.Printf("Connect via RDP: localhost:3389  |  WinRM: localhost:5985\n")
-	fmt.Printf("Credentials: vagrant / vagrant\n")
+	cli.Success("'%s' imported into UTM successfully!", vm.Name)
+	cli.Info("Start it with: utm-dev utm up %s", vmKey)
+	cli.Info("Connect via RDP: localhost:3389  |  WinRM: localhost:5985")
+	cli.Info("Credentials: vagrant / vagrant")
 	return nil
 }
 

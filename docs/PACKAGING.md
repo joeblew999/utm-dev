@@ -245,36 +245,6 @@ fi
 
 ---
 
-## Taskfile Integration
-
-All packaging operations have corresponding Taskfile tasks:
-
-### Build Tasks
-```bash
-task build:hybrid:macos          # Build (idempotent)
-task build:hybrid:macos:force    # Force rebuild
-task build:hybrid:macos:check    # Check if rebuild needed
-```
-
-### Bundle Tasks
-```bash
-task bundle:hybrid:macos         # Create signed bundle
-```
-
-### Package Tasks
-```bash
-task package:macos:dmg           # Create DMG (macOS only)
-```
-
-### CI Tasks
-```bash
-task ci:check                    # Check all examples
-task ci:build                    # Build all (idempotent)
-task ci:build:force             # Force rebuild all
-```
-
----
-
 ## Implementation Details
 
 ### Pure Go Packaging
@@ -355,7 +325,4 @@ utm-dev build --force macos examples/myapp
 
 ## See Also
 
-- [IDEMPOTENCY.md](IDEMPOTENCY.md) - Build caching details
-- [SCREENSHOT.md](SCREENSHOT.md) - Screenshot feature setup
-- [PACKAGING-MACOS.md](PACKAGING-MACOS.md) - macOS-specific guide
-- [../CLAUDE.md](../CLAUDE.md) - Full project documentation
+- [../CLAUDE.md](../CLAUDE.md) - Development guidelines

@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"text/template"
+
+	"github.com/joeblew999/utm-dev/pkg/cli"
 )
 
 //go:embed templates/windows-appxmanifest.xml.tmpl
@@ -74,7 +76,7 @@ func CreateWindowsBundle(config WindowsBundleConfig) error {
 		return fmt.Errorf("binary not found: %s", config.BinaryPath)
 	}
 
-	fmt.Printf("📦 Creating Windows MSIX bundle: %s\n", config.Name)
+	cli.Info("Creating Windows MSIX bundle: %s", config.Name)
 
 	// Create bundle staging directory
 	stagingDir := filepath.Join(config.OutputDir, ".staging")
@@ -95,7 +97,7 @@ func CreateWindowsBundle(config WindowsBundleConfig) error {
 	if err := CopyFile(config.BinaryPath, targetBinary); err != nil {
 		return fmt.Errorf("failed to copy binary: %w", err)
 	}
-	fmt.Printf("  ✓ Binary copied: %s\n", executableName)
+	cli.Success("Binary copied: %s", executableName)
 
 	// Create assets directory
 	assetsDir := filepath.Join(stagingDir, "assets")
@@ -109,13 +111,13 @@ func CreateWindowsBundle(config WindowsBundleConfig) error {
 		if err := copyAssets(config.AssetsDir, assetsDir); err != nil {
 			return fmt.Errorf("failed to copy assets: %w", err)
 		}
-		fmt.Printf("  ✓ Assets copied from %s\n", config.AssetsDir)
+		cli.Success("Assets copied from %s", config.AssetsDir)
 	} else {
 		// Generate placeholder assets (required by MSIX)
 		if err := generatePlaceholderAssets(assetsDir); err != nil {
 			return fmt.Errorf("failed to generate placeholder assets: %w", err)
 		}
-		fmt.Printf("  ✓ Generated placeholder assets\n")
+		cli.Success("Generated placeholder assets")
 	}
 
 	// Generate AppxManifest.xml
@@ -126,26 +128,26 @@ func CreateWindowsBundle(config WindowsBundleConfig) error {
 	if err := generateWindowsManifest(manifestPath, manifestConfig); err != nil {
 		return fmt.Errorf("failed to generate AppxManifest.xml: %w", err)
 	}
-	fmt.Printf("  ✓ AppxManifest.xml created\n")
+	cli.Success("AppxManifest.xml created")
 
 	// Create MSIX package (Windows-only)
 	if config.CreateMSIX {
 		if runtime.GOOS != "windows" {
-			fmt.Println("⚠️  Skipping MSIX creation: requires Windows")
-			fmt.Println("   Bundle structure created in .staging/, ready to package on Windows")
+			cli.Warn("Skipping MSIX creation: requires Windows")
+			cli.Info("   Bundle structure created in .staging/, ready to package on Windows")
 		} else {
 			msixPath := filepath.Join(config.OutputDir, config.Name+".msix")
 			if err := createMSIXPackage(stagingDir, msixPath); err != nil {
 				return fmt.Errorf("failed to create MSIX package: %w", err)
 			}
-			fmt.Printf("  ✓ MSIX package created: %s\n", msixPath)
+			cli.Success("MSIX package created: %s", msixPath)
 
 			// Sign the MSIX if certificate provided
 			if config.SigningCertificate != "" {
 				if err := signMSIX(msixPath, config.SigningCertificate, config.CertificatePassword); err != nil {
 					return fmt.Errorf("failed to sign MSIX: %w", err)
 				}
-				fmt.Printf("  ✓ MSIX signed with certificate\n")
+				cli.Success("MSIX signed with certificate")
 			}
 
 			// Clean up staging after successful MSIX creation
@@ -153,12 +155,12 @@ func CreateWindowsBundle(config WindowsBundleConfig) error {
 		}
 	}
 
-	fmt.Printf("✅ Windows bundle created successfully\n")
+	cli.Success("Windows bundle created successfully")
 	if runtime.GOOS != "windows" {
-		fmt.Printf("📍 Bundle structure: %s\n", stagingDir)
-		fmt.Printf("   Copy to Windows to complete packaging\n")
+		cli.Info("Bundle structure: %s", stagingDir)
+		cli.Info("   Copy to Windows to complete packaging")
 	} else {
-		fmt.Printf("📍 MSIX location: %s\n", filepath.Join(config.OutputDir, config.Name+".msix"))
+		cli.Info("MSIX location: %s", filepath.Join(config.OutputDir, config.Name+".msix"))
 	}
 
 	return nil
@@ -285,7 +287,7 @@ func generatePlaceholderAssets(destDir string) error {
 		}
 	}
 
-	fmt.Println("  ⚠️  Using placeholder assets - provide real icons for production")
+	cli.Warn("Using placeholder assets - provide real icons for production")
 
 	return nil
 }

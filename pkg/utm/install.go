@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/joeblew999/utm-dev/pkg/cli"
 )
 
 // InstallStatus represents the current UTM installation status
@@ -81,7 +83,7 @@ func InstallUTM(force bool) error {
 
 	// Check cache first (idempotent)
 	if !force && IsUTMAppCached(utmApp.Version, utmApp.Checksum) {
-		fmt.Printf("UTM v%s is already installed and cached at %s\n", utmApp.Version, appPath)
+		cli.Info("UTM v%s is already installed and cached at %s", utmApp.Version, appPath)
 		return nil
 	}
 
@@ -92,19 +94,19 @@ func InstallUTM(force bool) error {
 			// Compare installed version to gallery version
 			installedVersion, verErr := getInstalledVersion(utmctlPath)
 			if verErr == nil && strings.TrimSpace(installedVersion) == utmApp.Version {
-				fmt.Printf("UTM v%s is already installed at %s\n", utmApp.Version, appPath)
+				cli.Info("UTM v%s is already installed at %s", utmApp.Version, appPath)
 				if err := AddUTMAppToCache(utmApp.Version, utmApp.Checksum); err != nil {
-					fmt.Printf("Warning: failed to update cache: %v\n", err)
+					cli.Warn("failed to update cache: %v", err)
 				}
 				return nil
 			}
 			// Version mismatch — fall through to reinstall
-			fmt.Printf("UTM update available: installed=%s gallery=%s\n",
+			cli.Info("UTM update available: installed=%s gallery=%s",
 				strings.TrimSpace(installedVersion), utmApp.Version)
 		}
 	}
 
-	fmt.Printf("Installing UTM v%s...\n", utmApp.Version)
+	cli.Info("Installing UTM v%s...", utmApp.Version)
 
 	// Ensure global directories exist
 	if err := EnsureGlobalDirectories(); err != nil {
@@ -113,7 +115,7 @@ func InstallUTM(force bool) error {
 
 	// Download DMG
 	dmgPath := filepath.Join(filepath.Dir(appPath), "UTM.dmg")
-	fmt.Printf("Downloading from %s...\n", utmApp.URL)
+	cli.Info("Downloading from %s...", utmApp.URL)
 	if err := downloadFile(utmApp.URL, dmgPath); err != nil {
 		return fmt.Errorf("failed to download UTM: %w", err)
 	}
@@ -121,7 +123,7 @@ func InstallUTM(force bool) error {
 
 	// Mount DMG
 	mountPoint := "/tmp/utm-mount"
-	fmt.Println("Mounting DMG...")
+	cli.Info("Mounting DMG...")
 	if err := mountDMG(dmgPath, mountPoint); err != nil {
 		return fmt.Errorf("failed to mount DMG: %w", err)
 	}
@@ -130,12 +132,12 @@ func InstallUTM(force bool) error {
 	// Remove existing installation if force
 	if force {
 		if err := os.RemoveAll(appPath); err != nil {
-			fmt.Printf("Warning: failed to remove existing installation: %v\n", err)
+			cli.Warn("failed to remove existing installation: %v", err)
 		}
 	}
 
 	// Copy UTM.app
-	fmt.Printf("Copying UTM.app to %s...\n", appPath)
+	cli.Info("Copying UTM.app to %s...", appPath)
 	srcApp := filepath.Join(mountPoint, "UTM.app")
 	if err := copyDir(srcApp, appPath); err != nil {
 		return fmt.Errorf("failed to copy UTM.app: %w", err)
@@ -143,10 +145,10 @@ func InstallUTM(force bool) error {
 
 	// Add to cache for idempotency
 	if err := AddUTMAppToCache(utmApp.Version, utmApp.Checksum); err != nil {
-		fmt.Printf("Warning: failed to update cache: %v\n", err)
+		cli.Warn("failed to update cache: %v", err)
 	}
 
-	fmt.Printf("✓ UTM v%s installed successfully\n", utmApp.Version)
+	cli.Success("UTM v%s installed successfully", utmApp.Version)
 	return nil
 }
 
@@ -156,16 +158,16 @@ func UninstallUTM() error {
 	appPath := paths.App
 
 	if _, err := os.Stat(appPath); os.IsNotExist(err) {
-		fmt.Println("UTM is not installed")
+		cli.Info("UTM is not installed")
 		return nil
 	}
 
-	fmt.Printf("Removing %s...\n", appPath)
+	cli.Info("Removing %s...", appPath)
 	if err := os.RemoveAll(appPath); err != nil {
 		return fmt.Errorf("failed to remove UTM: %w", err)
 	}
 
-	fmt.Println("✓ UTM uninstalled successfully")
+	cli.Success("UTM uninstalled successfully")
 	return nil
 }
 
@@ -196,7 +198,7 @@ func downloadFile(url, destPath string) error {
 		resp, err := client.Do(req)
 		if err != nil {
 			if attempt < maxRetries {
-				fmt.Printf("  retry %d/%d after error: %v\n", attempt, maxRetries, err)
+				cli.Warn("retry %d/%d after error: %v", attempt, maxRetries, err)
 				continue
 			}
 			return err
@@ -231,7 +233,7 @@ func downloadFile(url, destPath string) error {
 
 		if copyErr != nil {
 			if attempt < maxRetries {
-				fmt.Printf("  retry %d/%d after disconnect\n", attempt, maxRetries)
+				cli.Warn("retry %d/%d after disconnect", attempt, maxRetries)
 				continue
 			}
 			return fmt.Errorf("download failed after %d attempts: %w", maxRetries, copyErr)
@@ -282,7 +284,7 @@ func DownloadISO(vmKey string, force bool) error {
 
 	// Check cache first (idempotent)
 	if !force && IsISOCached(vmKey) {
-		fmt.Printf("ISO already cached at %s\n", isoPath)
+		cli.Info("ISO already cached at %s", isoPath)
 		return nil
 	}
 
@@ -291,11 +293,11 @@ func DownloadISO(vmKey string, force bool) error {
 		if fi, err := os.Stat(isoPath); err == nil {
 			// If expected size is known, validate completeness
 			if vm.ISO.Size > 0 && fi.Size() != vm.ISO.Size {
-				fmt.Printf("ISO exists but is incomplete (%d/%d bytes) — redownloading\n", fi.Size(), vm.ISO.Size)
+				cli.Warn("ISO exists but is incomplete (%d/%d bytes) — redownloading", fi.Size(), vm.ISO.Size)
 			} else {
-				fmt.Printf("ISO already exists at %s\n", isoPath)
+				cli.Info("ISO already exists at %s", isoPath)
 				if err := AddISOToCache(vmKey); err != nil {
-					fmt.Printf("Warning: failed to update cache: %v\n", err)
+					cli.Warn("failed to update cache: %v", err)
 				}
 				return nil
 			}
@@ -308,8 +310,8 @@ func DownloadISO(vmKey string, force bool) error {
 	}
 
 	sizeGB := float64(vm.ISO.Size) / 1024 / 1024 / 1024
-	fmt.Printf("Downloading %s (%.1f GB)...\n", vm.ISO.Filename, sizeGB)
-	fmt.Printf("URL: %s\n", vm.ISO.URL)
+	cli.Info("Downloading %s (%.1f GB)...", vm.ISO.Filename, sizeGB)
+	cli.Info("URL: %s", vm.ISO.URL)
 
 	if err := downloadFile(vm.ISO.URL, isoPath); err != nil {
 		return fmt.Errorf("failed to download ISO: %w", err)
@@ -317,9 +319,9 @@ func DownloadISO(vmKey string, force bool) error {
 
 	// Add to cache for idempotency
 	if err := AddISOToCache(vmKey); err != nil {
-		fmt.Printf("Warning: failed to update cache: %v\n", err)
+		cli.Warn("failed to update cache: %v", err)
 	}
 
-	fmt.Printf("✓ ISO downloaded to %s\n", isoPath)
+	cli.Success("ISO downloaded to %s", isoPath)
 	return nil
 }

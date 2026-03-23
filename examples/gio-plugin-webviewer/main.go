@@ -20,8 +20,6 @@ import (
 	"gioui.org/font"
 	"github.com/gioui-plugins/gio-plugins/plugin/gioplugins"
 	"github.com/gioui-plugins/gio-plugins/webviewer/giowebview"
-	"github.com/joeblew999/utm-dev/pkg/logging"
-
 	"golang.org/x/exp/shiny/materialdesign/icons"
 
 	"gioui.org/app"

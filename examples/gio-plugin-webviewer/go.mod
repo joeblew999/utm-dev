@@ -6,12 +6,9 @@ replace gioui.org => ../../.src/gio
 
 replace github.com/gioui-plugins/gio-plugins => ../../.src/gio-plugins
 
-replace github.com/joeblew999/goup-util/pkg/logging => ../../pkg/logging
-
 require (
 	gioui.org v0.9.1-0.20251215212054-7bcb315ee174
 	github.com/gioui-plugins/gio-plugins v0.9.1
-	github.com/joeblew999/goup-util/pkg/logging v0.0.0-00010101000000-000000000000
 	golang.org/x/exp/shiny v0.0.0-20250620022241-b7579e27df2b
 )
 

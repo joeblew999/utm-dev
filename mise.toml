@@ -4,24 +4,20 @@
 # Usage:   mise install   (installs all tools)
 #          mise run build
 #
-# Replaces: Taskfile (task runner), direnv (env vars)
 # Go is managed here — no system Go required.
 
 [tools]
 go = "1.25"  # Go runtime — https://go.dev
 
 # ── Tauri (desktop + mobile builds, OS-gated) ────────────────────────────────
-# tauri-cli: macOS + Windows (builds .app/.dmg and .msi/.exe)
-# xcodegen + ruby: macOS only — needed for iOS target (.xcodeproj generation + CocoaPods)
+# These are needed to develop/test utm-dev itself (tauri-basic example).
+# End users get these via `utm-dev tauri setup`.
 "cargo:tauri-cli" = {version = "2",      os = ["macos", "windows"]}
 xcodegen          = {version = "latest", os = ["macos"]}
 ruby              = {version = "3.3",    os = ["macos"]}
 
 # ── Tasks ────────────────────────────────────────────────────────────────────
-# Kept minimal — utm-dev IS the CLI. Use `utm-dev <subcommand>` directly
-# for utm, android, ios, sdk etc. These tasks cover the dev loop only.
-# go.work is gitignored (local dev only) — mise doesn't set GOWORK so it
-# resolves naturally: present → workspace mode, absent → module mode.
+# Kept minimal — utm-dev IS the CLI. Use `utm-dev <subcommand>` directly.
 
 [tasks.build]
 description = "Build utm-dev binary for local dev"
@@ -45,28 +41,3 @@ run = "go run . self release ${1:-minor}"
 [tasks.clean]
 description = "Remove build artifacts"
 run = "rm -rf .bin .dist"
-
-# ── Docs ──────────────────────────────────────────────────────────────────────
-# utm-dev docs live here in docs/ (CLI reference auto-generated from cobra).
-# Web docs (VitePress) live in plat-trunk — sync them here when they change.
-# PLAT_TRUNK env var must point to your plat-trunk checkout.
-# Example: PLAT_TRUNK=~/workspace/go/src/github.com/joeblew999/plat-trunk
-
-[tasks."docs:gen"]
-description = "Regenerate CLI reference docs from cobra commands"
-run = "go run . docs docs/cli"
-
-[tasks."docs:sync"]
-description = "Copy VitePress built site from plat-trunk into docs/web/ (incremental)"
-sources  = ["${PLAT_TRUNK:-../plat-trunk}/systems/docs/website/docs/**/*.md"]
-outputs  = ["docs/web/**/*.md"]
-run = """
-TRUNK=${PLAT_TRUNK:-../plat-trunk}
-if [ ! -d "$TRUNK/systems/docs/website/docs" ]; then
-  echo "PLAT_TRUNK not found at $TRUNK — set PLAT_TRUNK env var"
-  exit 1
-fi
-mkdir -p docs/web
-cp -r "$TRUNK/systems/docs/website/docs/." docs/web/
-echo "✓ docs:sync complete from $TRUNK"
-"""

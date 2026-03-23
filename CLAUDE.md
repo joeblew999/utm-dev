@@ -1,6 +1,6 @@
 # CLAUDE.md — utm-dev
 
-CLI for building Gio + Tauri apps and automating UTM VMs on Apple Silicon.
+CLI for cross-platform build tooling: Tauri desktop apps (tested via UTM VMs on Apple Silicon) + Gio mobile apps (iOS/Android on host Mac). Manages SDK installation, device/simulator control, and packaging so devs don't pollute their OS.
 Installed by plat-trunk via `"github:joeblew999/utm-dev" = "latest"` in mise.toml.
 
 ## Task runner: mise (Taskfile deleted)
@@ -20,8 +20,17 @@ mise run release  # go run . self release minor
 ## Key commands
 
 ```bash
+# Tauri (desktop + mobile)
+utm-dev tauri dev|build|run|init <platform> <dir>
+utm-dev tauri build windows <dir>   # builds inside UTM VM
+
+# Gio (mobile)
 utm-dev build macos|ios|android|windows <dir>
-utm-dev utm install|create|start|exec|stop "Windows 11"
+
+# UTM VMs
+utm-dev utm install|start|exec|stop "Windows 11"
+
+# Self
 utm-dev self version | jq .
 ```
 

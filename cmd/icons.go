@@ -1,10 +1,11 @@
 package cmd
 
 import (
-	"github.com/joeblew999/utm-dev/pkg/utils"
 	"fmt"
 
-	"github.com/joeblew999/utm-dev/pkg/service"
+	"github.com/joeblew999/utm-dev/pkg/cli"
+	"github.com/joeblew999/utm-dev/pkg/icons"
+	"github.com/joeblew999/utm-dev/pkg/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -31,50 +32,22 @@ Examples:
 			return fmt.Errorf("invalid platform: %s. Valid platforms: %v", platform, validPlatforms)
 		}
 
-		// Get maintenance flags
-		autoMaintain, _ := cmd.Flags().GetBool("auto-maintain")
-		autoFix, _ := cmd.Flags().GetBool("auto-fix")
-		verbose, _ := cmd.Flags().GetBool("verbose")
+		cli.Info("Generating %s icons for project...", platform)
 
-		// Create service with configuration
-		config := service.ServiceConfig{
-			Mode:         "cli",
-			AutoMaintain: autoMaintain,
-			AutoFix:      autoFix,
-			Verbose:      verbose,
-		}
-		svc := service.NewGioServiceWithConfig(config)
-
-		// Use service for icon generation
-		req := service.ProjectRequest{
+		err := icons.GenerateForProject(icons.ProjectConfig{
 			ProjectPath: projectDir,
 			Platform:    platform,
-		}
-
-		fmt.Printf("Generating %s icons for project...\n", platform)
-
-		resp, err := svc.GenerateIcons(req)
+		})
 		if err != nil {
-			return fmt.Errorf("service error: %w", err)
+			return fmt.Errorf("failed to generate icons: %w", err)
 		}
 
-		if !resp.Success {
-			return fmt.Errorf("failed: %s", resp.Error)
-		}
-
-		fmt.Printf("✓ %s\n", resp.Message)
+		cli.Success("Generated %s icons", platform)
 		return nil
 	},
 }
 
 func init() {
-	// Group for help organization
 	iconsCmd.GroupID = "tools"
-
 	rootCmd.AddCommand(iconsCmd)
-
-	// Add maintenance flags
-	iconsCmd.Flags().Bool("auto-maintain", false, "Enable automatic maintenance checks")
-	iconsCmd.Flags().Bool("auto-fix", false, "Automatically fix issues found (requires --auto-maintain)")
-	iconsCmd.Flags().BoolP("verbose", "v", false, "Show detailed maintenance actions")
 }

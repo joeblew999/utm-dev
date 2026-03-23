@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/joeblew999/utm-dev/pkg/cli"
 )
 
 const (
@@ -17,7 +19,7 @@ const (
 
 // InstallGarble installs garble to SDK directory using go install
 func InstallGarble(cache *Cache) error {
-	fmt.Printf("📥 Installing garble %s to SDK directory...\n", GarbleVersion)
+	cli.Info("Installing garble %s to SDK directory...", GarbleVersion)
 
 	// Resolve SDK install path
 	installPath, err := ResolveInstallPath(GarbleInstallPath)
@@ -34,7 +36,7 @@ func InstallGarble(cache *Cache) error {
 
 	if entry, ok := cache.Entries["garble"]; ok {
 		if _, err := os.Stat(garblePath); err == nil {
-			fmt.Printf("✅ garble %s is already installed at: %s\n", entry.Version, garblePath)
+			cli.Success("garble %s is already installed at: %s", entry.Version, garblePath)
 			return nil
 		}
 	}
@@ -64,15 +66,15 @@ func InstallGarble(cache *Cache) error {
 		return fmt.Errorf("garble binary not found at %s after installation", garblePath)
 	}
 
-	fmt.Printf("✅ garble installed successfully at: %s\n", garblePath)
+	cli.Success("garble installed successfully at: %s", garblePath)
 
 	// Test garble version
 	versionCmd := exec.Command(garblePath, "version")
 	output, err := versionCmd.Output()
 	if err != nil {
-		fmt.Printf("⚠️  Warning: Could not verify garble version: %v\n", err)
+		cli.Warn("Could not verify garble version: %v", err)
 	} else {
-		fmt.Printf("   Version: %s\n", strings.TrimSpace(string(output)))
+		cli.Info("   Version: %s", strings.TrimSpace(string(output)))
 	}
 
 	// Add to cache
@@ -84,7 +86,7 @@ func InstallGarble(cache *Cache) error {
 	})
 
 	if err := cache.Save(); err != nil {
-		fmt.Printf("⚠️  Warning: Could not update cache: %v\n", err)
+		cli.Warn("Could not update cache: %v", err)
 	}
 
 	return nil

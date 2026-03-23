@@ -10,8 +10,10 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/joeblew999/utm-dev/pkg/cli"
 	"github.com/joeblew999/utm-dev/pkg/self/output"
 )
+
 
 // InstallSelf installs the current binary to system path.
 // For Unix (macOS, Linux): /usr/local/bin/utm-dev
@@ -398,7 +400,7 @@ func removeBinary(path string) error {
 	if err := os.Remove(path); err != nil {
 		// On Unix, might need sudo
 		if runtime.GOOS != "windows" {
-			fmt.Printf("🔐 Need sudo privileges to remove %s\n", path)
+			cli.Info("Need sudo privileges to remove %s", path)
 			cmd := exec.Command("sudo", "rm", path)
 			cmd.Stdin = os.Stdin
 			cmd.Stdout = os.Stdout

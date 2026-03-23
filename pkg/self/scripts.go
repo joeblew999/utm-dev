@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+
+	"github.com/joeblew999/utm-dev/pkg/cli"
 )
 
 //go:embed templates/macos-bootstrap.sh.tmpl
@@ -77,7 +79,7 @@ func Generate(outputDir string, config Config) error {
 		if err := generateScript(macosPath, "macos-bootstrap.sh.tmpl", macosTemplate, config, 0755); err != nil {
 			return fmt.Errorf("failed to generate macOS bootstrap: %w", err)
 		}
-		fmt.Printf("  ✓ Generated %s\n", macosPath)
+		cli.Success("Generated %s", macosPath)
 	}
 
 	// Generate Windows bootstrap if architectures are specified
@@ -86,7 +88,7 @@ func Generate(outputDir string, config Config) error {
 		if err := generateScript(windowsPath, "windows-bootstrap.ps1.tmpl", windowsTemplate, config, 0644); err != nil {
 			return fmt.Errorf("failed to generate Windows bootstrap: %w", err)
 		}
-		fmt.Printf("  ✓ Generated %s\n", windowsPath)
+		cli.Success("Generated %s", windowsPath)
 	}
 
 	return nil

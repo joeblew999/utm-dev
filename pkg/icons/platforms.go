@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/JackMordaunt/icns"
+	"github.com/joeblew999/utm-dev/pkg/cli"
 	"github.com/nfnt/resize"
 	ico "github.com/vldrus/golang/image/ico"
 )
@@ -50,7 +51,7 @@ func generateAndroidIcons(inputPath, outputDir string) error {
 		if err := png.Encode(outFile, resizedImg); err != nil {
 			return fmt.Errorf("failed to encode %s: %w", filePath, err)
 		}
-		fmt.Printf("Generated %s\n", filePath)
+		cli.Debug("Generated %s", filePath)
 	}
 
 	return nil
@@ -104,7 +105,7 @@ func generateIOSIcons(inputPath, outputDir string) error {
 		if err := png.Encode(outFile, resizedImg); err != nil {
 			return fmt.Errorf("failed to encode %s: %w", name, err)
 		}
-		fmt.Printf("Generated %s\n", filePath)
+		cli.Debug("Generated %s", filePath)
 	}
 
 	// Create Contents.json
@@ -138,7 +139,7 @@ func generateIOSIcons(inputPath, outputDir string) error {
 		return fmt.Errorf("failed to write Contents.json: %w", err)
 	}
 
-	fmt.Printf("Successfully generated iOS icons in %s\n", iconSetDir)
+	cli.Success("Generated iOS icons in %s", iconSetDir)
 	return nil
 }
 
@@ -177,7 +178,7 @@ func generateWindowsIcons(inputPath, outputDir string) error {
 		if err := png.Encode(outFile, resizedImg); err != nil {
 			return fmt.Errorf("failed to encode %s: %w", name, err)
 		}
-		fmt.Printf("Generated %s\n", filePath)
+		cli.Debug("Generated %s", filePath)
 	}
 
 	return nil
@@ -212,7 +213,7 @@ func generateICNS(inputPath, outputPath string) error {
 		return fmt.Errorf("failed to encode .icns file: %w", err)
 	}
 
-	fmt.Printf("Generated %s\n", icnsPath)
+	cli.Success("Generated %s", icnsPath)
 	return nil
 }
 
@@ -245,6 +246,6 @@ func generateICO(inputPath, outputPath string) error {
 		return fmt.Errorf("failed to encode .ico file: %w", err)
 	}
 
-	fmt.Printf("Generated %s\n", icoPath)
+	cli.Success("Generated %s", icoPath)
 	return nil
 }

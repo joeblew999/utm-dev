@@ -7,6 +7,8 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
+
+	"github.com/joeblew999/utm-dev/pkg/cli"
 )
 
 // InstallDeps installs system dependencies based on platform.
@@ -30,7 +32,7 @@ func InstallDeps() error {
 func installMacOSDeps() error {
 	// 1. Check/Install Homebrew
 	if !commandExists("brew") {
-		fmt.Println("📥 Homebrew not found. Installing...")
+		cli.Info("Homebrew not found. Installing...")
 		cmd := exec.Command("/bin/bash", "-c",
 			`/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`)
 		cmd.Stdin = os.Stdin
@@ -39,9 +41,9 @@ func installMacOSDeps() error {
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("failed to install Homebrew: %w", err)
 		}
-		fmt.Println("✅ Homebrew installed")
+		cli.Success("Homebrew installed")
 	} else {
-		fmt.Println("✅ Homebrew already installed")
+		cli.Success("Homebrew already installed")
 	}
 
 	// 2. Install required packages
@@ -61,12 +63,12 @@ func brewInstall(pkg string) error {
 	// Check if already installed
 	checkCmd := exec.Command("brew", "list", pkg)
 	if err := checkCmd.Run(); err == nil {
-		fmt.Printf("✅ %s already installed\n", pkg)
+		cli.Success("%s already installed", pkg)
 		return nil
 	}
 
 	// Install package
-	fmt.Printf("📥 Installing %s via Homebrew...\n", pkg)
+	cli.Info("Installing %s via Homebrew...", pkg)
 	cmd := exec.Command("brew", "install", pkg)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -74,7 +76,7 @@ func brewInstall(pkg string) error {
 		return fmt.Errorf("brew install %s failed: %w", pkg, err)
 	}
 
-	fmt.Printf("✅ %s installed\n", pkg)
+	cli.Success("%s installed", pkg)
 	return nil
 }
 
@@ -84,7 +86,7 @@ func installWindowsDeps() error {
 	if !commandExists("winget") {
 		return fmt.Errorf("winget not found. Please install App Installer from Microsoft Store: https://aka.ms/getwinget")
 	}
-	fmt.Println("✅ winget found")
+	cli.Success("winget found")
 
 	// Install required packages
 	packages := []struct {
@@ -113,12 +115,12 @@ func wingetInstall(id, name string) error {
 	checkCmd.Stdout = &out
 	checkCmd.Stderr = &out
 	if err := checkCmd.Run(); err == nil && strings.Contains(out.String(), id) {
-		fmt.Printf("✅ %s already installed\n", name)
+		cli.Success("%s already installed", name)
 		return nil
 	}
 
 	// Install package
-	fmt.Printf("📥 Installing %s via winget...\n", name)
+	cli.Info("Installing %s via winget...", name)
 	cmd := exec.Command("winget", "install", "--id", id, "--exact", "--silent", "--accept-source-agreements", "--accept-package-agreements")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -126,7 +128,7 @@ func wingetInstall(id, name string) error {
 		return fmt.Errorf("winget install %s failed: %w", id, err)
 	}
 
-	fmt.Printf("✅ %s installed\n", name)
+	cli.Success("%s installed", name)
 	return nil
 }
 
@@ -152,38 +154,38 @@ func installLinuxDeps() error {
 		return fmt.Errorf("no supported package manager found (apt-get, yum, dnf, pacman)")
 	}
 
-	fmt.Printf("✅ Using package manager: %s\n", pkgManager)
+	cli.Success("Using package manager: %s", pkgManager)
 
 	// Install git and go
 	packages := []string{"git", "golang"}
 	for _, pkg := range packages {
 		if commandExists(pkg) {
-			fmt.Printf("✅ %s already installed\n", pkg)
+			cli.Success("%s already installed", pkg)
 			continue
 		}
 
-		fmt.Printf("📥 Installing %s via %s...\n", pkg, pkgManager)
+		cli.Info("Installing %s via %s...", pkg, pkgManager)
 		cmd := exec.Command(installCmd[0], append(installCmd[1:], pkg)...)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("failed to install %s: %w", pkg, err)
 		}
-		fmt.Printf("✅ %s installed\n", pkg)
+		cli.Success("%s installed", pkg)
 	}
 
 	// Install task via go install if not available in package manager
 	if !commandExists("task") {
-		fmt.Println("📥 Installing task via go install...")
+		cli.Info("Installing task via go install...")
 		cmd := exec.Command("go", "install", "github.com/go-task/task/v3/cmd/task@latest")
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("failed to install task: %w", err)
 		}
-		fmt.Println("✅ task installed")
+		cli.Success("task installed")
 	} else {
-		fmt.Println("✅ task already installed")
+		cli.Success("task already installed")
 	}
 
 	return nil
