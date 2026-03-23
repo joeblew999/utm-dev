@@ -95,7 +95,8 @@ func installWindowsDeps() error {
 	}{
 		{"Git.Git", "Git"},
 		{"GoLang.Go", "Go"},
-		{"Task.Task", "Task"},
+		{"Rustlang.Rustup", "Rust"},
+		{"LLVM.LLVM", "LLVM/Clang"},
 	}
 
 	for _, pkg := range packages {
@@ -104,6 +105,40 @@ func installWindowsDeps() error {
 		}
 	}
 
+	// Install VS Build Tools with C++ workload (--override passes args to the VS installer)
+	if err := ensureVSBuildToolsWithCpp(); err != nil {
+		cli.Warn("VS Build Tools setup issue: %v", err)
+	}
+
+	return nil
+}
+
+// ensureVSBuildToolsWithCpp installs VS Build Tools with the VCTools workload + ARM64 component.
+// Uses winget --override to pass workload flags directly to the VS installer.
+func ensureVSBuildToolsWithCpp() error {
+	// Check if link.exe already exists for ARM64
+	vswhere := `C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe`
+	if _, err := os.Stat(vswhere); err == nil {
+		cmd := exec.Command(vswhere, "-latest", "-requires",
+			"Microsoft.VisualStudio.Component.VC.Tools.ARM64", "-property", "installationPath")
+		var out bytes.Buffer
+		cmd.Stdout = &out
+		if err := cmd.Run(); err == nil && strings.TrimSpace(out.String()) != "" {
+			cli.Success("VS Build Tools with C++ ARM64 already installed")
+			return nil
+		}
+	}
+
+	cli.Info("Installing VS Build Tools with C++ workload...")
+	cmd := exec.Command("winget", "install", "--id", "Microsoft.VisualStudio.2022.BuildTools",
+		"--override", "--quiet --wait --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.Tools.ARM64 --includeRecommended",
+		"--accept-source-agreements", "--accept-package-agreements", "--force")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to install VS Build Tools: %w", err)
+	}
+	cli.Success("VS Build Tools with C++ installed")
 	return nil
 }
 
@@ -190,6 +225,7 @@ func installLinuxDeps() error {
 
 	return nil
 }
+
 
 // commandExists checks if a command is available in PATH
 func commandExists(cmd string) bool {

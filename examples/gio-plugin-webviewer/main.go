@@ -246,7 +246,9 @@ func unzipUpdate(zipPath, destDir string) error {
 func main() {
 	proxy := flag.String("proxy", "", "proxy")
 	update := flag.Bool("update", false, "self-update from GitHub releases")
-	if proxy != nil && *proxy != "" {
+	flag.Parse()
+
+	if *proxy != "" {
 		u, err := url.Parse(*proxy)
 		if err != nil {
 			panic(err)
@@ -255,7 +257,6 @@ func main() {
 			panic(err)
 		}
 	}
-	flag.Parse()
 
 	// Load config from app.json (if present)
 	cfg := loadAppConfig()

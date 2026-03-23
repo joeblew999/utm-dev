@@ -1,9 +1,12 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os/exec"
+	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/joeblew999/utm-dev/pkg/adb"
 	"github.com/joeblew999/utm-dev/pkg/project"
@@ -115,8 +118,8 @@ func launchAndroidApp(apkPath, appName string) error {
 		return fmt.Errorf("install failed: %w", err)
 	}
 
-	// Launch the app — gogio uses "localhost.<appname>" as package by default
-	pkg := "localhost." + appName
+	// gogio sanitizes names (hyphens → underscores), so derive package ID the same way
+	pkg := "localhost." + strings.ReplaceAll(appName, "-", "_")
 	fmt.Printf("Launching %s...\n", pkg)
 	if err := client.Launch(pkg); err != nil {
 		return fmt.Errorf("launch failed: %w", err)
@@ -153,8 +156,13 @@ func launchIOSSimulator(appPath, appName string) error {
 		return fmt.Errorf("install failed: %w", err)
 	}
 
-	// Launch the app — gogio uses "localhost.<appname>" as bundle ID by default
-	bundleID := "localhost." + appName
+	// Read the actual bundle ID from the built .app — gogio sanitizes names
+	// (e.g. hyphens become underscores), so guessing from appName doesn't work.
+	bundleID, err := readBundleID(appPath)
+	if err != nil {
+		// Fallback to convention if plist read fails
+		bundleID = "localhost." + strings.ReplaceAll(appName, "-", "_")
+	}
 	fmt.Printf("Launching %s...\n", bundleID)
 	if err := client.Launch(bundleID); err != nil {
 		return fmt.Errorf("launch failed: %w", err)
@@ -162,6 +170,25 @@ func launchIOSSimulator(appPath, appName string) error {
 
 	fmt.Printf("✓ App running on simulator\n")
 	return nil
+}
+
+// readBundleID extracts CFBundleIdentifier from an iOS/macOS .app's Info.plist.
+func readBundleID(appPath string) (string, error) {
+	plistPath := filepath.Join(appPath, "Info.plist")
+	out, err := exec.Command("plutil", "-convert", "json", "-o", "-", plistPath).Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to read Info.plist: %w", err)
+	}
+	var info struct {
+		BundleID string `json:"CFBundleIdentifier"`
+	}
+	if err := json.Unmarshal(out, &info); err != nil {
+		return "", fmt.Errorf("failed to parse Info.plist: %w", err)
+	}
+	if info.BundleID == "" {
+		return "", fmt.Errorf("CFBundleIdentifier not found in Info.plist")
+	}
+	return info.BundleID, nil
 }
 
 func init() {

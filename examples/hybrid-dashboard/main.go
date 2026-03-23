@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"runtime"
 	"strings"
 	"time"
 
@@ -126,8 +127,8 @@ func startWebServer() string {
 
 func handleStats(w http.ResponseWriter, r *http.Request) {
 	stats := SystemStats{
-		Platform:    fmt.Sprintf("%s", os.Getenv("GOOS")),
-		GoVersion:   "1.25.0",
+		Platform:    runtime.GOOS,
+		GoVersion:   runtime.Version(),
 		CPUUsage:    rand.Float64() * 100,      // Simulated
 		MemoryUsage: 50 + rand.Float64()*40,    // Simulated
 		Uptime:      time.Since(startTime).Milliseconds(),

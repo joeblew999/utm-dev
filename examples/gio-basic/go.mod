@@ -1,4 +1,4 @@
-module example-gio-app
+module gio-basic
 
 go 1.25.0
 

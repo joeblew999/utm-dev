@@ -74,6 +74,7 @@ func PushFileViaWinRM(localPath, remotePath string) error {
 }
 
 // pushLargeFileViaHTTP starts a temp HTTP server and tells the VM to download the file.
+// Tries multiple gateway IPs (emulated VLAN + shared network) and falls back to chunks.
 func pushLargeFileViaHTTP(localPath, remotePath string) error {
 	// Find a free port
 	listener, err := net.Listen("tcp", "0.0.0.0:0")
@@ -93,34 +94,32 @@ func pushLargeFileViaHTTP(localPath, remotePath string) error {
 	go server.ListenAndServe()
 	defer server.Close()
 
-	// Small delay for server to start
 	time.Sleep(100 * time.Millisecond)
-
-	// The VM reaches the host via the gateway IP (10.0.2.2 for QEMU VLAN)
-	// But we're using port-forwarded localhost, so the VM should use the host's IP.
-	// For emulated VLAN, the host is reachable at 10.0.2.2.
-	url := fmt.Sprintf("http://10.0.2.2:%d/%s", port, filename)
 
 	client, err := newWinRMClient()
 	if err != nil {
 		return fmt.Errorf("winrm connect failed: %w", err)
 	}
 
-	// Use PowerShell to download
-	psDownload := fmt.Sprintf(
-		`powershell -Command "Invoke-WebRequest -Uri '%s' -OutFile '%s' -UseBasicParsing"`,
-		url, remotePath)
+	// Try gateway IPs: emulated VLAN (10.0.2.2), then common shared network gateways
+	gatewayIPs := []string{"10.0.2.2", "192.168.64.1", "192.168.1.1"}
+	for _, ip := range gatewayIPs {
+		url := fmt.Sprintf("http://%s:%d/%s", ip, port, filename)
+		psDownload := fmt.Sprintf(
+			`powershell -Command "Invoke-WebRequest -Uri '%s' -OutFile '%s' -UseBasicParsing -TimeoutSec 10"`,
+			url, remotePath)
 
-	fmt.Printf("  Serving file via HTTP (port %d)...\n", port)
-	_, stderr, exitCode, err := client.RunWithString(psDownload, "")
-	if err != nil {
-		return fmt.Errorf("download in VM failed: %w", err)
-	}
-	if exitCode != 0 {
-		return fmt.Errorf("download in VM failed: %s", stderr)
+		fmt.Printf("  Trying HTTP push via %s:%d...\n", ip, port)
+		_, _, exitCode, err := client.RunWithString(psDownload, "")
+		if err == nil && exitCode == 0 {
+			return nil
+		}
 	}
 
-	return nil
+	// Fall back to chunked upload
+	fmt.Println("  HTTP push failed, falling back to chunked upload...")
+	server.Close()
+	return pushSmallFileViaChunks(localPath, remotePath)
 }
 
 // pushSmallFileViaChunks sends small files as base64 chunks over WinRM.

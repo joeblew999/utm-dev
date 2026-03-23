@@ -3,19 +3,19 @@
 
 [tasks.dev]
 description = "Run on macOS (dev mode)"
-run = "utm-dev run macos ."
+run = "utm-dev gio run macos ."
 
 [tasks.build]
 description = "Build for macOS"
-run = "utm-dev build macos ."
+run = "utm-dev gio build macos ."
 
 [tasks.ios]
 description = "Run on iOS simulator (macOS only)"
-run = "utm-dev run ios ."
+run = "utm-dev gio run ios-simulator ."
 
 [tasks.android]
 description = "Run on Android device/emulator"
-run = "utm-dev run android ."
+run = "utm-dev gio run android ."
 
 [tasks.windows]
 description = "Build and run in Windows UTM VM"

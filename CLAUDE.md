@@ -62,5 +62,5 @@ utm-dev self version | jq .
 
 ```bash
 go get gioui.org@7bcb315ee174
-go get github.com/gioui-plugins/gio-plugins@v0.9.1
+go get github.com/gioui-plugins/gio-plugins@v0.9.2
 ```

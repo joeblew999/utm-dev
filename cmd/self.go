@@ -104,6 +104,19 @@ Returns JSON with:
 	},
 }
 
+var selfSetupCmd = &cobra.Command{
+	Use:   "setup",
+	Short: "Install system dependencies for this platform",
+	Long: `Install all required system dependencies based on the current platform.
+
+macOS:  Homebrew, git, go, task
+Windows: git, go, VS Build Tools, Rust (via winget)
+Linux:  git, go, task (via package manager)`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return self.InstallDeps()
+	},
+}
+
 var selfUpgradeCmd = &cobra.Command{
 	Use:   "upgrade",
 	Short: "Download and install latest release from GitHub",
@@ -159,6 +172,7 @@ func init() {
 	// User commands
 	selfCmd.AddCommand(selfVersionCmd)
 	selfCmd.AddCommand(selfUpgradeCmd)
+	selfCmd.AddCommand(selfSetupCmd)
 	selfCmd.AddCommand(selfDoctorCmd)
 
 	// Developer commands

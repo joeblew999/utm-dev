@@ -13,8 +13,6 @@ import (
 	"github.com/gioui-plugins/gio-plugins/hyperlink/giohyperlink"
 	"github.com/gioui-plugins/gio-plugins/plugin/gioplugins"
 
-	_ "unsafe"
-
 	"gioui.org/app"
 	"gioui.org/layout"
 	"gioui.org/op"
@@ -24,8 +22,6 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 )
-
-var f = gioplugins.Event
 
 func main() {
 	go func() {
@@ -89,7 +85,7 @@ func render(gtx layout.Context) layout.Dimensions {
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 			return MarginDesign.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 				return InputBackgroundDesign.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-					return InputDesign.Layout(gtx, InputAction, "Type some webite (e.g https://gioui.org)", "https://gioui.org")
+					return InputDesign.Layout(gtx, InputAction, "Type some website (e.g. https://gioui.org)", "https://gioui.org")
 				})
 			})
 		}),

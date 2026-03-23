@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/joeblew999/utm-dev/pkg/adb"
@@ -48,21 +49,26 @@ func ensureRust() error {
 	return nil
 }
 
-// ensureMSVC installs Visual Studio Build Tools on Windows if link.exe is missing. Idempotent.
+// ensureMSVC installs Visual Studio Build Tools with C++ on Windows. Idempotent.
+// Uses winget --override to include VCTools workload + ARM64 component in one step.
 func ensureMSVC() error {
 	if runtime.GOOS != "windows" {
 		return nil
 	}
-	// Check if vswhere exists (VS Build Tools installed)
+	// Check if vswhere sees a VC installation
 	vswhere := `C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe`
 	if _, err := os.Stat(vswhere); err == nil {
-		return nil
+		cmd := exec.Command(vswhere, "-latest", "-requires",
+			"Microsoft.VisualStudio.Component.VC.Tools.ARM64", "-property", "installationPath")
+		out, _ := cmd.Output()
+		if strings.TrimSpace(string(out)) != "" {
+			return nil // Already installed with ARM64 C++ tools
+		}
 	}
-	cli.Info("Installing Visual Studio Build Tools (C++ workload)...")
-	cli.Info("This is a one-time ~2GB download — please be patient")
-	cmd := exec.Command("powershell", "-Command",
-		`Invoke-WebRequest -Uri "https://aka.ms/vs/17/release/vs_BuildTools.exe" -OutFile "$env:TEMP\vs_BuildTools.exe"; `+
-			`Start-Process -Wait -FilePath "$env:TEMP\vs_BuildTools.exe" -ArgumentList "--quiet","--wait","--norestart","--nocache","--add","Microsoft.VisualStudio.Workload.VCTools","--includeRecommended"`)
+	cli.Info("Installing VS Build Tools with C++ workload via winget...")
+	cmd := exec.Command("winget", "install", "--id", "Microsoft.VisualStudio.2022.BuildTools",
+		"--override", "--quiet --wait --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.Tools.ARM64 --includeRecommended",
+		"--accept-source-agreements", "--accept-package-agreements", "--force")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {

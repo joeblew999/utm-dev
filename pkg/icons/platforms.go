@@ -13,6 +13,19 @@ import (
 	ico "github.com/vldrus/golang/image/ico"
 )
 
+// writeImage creates a PNG file, closing it properly before returning.
+func writeImage(filePath string, img image.Image) error {
+	f, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	if err := png.Encode(f, img); err != nil {
+		f.Close()
+		return err
+	}
+	return f.Close()
+}
+
 // generateAndroidIcons creates Android drawable icons
 func generateAndroidIcons(inputPath, outputDir string) error {
 	file, err := os.Open(inputPath)
@@ -42,14 +55,8 @@ func generateAndroidIcons(inputPath, outputDir string) error {
 
 		resizedImg := resize.Resize(uint(size), uint(size), img, resize.Lanczos3)
 		filePath := filepath.Join(dirPath, "icon.png")
-		outFile, err := os.Create(filePath)
-		if err != nil {
-			return fmt.Errorf("failed to create file %s: %w", filePath, err)
-		}
-		defer outFile.Close()
-
-		if err := png.Encode(outFile, resizedImg); err != nil {
-			return fmt.Errorf("failed to encode %s: %w", filePath, err)
+		if err := writeImage(filePath, resizedImg); err != nil {
+			return fmt.Errorf("failed to write %s: %w", filePath, err)
 		}
 		cli.Debug("Generated %s", filePath)
 	}
@@ -96,14 +103,8 @@ func generateIOSIcons(inputPath, outputDir string) error {
 	for name, size := range sizes {
 		resizedImg := resize.Resize(uint(size), uint(size), img, resize.Lanczos3)
 		filePath := filepath.Join(iconSetDir, name)
-		outFile, err := os.Create(filePath)
-		if err != nil {
-			return fmt.Errorf("failed to create file %s: %w", name, err)
-		}
-		defer outFile.Close()
-
-		if err := png.Encode(outFile, resizedImg); err != nil {
-			return fmt.Errorf("failed to encode %s: %w", name, err)
+		if err := writeImage(filePath, resizedImg); err != nil {
+			return fmt.Errorf("failed to write %s: %w", name, err)
 		}
 		cli.Debug("Generated %s", filePath)
 	}
@@ -169,14 +170,8 @@ func generateWindowsIcons(inputPath, outputDir string) error {
 	for name, size := range sizes {
 		resizedImg := resize.Resize(uint(size), uint(size), img, resize.Lanczos3)
 		filePath := filepath.Join(assetsDir, name)
-		outFile, err := os.Create(filePath)
-		if err != nil {
-			return fmt.Errorf("failed to create file %s: %w", name, err)
-		}
-		defer outFile.Close()
-
-		if err := png.Encode(outFile, resizedImg); err != nil {
-			return fmt.Errorf("failed to encode %s: %w", name, err)
+		if err := writeImage(filePath, resizedImg); err != nil {
+			return fmt.Errorf("failed to write %s: %w", name, err)
 		}
 		cli.Debug("Generated %s", filePath)
 	}

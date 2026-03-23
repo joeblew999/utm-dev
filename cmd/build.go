@@ -5,6 +5,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
+	"strings"
 
 	"github.com/joeblew999/utm-dev/pkg/buildcache"
 	"github.com/joeblew999/utm-dev/pkg/cli"
@@ -396,35 +398,198 @@ func buildIOS(proj *project.GioProject, platform string, opts BuildOptions, simu
 	// Build with gogio - project paths are already absolute
 	// Use minOS from SDK config (centralized in sdk-ios-list.json)
 	minOS := config.GetIOSMinOS()
-	args := []string{"-target", "ios", "-minsdk", minOS, "-o", appPath}
 
-	// Add deep linking schemes if specified
-	if opts.Schemes != "" {
-		args = append(args, "-schemes", opts.Schemes)
-	}
+	if simulator && runtime.GOARCH == "arm64" {
+		// gogio v0.9.0 hardcodes x86_64 for simulator builds, which causes
+		// black screens on Apple Silicon (Metal doesn't work under Rosetta).
+		// Build the simulator binary ourselves with the correct arch + SDK.
+		if err := buildIOSSimulatorArm64(proj, appPath, minOS, opts); err != nil {
+			cache.RecordBuild(proj.Name, platform, proj.RootDir, appPath, false)
+			return err
+		}
+	} else {
+		args := []string{"-target", "ios", "-minsdk", minOS, "-o", appPath}
 
-	// Add signing key / provisioning profile if specified
-	if opts.SignKey != "" {
-		args = append(args, "-signkey", opts.SignKey)
-	}
+		// Add deep linking schemes if specified
+		if opts.Schemes != "" {
+			args = append(args, "-schemes", opts.Schemes)
+		}
 
-	args = append(args, ".") // Build current directory
-	gogioCmd := exec.Command("gogio", args...)
-	gogioCmd.Dir = proj.RootDir // Run from app directory so its go.mod is used
-	// Set GOWORK=off to avoid workspace interference with example modules
-	gogioCmd.Env = gogioEnv()
-	gogioCmd.Stdout = os.Stdout
-	gogioCmd.Stderr = os.Stderr
+		// Add signing key / provisioning profile if specified
+		if opts.SignKey != "" {
+			args = append(args, "-signkey", opts.SignKey)
+		}
 
-	if err := gogioCmd.Run(); err != nil {
-		cache.RecordBuild(proj.Name, platform, proj.RootDir, appPath, false)
-		return fmt.Errorf("gogio build failed: %w", err)
+		args = append(args, ".") // Build current directory
+		gogioCmd := exec.Command("gogio", args...)
+		gogioCmd.Dir = proj.RootDir // Run from app directory so its go.mod is used
+		gogioCmd.Env = gogioEnv()
+		gogioCmd.Stdout = os.Stdout
+		gogioCmd.Stderr = os.Stderr
+
+		if err := gogioCmd.Run(); err != nil {
+			cache.RecordBuild(proj.Name, platform, proj.RootDir, appPath, false)
+			return fmt.Errorf("gogio build failed: %w", err)
+		}
 	}
 
 	// Record successful build
 	cache.RecordBuild(proj.Name, platform, proj.RootDir, appPath, true)
 
 	fmt.Printf("✓ Built %s for %s: %s\n", proj.Name, target, appPath)
+	return nil
+}
+
+// buildIOSSimulatorArm64 builds an iOS simulator .app using go build directly,
+// bypassing gogio's hardcoded x86_64 arch. gogio v0.9.0 strips arm64 from
+// simulator builds, causing black screens on Apple Silicon (Metal needs native arch).
+func buildIOSSimulatorArm64(proj *project.GioProject, appPath, minOS string, opts BuildOptions) error {
+	// Create .app directory structure
+	if err := os.MkdirAll(appPath, 0755); err != nil {
+		return fmt.Errorf("failed to create app directory: %w", err)
+	}
+
+	// Get the simulator SDK path
+	sdkPath, err := exec.Command("xcrun", "--sdk", "iphonesimulator", "--show-sdk-path").Output()
+	if err != nil {
+		return fmt.Errorf("failed to get simulator SDK path: %w", err)
+	}
+	sdk := strings.TrimSpace(string(sdkPath))
+
+	// Get clang path from simulator SDK
+	clangPath, err := exec.Command("xcrun", "--sdk", "iphonesimulator", "-f", "clang").Output()
+	if err != nil {
+		return fmt.Errorf("failed to find clang: %w", err)
+	}
+	clang := strings.TrimSpace(string(clangPath))
+
+	// Use the same binary name convention as gogio: uppercase first letter
+	binName := strings.ToUpper(proj.Name[:1]) + proj.Name[1:]
+	binPath := filepath.Join(appPath, binName)
+
+	// Match gogio's exact compiler flags for iOS builds:
+	// -fembed-bitcode, -fobjc-arc, -arch arm64, simulator SDK, min version
+	// Plus -lresolv in ldflags (required by Gio's network code)
+	cflags := fmt.Sprintf("-fembed-bitcode -fobjc-arc -arch arm64 -isysroot %s -mios-simulator-version-min=%s", sdk, minOS)
+	ldflags := fmt.Sprintf("-lresolv -fembed-bitcode -fobjc-arc -arch arm64 -isysroot %s -mios-simulator-version-min=%s", sdk, minOS)
+
+	env := gogioEnv()
+	env = append(env,
+		"GOOS=ios",
+		"GOARCH=arm64",
+		"CGO_ENABLED=1",
+		"CC="+clang,
+		"CGO_CFLAGS="+cflags,
+		"CGO_LDFLAGS="+ldflags,
+	)
+
+	// Gio's shader module (gioui.org/shader) selects Metal shader variants at
+	// init time based on runtime.GOARCH: "amd64" → simulator shaders, anything
+	// else → device shaders. When we build GOARCH=arm64 for the simulator, the
+	// wrong (device) shaders are loaded, causing "Compiler failed to build
+	// request" at runtime.
+	//
+	// Fix: vendor dependencies, patch the vendored shaders.go to always select
+	// simulator shaders, then build with -mod=vendor.
+	if err := patchVendorForSimulatorShaders(proj.RootDir, env); err != nil {
+		return fmt.Errorf("failed to patch shaders for simulator: %w", err)
+	}
+	defer os.RemoveAll(filepath.Join(proj.RootDir, "vendor")) // Clean up vendor dir
+
+	buildCmd := exec.Command("go", "build", "-mod=vendor", "-ldflags=-s -w", "-o", binPath, ".")
+	buildCmd.Dir = proj.RootDir
+	buildCmd.Env = env
+	buildCmd.Stdout = os.Stdout
+	buildCmd.Stderr = os.Stderr
+
+	if err := buildCmd.Run(); err != nil {
+		return fmt.Errorf("go build for iOS simulator failed: %w", err)
+	}
+
+	// Generate Info.plist
+	bundleID := "localhost." + strings.ReplaceAll(proj.Name, "-", "_")
+	plist := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleExecutable</key>
+	<string>%s</string>
+	<key>CFBundleIdentifier</key>
+	<string>%s</string>
+	<key>CFBundleName</key>
+	<string>%s</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>CFBundleSupportedPlatforms</key>
+	<array><string>iPhoneSimulator</string></array>
+	<key>MinimumOSVersion</key>
+	<string>%s</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>UIRequiredDeviceCapabilities</key>
+	<array><string>arm64</string></array>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+</dict>
+</plist>`, binName, bundleID, proj.Name, minOS)
+
+	plistPath := filepath.Join(appPath, "Info.plist")
+	if err := os.WriteFile(plistPath, []byte(plist), 0644); err != nil {
+		return fmt.Errorf("failed to write Info.plist: %w", err)
+	}
+
+	// Copy icon assets if they exist
+	assetsDir := filepath.Join(proj.RootDir, constants.BuildDir, "Assets.xcassets")
+	if _, err := os.Stat(assetsDir); err == nil {
+		// Compile assets with actool
+		actoolCmd := exec.Command("xcrun", "actool", "--compile", appPath,
+			"--platform", "iphonesimulator",
+			"--minimum-deployment-target", minOS,
+			assetsDir)
+		actoolCmd.Stdout = os.Stdout
+		actoolCmd.Stderr = os.Stderr
+		actoolCmd.Run() // Non-fatal if this fails
+	}
+
+	return nil
+}
+
+// patchVendorForSimulatorShaders vendors the project's dependencies and patches
+// gioui.org/shader's shaders.go so that arm64 iOS builds use simulator Metal
+// shaders instead of device shaders.
+func patchVendorForSimulatorShaders(projectDir string, env []string) error {
+	// Vendor dependencies
+	vendorCmd := exec.Command("go", "mod", "vendor")
+	vendorCmd.Dir = projectDir
+	vendorCmd.Env = env
+	vendorCmd.Stdout = os.Stdout
+	vendorCmd.Stderr = os.Stderr
+	if err := vendorCmd.Run(); err != nil {
+		return fmt.Errorf("go mod vendor failed: %w", err)
+	}
+
+	// Patch the vendored shaders.go
+	shadersPath := filepath.Join(projectDir, "vendor", "gioui.org", "shader", "gio", "shaders.go")
+	src, err := os.ReadFile(shadersPath)
+	if err != nil {
+		return fmt.Errorf("failed to read vendored shaders.go: %w", err)
+	}
+
+	// Replace the GOARCH check so arm64 simulator builds use simulator shaders.
+	// Original: `if runtime.GOARCH == "amd64" {` → selects simulator shaders only for x86_64
+	// Patched:  `if true {` → always selects simulator shaders (correct for simulator builds)
+	patched := strings.ReplaceAll(string(src),
+		`runtime.GOARCH == "amd64"`,
+		`true /* patched: arm64 simulator needs simulator shaders */`)
+
+	if err := os.WriteFile(shadersPath, []byte(patched), 0644); err != nil {
+		return fmt.Errorf("failed to write patched shaders.go: %w", err)
+	}
+
 	return nil
 }
 

@@ -17,8 +17,7 @@ github.com/inkeliz/go_inkwasm v0.1.23-0.20240519174017-989fbe5b10f6 h1:zOY3Po61l
 github.com/inkeliz/go_inkwasm v0.1.23-0.20240519174017-989fbe5b10f6/go.mod h1:68mLNhLJuUItd5PbLmnwC4H5P6wI3l3l8gGnAvXQq9k=
 golang.org/x/crypto v0.49.0 h1:+Ng2ULVvLHnJ/ZFEq4KdcDd/cfjrrjjNSXNzxg0Y4U4=
 golang.org/x/crypto v0.49.0/go.mod h1:ErX4dUh2UM+CFYiXZRTcMpEcN8b/1gxEuv3nODoYtCA=
-golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 h1:R84qjqJb5nVJMxqWYb3np9L5ZsaDtB+a39EqjV0JSUM=
-golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0/go.mod h1:S9Xr4PYopiDyqSyp5NjCrhFrqg6A5zA2E/iPHPhqnS8=
+golang.org/x/exp v0.0.0-20260312153236-7ab1446f8b90 h1:jiDhWWeC7jfWqR9c/uplMOqJ0sbNlNWv0UkzE0vX1MA=
 golang.org/x/exp/shiny v0.0.0-20260312153236-7ab1446f8b90 h1:kyPrwnEYXdME284bE7xgS9BPxhG7MCa5hw1/TpaTJVs=
 golang.org/x/exp/shiny v0.0.0-20260312153236-7ab1446f8b90/go.mod h1:jqkJFnLVkS8zgKKY4+MOPCZtuZGw3hONUjhapUSwZ8c=
 golang.org/x/image v0.37.0 h1:ZiRjArKI8GwxZOoEtUfhrBtaCN+4b/7709dlT6SSnQA=
