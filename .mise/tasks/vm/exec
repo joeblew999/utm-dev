@@ -12,6 +12,7 @@ echo "── $(date '+%Y-%m-%d %H:%M:%S') ──"
 
 SSH_PORT=2222
 VM_USER="vagrant"
+VM_PASS="vagrant"
 
 if [ $# -eq 0 ]; then
   echo "Usage: mise vm:exec <command>"
@@ -20,12 +21,19 @@ if [ $# -eq 0 ]; then
   exit 1
 fi
 
-if ! ssh -o ConnectTimeout=3 -o StrictHostKeyChecking=no -o BatchMode=yes -p ${SSH_PORT} ${VM_USER}@127.0.0.1 "echo" 2>/dev/null; then
-  echo "✗ Cannot connect (port ${SSH_PORT})"
-  echo "  VM running?   mise vm:up"
-  echo "  SSH enabled?  See vm:up output"
+# Ensure sshpass is available
+if ! command -v sshpass >/dev/null 2>&1; then
+  echo "→ Installing sshpass..."
+  HOMEBREW_NO_AUTO_UPDATE=1 brew install hudochenkov/sshpass/sshpass </dev/null 2>/dev/null \
+    || { echo "✗ Failed to install sshpass"; exit 1; }
+fi
+
+if ! sshpass -p "${VM_PASS}" ssh -o ConnectTimeout=3 -o StrictHostKeyChecking=no -p ${SSH_PORT} ${VM_USER}@127.0.0.1 "echo" 2>/dev/null; then
+  echo "✗ Cannot connect via SSH (port ${SSH_PORT})"
+  echo "  VM running?       mise run vm:up"
+  echo "  SSH bootstrapped?  mise run vm:bootstrap"
   exit 1
 fi
 
 echo "→ $*"
-ssh -o StrictHostKeyChecking=no -p ${SSH_PORT} ${VM_USER}@127.0.0.1 "$*"
+sshpass -p "${VM_PASS}" ssh -o StrictHostKeyChecking=no -p ${SSH_PORT} ${VM_USER}@127.0.0.1 "$*"

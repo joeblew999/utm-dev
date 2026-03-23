@@ -280,7 +280,16 @@ while [ $ELAPSED -lt $TIMEOUT ]; do
 done
 [ $ELAPSED -ge $TIMEOUT ] && die "Timeout waiting for Windows (${TIMEOUT}s)"
 
+# ── 6. Bootstrap SSH + Rust ───────────────────────────────────────────────────
+
+TASK_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [ -x "${TASK_DIR}/bootstrap" ]; then
+  "${TASK_DIR}/bootstrap"
+else
+  info "Skipping bootstrap (task not found — run mise run vm:bootstrap manually)"
+fi
+
 echo ""
 ok "Done"
 echo "  RDP: localhost:${RDP_PORT} (${VM_USER}/${VM_PASS})"
-echo "  SSH: ssh -p ${SSH_PORT} ${VM_USER}@127.0.0.1"
+echo "  SSH: sshpass -p ${VM_PASS} ssh -p ${SSH_PORT} ${VM_USER}@127.0.0.1"

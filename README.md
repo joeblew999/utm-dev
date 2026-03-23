@@ -21,32 +21,35 @@ Then:
 mise run init      # Adds tools + env to your mise.toml (one time)
 mise install       # Install tools
 mise run setup     # Install SDKs + targets (idempotent)
-mise run vm:up     # Windows VM (idempotent)
+mise run vm:up     # Windows VM + SSH + Rust (idempotent)
 ```
 
-That's it. `init` configures your project, `setup` installs everything, `vm:up` gives you Windows.
+Everything is idempotent. Run any command as many times as you want.
 
-## What you can build
-
-| Platform | How |
-|---|---|
-| macOS | `cargo tauri build` — .app + .dmg |
-| iOS simulator | `cargo tauri ios build --target aarch64-sim` — .app |
-| iOS device | `cargo tauri ios build` — needs Apple Developer signing |
-| Android | `cargo tauri android build` — .apk + .aab |
-| Windows | RDP into VM (`localhost:3389`, vagrant/vagrant), build there |
-
-macOS, iOS, and Android build natively on your Mac after `mise run setup`.
-
-Windows builds inside the UTM VM after `mise run vm:up`. Automated Windows builds (SSH bootstrap, code sync) are coming — for now, RDP in and build manually.
-
-## Teardown
+## Build for every platform
 
 ```bash
-mise run vm:down          # Stop the VM
-mise run vm:delete vm     # Delete the VM (keeps cached 6 GB download)
-mise run vm:delete all    # Nuclear option (still keeps cached download)
+cargo tauri build                              # macOS — .app + .dmg
+cargo tauri ios build --target aarch64-sim     # iOS simulator — .app
+cargo tauri android build                      # Android — .apk + .aab
+mise run vm:build                              # Windows — .msi + .exe
 ```
+
+macOS, iOS, and Android build natively on your Mac. Windows builds inside the VM — code is synced automatically, artifacts are pulled back to `.build/windows/`.
+
+## All commands
+
+| Command | What it does |
+|---|---|
+| `mise run init` | Add tools + env to your mise.toml |
+| `mise run setup` | Install Rust, Android SDK/NDK, CocoaPods, targets |
+| `mise run vm:up` | Install UTM + Windows VM + bootstrap SSH + Rust |
+| `mise run vm:build` | Sync code to VM, build, pull .msi/.exe back |
+| `mise run vm:exec '<cmd>'` | Run any command inside Windows |
+| `mise run vm:sync` | Sync project files to VM |
+| `mise run vm:down` | Stop the VM |
+| `mise run vm:delete vm` | Delete VM (keeps UTM + cached box) |
+| `mise run vm:delete all` | Nuclear option (still keeps cached 6 GB download) |
 
 ## Prerequisites
 
@@ -57,4 +60,4 @@ mise run vm:delete all    # Nuclear option (still keeps cached download)
 
 ## Examples
 
-See [`examples/tauri-basic/`](examples/tauri-basic/) — a working Tauri app with per-platform build tasks.
+See [`examples/tauri-basic/`](examples/tauri-basic/) — a working Tauri app you can build for all 4 platforms.

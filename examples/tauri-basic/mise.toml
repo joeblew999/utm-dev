@@ -7,6 +7,7 @@
 #   mise run dev              macOS desktop dev mode
 #   mise run ios              iOS simulator
 #   mise run android          Android emulator
+#   mise run vm:build         Build Windows .msi/.exe in the VM
 
 # Pull in utm-dev tasks (init, setup, vm:up, vm:down, vm:exec, vm:delete)
 [task_config]

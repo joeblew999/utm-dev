@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+set -eu
+
+#MISE description="Sync project files into Windows VM"
+#MISE alias="vm-sync"
+
+PROJECT_DIR="$(pwd)"
+PROJECT_NAME="$(basename "${PROJECT_DIR}")"
+LOGDIR="${PROJECT_DIR}/.mise/logs"
+mkdir -p "${LOGDIR}"
+exec > >(tee -a "${LOGDIR}/vm-sync.log") 2>&1
+echo "── $(date '+%Y-%m-%d %H:%M:%S') ──"
+
+SSH_PORT=2222
+VM_USER="vagrant"
+VM_PASS="vagrant"
+VM_HOME="C:\\Users\\${VM_USER}"
+
+# Ensure sshpass
+if ! command -v sshpass >/dev/null 2>&1; then
+  echo "→ Installing sshpass..."
+  HOMEBREW_NO_AUTO_UPDATE=1 brew install hudochenkov/sshpass/sshpass </dev/null 2>/dev/null
+fi
+
+SSH_CMD="sshpass -p ${VM_PASS} ssh -o StrictHostKeyChecking=no -p ${SSH_PORT} ${VM_USER}@127.0.0.1"
+SCP_CMD="sshpass -p ${VM_PASS} scp -o StrictHostKeyChecking=no -P ${SSH_PORT}"
+
+# Test SSH
+${SSH_CMD} "echo ok" 2>/dev/null | grep -q ok || { echo "✗ Cannot connect via SSH. Run: mise run vm:bootstrap"; exit 1; }
+
+echo "→ Syncing ${PROJECT_NAME} to VM..."
+
+# Create tarball, scp it, extract on Windows
+TMPTAR=$(mktemp /tmp/vm-sync-XXXXX.tar.gz)
+trap "rm -f ${TMPTAR}" EXIT
+
+tar -czf "${TMPTAR}" \
+  --exclude='target' \
+  --exclude='node_modules' \
+  --exclude='.git' \
+  --exclude='.mise/logs' \
+  --exclude='.mise/state' \
+  --exclude='.build' \
+  --exclude='.gradle' \
+  -C "${PROJECT_DIR}" .
+
+${SCP_CMD} "${TMPTAR}" "${VM_USER}@127.0.0.1:sync.tar.gz"
+
+${SSH_CMD} "if not exist \"${VM_HOME}\\${PROJECT_NAME}\" mkdir \"${VM_HOME}\\${PROJECT_NAME}\" && cd \"${VM_HOME}\\${PROJECT_NAME}\" && tar -xzf \"%USERPROFILE%\\sync.tar.gz\" && del \"%USERPROFILE%\\sync.tar.gz\""
+
+echo "✓ Synced to ${VM_HOME}\\${PROJECT_NAME}"
