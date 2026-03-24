@@ -15,7 +15,7 @@ import { $ } from "bun";
 import { mkdirSync, writeFileSync, existsSync } from "fs";
 import { join } from "path";
 import {
-  PROJECT_DIR, LOGDIR, UTMCTL, loadState, info, ok, die, log, timestamp,
+  PROJECT_DIR, UTMCTL, loadState, info, ok, die, log, timestamp,
 } from "../_lib.ts";
 
 const LOG = "vm-package.log";

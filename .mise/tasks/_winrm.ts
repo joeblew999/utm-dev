@@ -148,13 +148,13 @@ export class WinRM {
 
   /** Run a PowerShell script */
   async runPS(script: string): Promise<CmdResult> {
-    const utf16 = new Uint8Array(script.length * 2);
+    // Encode as UTF-16LE base64 for powershell -EncodedCommand
+    // Use Buffer to avoid stack overflow with large scripts (spread operator limit ~30K)
+    const utf16 = Buffer.alloc(script.length * 2);
     for (let i = 0; i < script.length; i++) {
-      const code = script.charCodeAt(i);
-      utf16[i * 2] = code & 0xff;
-      utf16[i * 2 + 1] = (code >> 8) & 0xff;
+      utf16.writeUInt16LE(script.charCodeAt(i), i * 2);
     }
-    const encoded = btoa(String.fromCharCode(...utf16));
+    const encoded = utf16.toString("base64");
 
     const shellId = await this.createShell();
     try {
@@ -231,7 +231,8 @@ function extractStreams(xml: string): { stdout: string; stderr: string } {
   const re = /<(?:rsp:)?Stream[^>]*Name="(stdout|stderr)"[^>]*>([^<]*)<\/(?:rsp:)?Stream>/gi;
   let match;
   while ((match = re.exec(xml)) !== null) {
-    const decoded = atob(match[2]);
+    // Decode base64 via Buffer to correctly handle UTF-8 (atob corrupts multi-byte chars)
+    const decoded = Buffer.from(match[2], "base64").toString("utf-8");
     if (match[1] === "stdout") stdout += decoded;
     else stderr += decoded;
   }

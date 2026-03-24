@@ -4,7 +4,7 @@
 // #MISE alias="vm-exec"
 
 import {
-  LOGDIR, ensureSshpass, checkSsh, ssh, info, log, timestamp,
+  ensureSshpass, checkSsh, ssh, info, log, timestamp,
 } from "../_lib.ts";
 
 const LOG = "vm-exec.log";

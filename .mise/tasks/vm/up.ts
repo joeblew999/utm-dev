@@ -266,8 +266,15 @@ on run argv
 end run
 `;
 
-const pfResult = await $`osascript - ${VM_UUID} --index ${emulatedIndex} ${"TcPp,,22,127.0.0.1," + SSH_PORT} --index ${emulatedIndex} ${"TcPp,,3389,127.0.0.1," + RDP_PORT} --index ${emulatedIndex} ${"TcPp,,5985,127.0.0.1," + WINRM_PORT} << ${portForwardScript}`.quiet().nothrow();
-if (pfResult.exitCode !== 0) die("Failed to configure port forwards");
+// Write AppleScript to temp file — heredoc via Bun.$ is unreliable for multiline scripts
+const tmpScript = `/tmp/utm-port-forward-${Date.now()}.scpt`;
+writeFileSync(tmpScript, portForwardScript);
+try {
+  const pfResult = await $`osascript ${tmpScript} ${VM_UUID} --index ${emulatedIndex} ${"TcPp,,22,127.0.0.1," + SSH_PORT} --index ${emulatedIndex} ${"TcPp,,3389,127.0.0.1," + RDP_PORT} --index ${emulatedIndex} ${"TcPp,,5985,127.0.0.1," + WINRM_PORT}`.quiet().nothrow();
+  if (pfResult.exitCode !== 0) die("Failed to configure port forwards");
+} finally {
+  await $`rm -f ${tmpScript}`.nothrow();
+}
 
 ok(`Network: SSH:${SSH_PORT} RDP:${RDP_PORT} WinRM:${WINRM_PORT}`, LOG);
 
@@ -309,9 +316,9 @@ if (elapsed >= timeout) die(`Timeout waiting for Windows (${timeout}s)`);
 // ── 6. Bootstrap SSH + Rust ───────────────────────────────────────────────
 
 const taskDir = dirname(new URL(import.meta.url).pathname);
-const bootstrapPath = join(taskDir, "bootstrap");
+const bootstrapPath = join(taskDir, "bootstrap.ts");
 if (existsSync(bootstrapPath)) {
-  await $`${bootstrapPath}`;
+  await $`bun ${bootstrapPath}`;
 } else {
   info("Skipping bootstrap (task not found — run mise run vm:bootstrap manually)", LOG);
 }

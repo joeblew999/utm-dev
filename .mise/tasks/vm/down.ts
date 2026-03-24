@@ -5,7 +5,7 @@
 
 import { $ } from "bun";
 import {
-  LOGDIR, UTMCTL, loadState, info, ok, die, log, timestamp,
+  UTMCTL, loadState, info, ok, die, log, timestamp,
 } from "../_lib.ts";
 
 const LOG = "vm-down.log";

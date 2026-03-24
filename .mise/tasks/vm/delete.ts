@@ -3,7 +3,7 @@
 // #MISE description="Delete VM and/or UTM: vm:delete vm | utm | all"
 
 import { $ } from "bun";
-import { existsSync, readFileSync, unlinkSync, rmSync } from "fs";
+import { existsSync, unlinkSync, rmSync, readdirSync } from "fs";
 import { join } from "path";
 import {
   PROJECT_DIR, LOGDIR, STATEFILE, UTMCTL, info, ok, die, log, timestamp,
@@ -93,7 +93,6 @@ function cleanData() {
   // Clean Group Containers matching UTM
   try {
     const groupDir = join(home, "Library/Group Containers");
-    const { readdirSync } = require("fs");
     for (const d of readdirSync(groupDir)) {
       if (d.includes("com.utmapp.UTM")) {
         rmSync(join(groupDir, d), { recursive: true, force: true });

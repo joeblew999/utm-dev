@@ -9,7 +9,7 @@
 #   mise run android          Android emulator
 #   mise run vm:build         Build Windows .msi/.exe in the VM
 
-# Pull in utm-dev tasks (init, setup, vm:up, vm:down, vm:exec, vm:delete, doctor)
+# Pull in utm-dev tasks (init, setup, doctor, vm:up/down/sync/exec/build/delete/bootstrap/package)
 [task_config]
 includes = ["git::https://github.com/joeblew999/utm-dev.git//.mise/tasks?ref=main"]
 

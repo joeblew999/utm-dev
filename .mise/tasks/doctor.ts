@@ -7,7 +7,7 @@
 
 import { $ } from "bun";
 import { existsSync } from "fs";
-import { SSH_PORT, VM_USER, VM_PASS, UTMCTL } from "./_lib.ts";
+import { SSH_PORT, WINRM_PORT, VM_USER, VM_PASS, UTMCTL } from "./_lib.ts";
 
 async function check(name: string, testCmd: string, verCmd: string): Promise<void> {
   const test = await $`sh -c ${testCmd}`.quiet().nothrow();
@@ -98,8 +98,8 @@ if (sshpassCheck.exitCode === 0) {
 
 // Check WinRM
 try {
-  await fetch(`http://127.0.0.1:5985/wsman`, { signal: AbortSignal.timeout(2000) });
-  console.log("  ✓ WinRM (port 5985)");
+  await fetch(`http://127.0.0.1:${WINRM_PORT}/wsman`, { signal: AbortSignal.timeout(2000) });
+  console.log(`  ✓ WinRM (port ${WINRM_PORT})`);
 } catch {
   console.log("  ✗ WinRM (not reachable)");
 }

@@ -2,7 +2,7 @@
 // Import: import { ssh, scp, info, ok, die, ... } from "./_lib.ts";
 
 import { mkdirSync, appendFileSync, existsSync, readFileSync } from "fs";
-import { join, dirname } from "path";
+import { join } from "path";
 import { $ } from "bun";
 
 // ── VM constants ──────────────────────────────────────────────────────────

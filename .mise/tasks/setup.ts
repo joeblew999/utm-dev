@@ -14,38 +14,16 @@
 // Every step is idempotent. Run it 100 times, nothing breaks.
 
 import { $ } from "bun";
-import { existsSync, mkdirSync, appendFileSync } from "fs";
-import { join } from "path";
+import { existsSync, mkdirSync } from "fs";
+import { info, ok, die, log, timestamp } from "./_lib.ts";
 
-const PROJECT_DIR = process.cwd();
-const LOGDIR = join(PROJECT_DIR, ".mise", "logs");
-mkdirSync(LOGDIR, { recursive: true });
-
-const LOG = join(LOGDIR, "setup.log");
-
-function log(msg: string) {
-  const line = msg + "\n";
-  process.stdout.write(line);
-  appendFileSync(LOG, line);
-}
-
-const info = (msg: string) => log(`→ ${msg}`);
-const ok = (msg: string) => log(`✓ ${msg}`);
-
-function die(msg: string): never {
-  log(`✗ ${msg}`);
-  process.exit(1);
-}
+const LOG = "setup.log";
 
 async function cmdExists(cmd: string): Promise<boolean> {
   return (await $`command -v ${cmd}`.quiet().nothrow()).exitCode === 0;
 }
 
-async function dirExists(path: string): Promise<boolean> {
-  return existsSync(path);
-}
-
-log(`── ${new Date().toISOString().replace("T", " ").slice(0, 19)} ──`);
+log(`── ${timestamp()} ──`, LOG);
 
 const JAVA_VERSION = "temurin-17.0.18+8";
 const NDK_VERSION = "27.2.12479018";
@@ -55,53 +33,53 @@ const CMDLINE_TOOLS_URL =
   "https://dl.google.com/android/repository/commandlinetools-mac-14742923_latest.zip";
 const ANDROID_HOME = process.env.ANDROID_HOME ?? `${process.env.HOME}/.android-sdk`;
 
-log("═══ utm-dev setup ═══");
-log("");
+log("═══ utm-dev setup ═══", LOG);
+log("", LOG);
 
 // ── Stage 1: Host tools ───────────────────────────────────────────────────
 
-log("── Stage 1: Host tools ──");
+log("── Stage 1: Host tools ──", LOG);
 
 if (await cmdExists("cargo")) {
   const ver = (await $`cargo --version`.quiet()).stdout.toString().trim().split(" ")[1];
-  ok(`Rust ${ver}`);
+  ok(`Rust ${ver}`, LOG);
 } else {
-  info("Installing Rust...");
+  info("Installing Rust...", LOG);
   await $`curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y`;
-  ok("Rust installed");
+  ok("Rust installed", LOG);
 }
 
 if ((await $`xcode-select -p`.quiet().nothrow()).exitCode === 0) {
   const path = (await $`xcode-select -p`.quiet()).stdout.toString().trim();
-  ok(`Xcode (${path})`);
+  ok(`Xcode (${path})`, LOG);
 } else {
   die(
     "Xcode not found.\n  Install from: https://apps.apple.com/app/xcode/id497799835\n  Then run: sudo xcode-select --switch /Applications/Xcode.app",
   );
 }
 
-log("");
+log("", LOG);
 
 // ── Stage 2: Mobile SDKs ──────────────────────────────────────────────────
 
-log("── Stage 2: Mobile SDKs ──");
+log("── Stage 2: Mobile SDKs ──", LOG);
 
 // Java (via mise)
 if ((await $`mise where java`.quiet().nothrow()).exitCode === 0) {
   const javaPath = (await $`mise where java`.quiet()).stdout.toString().trim();
-  ok(`Java (${javaPath})`);
+  ok(`Java (${javaPath})`, LOG);
 } else {
-  info(`Installing Java ${JAVA_VERSION} via mise...`);
+  info(`Installing Java ${JAVA_VERSION} via mise...`, LOG);
   await $`mise use --global java@${JAVA_VERSION}`;
-  ok("Java installed");
+  ok("Java installed", LOG);
 }
 
 // Android SDK cmdline-tools
 const sdkmanager = `${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager`;
 if (existsSync(sdkmanager)) {
-  ok(`Android cmdline-tools (${ANDROID_HOME})`);
+  ok(`Android cmdline-tools (${ANDROID_HOME})`, LOG);
 } else {
-  info(`Installing Android cmdline-tools to ${ANDROID_HOME}...`);
+  info(`Installing Android cmdline-tools to ${ANDROID_HOME}...`, LOG);
   mkdirSync(ANDROID_HOME, { recursive: true });
   const tmpzip = `/tmp/cmdline-tools-${Date.now()}.zip`;
   await $`curl -sSfL -o ${tmpzip} ${CMDLINE_TOOLS_URL}`;
@@ -111,7 +89,7 @@ if (existsSync(sdkmanager)) {
   await $`mv ${ANDROID_HOME}/cmdline-tools-tmp/cmdline-tools ${ANDROID_HOME}/cmdline-tools/latest`;
   await $`rmdir ${ANDROID_HOME}/cmdline-tools-tmp`.nothrow();
   await $`rm -f ${tmpzip}`;
-  ok("Android cmdline-tools installed");
+  ok("Android cmdline-tools installed", LOG);
 }
 
 // Set up paths for sdkmanager commands
@@ -124,53 +102,53 @@ const sdkEnv = {
 };
 
 // Accept licenses
-info("Accepting Android SDK licenses...");
+info("Accepting Android SDK licenses...", LOG);
 await $`yes 2>/dev/null | ${sdkmanager} --licenses --sdk_root=${ANDROID_HOME} > /dev/null 2>&1 || true`
   .env(sdkEnv)
   .nothrow();
 
 // Platform
 if (existsSync(`${ANDROID_HOME}/platforms/${PLATFORM_VERSION}`)) {
-  ok(`Android platform ${PLATFORM_VERSION}`);
+  ok(`Android platform ${PLATFORM_VERSION}`, LOG);
 } else {
-  info(`Installing Android platform ${PLATFORM_VERSION}...`);
+  info(`Installing Android platform ${PLATFORM_VERSION}...`, LOG);
   await $`${sdkmanager} --sdk_root=${ANDROID_HOME} platforms;${PLATFORM_VERSION}`.env(sdkEnv);
-  ok("Android platform installed");
+  ok("Android platform installed", LOG);
 }
 
 // Build tools
 if (existsSync(`${ANDROID_HOME}/build-tools/${BUILD_TOOLS_VERSION}`)) {
-  ok(`Android build-tools ${BUILD_TOOLS_VERSION}`);
+  ok(`Android build-tools ${BUILD_TOOLS_VERSION}`, LOG);
 } else {
-  info(`Installing Android build-tools ${BUILD_TOOLS_VERSION}...`);
+  info(`Installing Android build-tools ${BUILD_TOOLS_VERSION}...`, LOG);
   await $`${sdkmanager} --sdk_root=${ANDROID_HOME} build-tools;${BUILD_TOOLS_VERSION}`.env(sdkEnv);
-  ok("Android build-tools installed");
+  ok("Android build-tools installed", LOG);
 }
 
 // Platform tools (adb)
 if (existsSync(`${ANDROID_HOME}/platform-tools`)) {
-  ok("Android platform-tools (adb)");
+  ok("Android platform-tools (adb)", LOG);
 } else {
-  info("Installing Android platform-tools...");
+  info("Installing Android platform-tools...", LOG);
   await $`${sdkmanager} --sdk_root=${ANDROID_HOME} platform-tools`.env(sdkEnv);
-  ok("Android platform-tools installed");
+  ok("Android platform-tools installed", LOG);
 }
 
 // NDK
 if (existsSync(`${ANDROID_HOME}/ndk/${NDK_VERSION}/source.properties`)) {
-  ok(`Android NDK ${NDK_VERSION}`);
+  ok(`Android NDK ${NDK_VERSION}`, LOG);
 } else {
   await $`rm -rf ${ANDROID_HOME}/ndk/${NDK_VERSION}`.nothrow();
-  info(`Installing Android NDK ${NDK_VERSION}...`);
+  info(`Installing Android NDK ${NDK_VERSION}...`, LOG);
   await $`${sdkmanager} --sdk_root=${ANDROID_HOME} ndk;${NDK_VERSION}`.env(sdkEnv);
-  ok("Android NDK installed");
+  ok("Android NDK installed", LOG);
 }
 
-log("");
+log("", LOG);
 
 // ── Stage 3: Rust targets ─────────────────────────────────────────────────
 
-log("── Stage 3: Rust Android targets ──");
+log("── Stage 3: Rust Android targets ──", LOG);
 
 const TARGETS = [
   "aarch64-linux-android",
@@ -182,36 +160,36 @@ const TARGETS = [
 for (const target of TARGETS) {
   const installed = await $`rustup target list --installed`.quiet();
   if (installed.stdout.toString().includes(target)) {
-    ok(target);
+    ok(target, LOG);
   } else {
-    info(`Adding ${target}...`);
+    info(`Adding ${target}...`, LOG);
     await $`rustup target add ${target}`;
-    ok(`${target} added`);
+    ok(`${target} added`, LOG);
   }
 }
 
-log("");
+log("", LOG);
 
 // ── Stage 4: iOS deps ─────────────────────────────────────────────────────
 
-log("── Stage 4: iOS deps ──");
+log("── Stage 4: iOS deps ──", LOG);
 
 if (await cmdExists("pod")) {
   const ver = (await $`pod --version`.quiet()).stdout.toString().trim();
-  ok(`CocoaPods ${ver}`);
+  ok(`CocoaPods ${ver}`, LOG);
 } else {
-  info("Installing CocoaPods...");
+  info("Installing CocoaPods...", LOG);
   await $`gem install cocoapods`;
-  ok("CocoaPods installed");
+  ok("CocoaPods installed", LOG);
 }
 
-log("");
+log("", LOG);
 
 // ── Summary ───────────────────────────────────────────────────────────────
 
-log("═══ Setup complete ═══");
-log("");
-log("Environment variables (set in mise.toml):");
-log(`  ANDROID_HOME=${ANDROID_HOME}`);
-log(`  NDK_HOME=${ANDROID_HOME}/ndk/${NDK_VERSION}`);
-log(`  JAVA_HOME=${JAVA_HOME}`);
+log("═══ Setup complete ═══", LOG);
+log("", LOG);
+log("Environment variables (set in mise.toml):", LOG);
+log(`  ANDROID_HOME=${ANDROID_HOME}`, LOG);
+log(`  NDK_HOME=${ANDROID_HOME}/ndk/${NDK_VERSION}`, LOG);
+log(`  JAVA_HOME=${JAVA_HOME}`, LOG);

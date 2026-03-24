@@ -9,8 +9,8 @@ import { $ } from "bun";
 import { mkdirSync, writeFileSync } from "fs";
 import { join } from "path";
 import {
-  PROJECT_DIR, PROJECT_NAME, LOGDIR, VM_USER, VM_PASS, VM_HOME,
-  SSH_PORT, ensureSshpass, checkSsh, ssh, scp, info, ok, die, log, timestamp,
+  PROJECT_DIR, PROJECT_NAME, VM_USER, VM_HOME,
+  ensureSshpass, checkSsh, ssh, scp, info, ok, log, timestamp,
 } from "../_lib.ts";
 
 const LOG = "vm-sync.log";

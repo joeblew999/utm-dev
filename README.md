@@ -51,6 +51,7 @@ macOS, iOS, and Android build natively on your Mac. Windows builds inside the VM
 | `mise run setup` | Install Rust, Android SDK/NDK, CocoaPods, targets |
 | `mise run doctor` | Check what's installed and what's missing |
 | `mise run vm:up` | Install UTM + Windows VM + bootstrap SSH + Rust |
+| `mise run vm:bootstrap` | Bootstrap SSH + dev tools in VM (called by vm:up) |
 | `mise run vm:build` | Sync code to VM, build, pull .msi/.exe back |
 | `mise run vm:exec '<cmd>'` | Run any command inside Windows |
 | `mise run vm:sync` | Sync project files to VM |
