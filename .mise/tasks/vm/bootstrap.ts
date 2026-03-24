@@ -1,10 +1,11 @@
 #!/usr/bin/env bun
 
-//MISE description="Bootstrap Windows VM: SSH, mise, VS Build Tools, WebView2"
+//MISE description="Bootstrap Windows VM: SSH + dev tools (build) or SSH only (test)"
 //MISE alias="vm-bootstrap"
 
 // Bootstraps a Windows VM via WinRM (the only thing available on a fresh box).
-// Installs: OpenSSH Server, VS Build Tools, WebView2, mise (which handles Rust + cargo-tauri).
+// - "full" (build VM): OpenSSH + VS Build Tools + WebView2 + mise
+// - "ssh-only" (test VM): just OpenSSH — clean Windows for testing
 // Idempotent — safe to run multiple times.
 // Usage: vm:bootstrap [build|test]  (default: build)
 
@@ -25,7 +26,7 @@ if (!(await winrm.ping())) {
   die(`WinRM not reachable on port ${profile.winrmPort} — is the ${vmName} VM running?`);
 }
 
-info(`Bootstrapping ${vmName} VM via WinRM...`, LOG);
+info(`Bootstrapping ${vmName} VM via WinRM (mode: ${profile.bootstrap})...`, LOG);
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -50,7 +51,7 @@ async function wingetInstall(pkgId: string, desc: string, timeout = 300): Promis
   );
 }
 
-// ── Step 1: OpenSSH Server ────────────────────────────────────────────────
+// ── Step 1: OpenSSH Server (all modes) ──────────────────────────────────
 
 if (!(await check("OpenSSH", "Get-Service sshd -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Status"))) {
   info("Installing OpenSSH Server...", LOG);
@@ -83,8 +84,19 @@ if (sshdStatus.stdout.trim() !== "Running") {
 }
 ok(`sshd: ${sshdStatus.stdout.trim()}`, LOG);
 
-// ── Step 2: VS Build Tools (needed for Rust/MSVC on Windows) ──────────────
+// ── ssh-only mode stops here ────────────────────────────────────────────
 
+if (profile.bootstrap === "ssh-only") {
+  log("", LOG);
+  ok(`${vmName} VM bootstrap complete (SSH only)`, LOG);
+  log(`  SSH: sshpass -p ${profile.pass} ssh -p ${profile.sshPort} ${profile.user}@127.0.0.1`, LOG);
+  log(`  RDP: localhost:${profile.rdpPort}`, LOG);
+  process.exit(0);
+}
+
+// ── Full mode: dev tools ────────────────────────────────────────────────
+
+// Step 2: VS Build Tools (needed for Rust/MSVC on Windows)
 await wingetInstall("Microsoft.VisualStudio.2022.BuildTools", "VS Build Tools 2022", 600);
 
 info("Installing C++ workload for MSVC...", LOG);
@@ -95,12 +107,10 @@ if (Test-Path $installer) {
     Start-Process -FilePath $installer -ArgumentList "modify","--installPath",$vs,"--add","Microsoft.VisualStudio.Workload.VCTools","--includeRecommended","--quiet","--norestart" -Wait -NoNewWindow
 }`, 600);
 
-// ── Step 3: WebView2 Runtime (needed by Tauri) ────────────────────────────
-
+// Step 3: WebView2 Runtime (needed by Tauri)
 await wingetInstall("Microsoft.EdgeWebView2Runtime", "WebView2 Runtime", 120);
 
-// ── Step 4: mise (handles Rust + cargo-tauri) ─────────────────────────────
-
+// Step 4: mise (handles Rust + cargo-tauri)
 const miseCheck = await winrm.runCmd("where mise");
 if (miseCheck.exitCode === 0) {
   const ver = await winrm.runCmd("mise --version");
@@ -117,5 +127,5 @@ if (miseCheck.exitCode === 0) {
 }
 
 log("", LOG);
-ok("Bootstrap complete", LOG);
+ok(`${vmName} VM bootstrap complete`, LOG);
 log("  Next: mise run vm:sync && mise run vm:exec 'cd project && mise install'", LOG);

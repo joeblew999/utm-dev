@@ -7,6 +7,8 @@ import { $ } from "bun";
 
 // ── VM profiles ──────────────────────────────────────────────────────────────
 
+export type BootstrapMode = "full" | "ssh-only" | false;
+
 export type VMProfile = {
   box: string;
   sshPort: number;
@@ -14,7 +16,7 @@ export type VMProfile = {
   winrmPort: number;
   user: string;
   pass: string;
-  bootstrap: boolean;
+  bootstrap: BootstrapMode;
 };
 
 export const VM_PROFILES: Record<string, VMProfile> = {
@@ -25,7 +27,7 @@ export const VM_PROFILES: Record<string, VMProfile> = {
     winrmPort: 5985,
     user: "vagrant",
     pass: "vagrant",
-    bootstrap: true,
+    bootstrap: "full",      // SSH + VS Build Tools + WebView2 + mise
   },
   test: {
     box: "windows-11",
@@ -34,7 +36,7 @@ export const VM_PROFILES: Record<string, VMProfile> = {
     winrmPort: 6985,
     user: "vagrant",
     pass: "vagrant",
-    bootstrap: false,
+    bootstrap: "ssh-only",  // SSH only — clean Windows for testing
   },
 };
 
