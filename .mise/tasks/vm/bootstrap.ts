@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
-// #MISE description="Bootstrap Windows VM: SSH, mise, VS Build Tools, WebView2"
-// #MISE alias="vm-bootstrap"
+//MISE description="Bootstrap Windows VM: SSH, mise, VS Build Tools, WebView2"
+//MISE alias="vm-bootstrap"
 
 // Bootstraps the Windows VM via WinRM (the only thing available on a fresh box).
 // Installs: OpenSSH Server, VS Build Tools, WebView2, mise (which handles Rust + cargo-tauri).

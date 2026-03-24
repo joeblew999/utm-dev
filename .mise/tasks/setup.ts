@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
-// #MISE description="Install all prerequisites for Tauri development"
-// #MISE alias="s"
+//MISE description="Install all prerequisites for Tauri development"
+//MISE alias="s"
 
 // Stages:
 //   1. Host tools   — Rust, Xcode check

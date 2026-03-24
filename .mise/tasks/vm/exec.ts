@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
-// #MISE description="Run a command inside the Windows VM via SSH"
-// #MISE alias="vm-exec"
+//MISE description="Run a command inside the Windows VM via SSH"
+//MISE alias="vm-exec"
 
 import {
   ensureSshpass, checkSsh, ssh, info, log, timestamp,

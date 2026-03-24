@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
-// #MISE description="Check what's installed and what's missing"
-// #MISE alias="d"
+//MISE description="Check what's installed and what's missing"
+//MISE alias="d"
 
 // Quick health check — shows what's working and what needs fixing.
 

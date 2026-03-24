@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
-// #MISE description="Add utm-dev tools and env to your project's mise.toml"
-// #MISE alias="i"
+//MISE description="Add utm-dev tools and env to your project's mise.toml"
+//MISE alias="i"
 
 // Adds the [tools] and [env] blocks needed for Tauri cross-platform builds.
 // Idempotent — safe to run multiple times.

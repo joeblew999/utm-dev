@@ -1,9 +1,9 @@
 #!/usr/bin/env bun
 
-// #MISE description="Sync project files into Windows VM"
-// #MISE alias="vm-sync"
-// #MISE sources=["src-tauri/**/*", "ui/**/*", "Cargo.toml", "Cargo.lock", "mise.toml", "package.json"]
-// #MISE outputs=[".mise/state/last-sync"]
+//MISE description="Sync project files into Windows VM"
+//MISE alias="vm-sync"
+//MISE sources=["src-tauri/**/*", "ui/**/*", "Cargo.toml", "Cargo.lock", "mise.toml", "package.json"]
+//MISE outputs=[".mise/state/last-sync"]
 
 import { $ } from "bun";
 import { mkdirSync, writeFileSync } from "fs";

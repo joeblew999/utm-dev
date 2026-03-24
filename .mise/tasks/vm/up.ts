@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
-// #MISE description="Install UTM + download Windows VM + start + wait"
-// #MISE alias="vm-up"
+//MISE description="Install UTM + download Windows VM + start + wait"
+//MISE alias="vm-up"
 
 // Fully unattended — works from nothing, no prompts, no GUI interaction.
 // Works both locally and when pulled as a remote mise task include.

@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-// #MISE description="Delete VM and/or UTM: vm:delete vm | utm | all"
+//MISE description="Delete VM and/or UTM: vm:delete vm | utm | all"
 
 import { $ } from "bun";
 import { existsSync, unlinkSync, rmSync, readdirSync } from "fs";

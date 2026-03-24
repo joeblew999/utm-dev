@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
-// #MISE description="Export current VM as a reusable Vagrant box"
-// #MISE alias="vm-package"
+//MISE description="Export current VM as a reusable Vagrant box"
+//MISE alias="vm-package"
 
 // Packages the current (bootstrapped) VM into a .box file that can be
 // uploaded to Vagrant Cloud. Other devs get a pre-baked box with SSH,

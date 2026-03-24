@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
 
-// #MISE description="Build Tauri Windows app: sync code to VM, build, pull artifacts back"
-// #MISE alias="vm-build"
-// #MISE depends=["vm:sync"]
+//MISE description="Build Tauri Windows app: sync code to VM, build, pull artifacts back"
+//MISE alias="vm-build"
+//MISE depends=["vm:sync"]
 
 import { $ } from "bun";
 import { mkdirSync } from "fs";
