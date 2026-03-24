@@ -1,9 +1,11 @@
 #!/usr/bin/env bun
 
-//MISE description="Delete VM and/or UTM: vm:delete build|test|utm|all"
+//MISE description="Delete a VM or UTM"
+//MISE alias="vm-delete"
+//MISE hide=true
 
 import { $ } from "bun";
-import { rmSync, readdirSync } from "fs";
+import { readdirSync } from "fs";
 import { join } from "path";
 import {
   UTMCTL, VM_PROFILES,
@@ -16,7 +18,7 @@ log(`── ${timestamp()} ──`, LOG);
 
 const arg = process.argv[2];
 if (!arg) {
-  console.log("Usage: mise vm:delete build|test|utm|all");
+  log("Usage: mise vm:delete windows-build|windows-test|linux-build|linux-test|utm|all");
   process.exit(1);
 }
 
@@ -124,15 +126,16 @@ async function deleteUtm() {
   ok("UTM uninstalled", LOG);
 }
 
-function cleanData() {
+async function cleanData() {
   info("Cleaning UTM app data (preserving box cache)...", LOG);
   const home = process.env.HOME!;
-  rmSync(join(home, "Library/Containers/com.utmapp.UTM"), { recursive: true, force: true });
+  // macOS protects container dirs — use rm command which handles it better
+  await $`rm -rf ${join(home, "Library/Containers/com.utmapp.UTM")}`.quiet().nothrow();
   try {
     const groupDir = join(home, "Library/Group Containers");
     for (const d of readdirSync(groupDir)) {
       if (d.includes("com.utmapp.UTM")) {
-        rmSync(join(groupDir, d), { recursive: true, force: true });
+        await $`rm -rf ${join(groupDir, d)}`.quiet().nothrow();
       }
     }
   } catch {}
@@ -143,8 +146,10 @@ function cleanData() {
 }
 
 switch (arg) {
-  case "build":
-  case "test":
+  case "windows-build":
+  case "windows-test":
+  case "linux-build":
+  case "linux-test":
     await deleteVmByName(arg);
     break;
   case "utm":
@@ -154,11 +159,11 @@ switch (arg) {
   case "all":
     await deleteAllVms();
     await deleteUtm();
-    cleanData();
+    await cleanData();
     break;
   default:
-    console.log("Usage: mise vm:delete build|test|utm|all");
+    log("Usage: mise vm:delete windows-build|windows-test|linux-build|linux-test|utm|all");
     process.exit(1);
 }
 
-log("Rebuild: mise vm:up [build|test]", LOG);
+log("Rebuild: mise vm:up [windows-build|windows-test|linux-build|linux-test]", LOG);

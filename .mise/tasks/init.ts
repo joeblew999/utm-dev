@@ -8,20 +8,19 @@
 
 import { existsSync, readFileSync, appendFileSync } from "fs";
 import { join } from "path";
+import { log, die } from "./_lib.ts";
 
 const miseToml = join(process.cwd(), "mise.toml");
 
 if (!existsSync(miseToml)) {
-  console.log(`✗ No mise.toml found in ${process.cwd()}`);
-  console.log("  Create one first, or run from your project root.");
-  process.exit(1);
+  die(`No mise.toml found in ${process.cwd()} — create one first, or run from your project root.`);
 }
 
 const content = readFileSync(miseToml, "utf-8");
 
 // Check if we already added our blocks
 if (content.includes("# utm-dev tools")) {
-  console.log("✓ Already initialised");
+  log("✓ Already initialised");
   process.exit(0);
 }
 
@@ -29,24 +28,25 @@ const hasTools = /^\[tools\]/m.test(content);
 const hasEnv = /^\[env\]/m.test(content);
 
 if (hasTools || hasEnv) {
-  console.log("⚠ Your mise.toml already has [tools] and/or [env] sections.");
-  console.log("  Add the following lines manually to your existing sections:");
-  console.log("");
+  log("⚠ Your mise.toml already has [tools] and/or [env] sections.");
+  log("  Add the following lines manually to your existing sections:");
+  log("");
   if (hasTools) {
-    console.log("  # In your [tools] section:");
-    console.log('  "cargo:tauri-cli" = {version = "2",      os = ["macos", "windows"]}');
-    console.log('  bun               = "latest"');
-    console.log('  xcodegen          = {version = "latest", os = ["macos"]}');
-    console.log('  ruby              = {version = "3.3",    os = ["macos"]}');
-    console.log('  java              = "temurin-17.0.18+8"');
-    console.log("");
+    log("  # In your [tools] section:");
+    log('  "cargo:tauri-cli" = {version = "2",      os = ["macos", "windows"]}');
+    log('  bun               = "latest"');
+    log('  xcodegen          = {version = "latest", os = ["macos"]}');
+    log('  ruby              = {version = "3.3",    os = ["macos"]}');
+    log('  java              = "temurin-17.0.18+8"');
+    log("");
   }
   if (hasEnv) {
-    console.log("  # In your [env] section:");
-    console.log('  ANDROID_HOME = "{{env.HOME}}/.android-sdk"');
-    console.log('  NDK_HOME = "{{env.HOME}}/.android-sdk/ndk/27.2.12479018"');
-    console.log('  JAVA_HOME = "{{env.HOME}}/.local/share/mise/installs/java/temurin-17.0.18+8"');
-    console.log("");
+    log("  # In your [env] section:");
+    log('  ANDROID_HOME = "{{env.HOME}}/.android-sdk"');
+    log('  NDK_HOME = "{{env.HOME}}/.android-sdk/ndk/27.2.12479018"');
+    log('  JAVA_HOME = "{{env.HOME}}/.local/share/mise/installs/java/temurin-17.0.18+8"');
+    log('  _.path = ["{{env.HOME}}/.android-sdk/platform-tools", "{{env.HOME}}/.android-sdk/emulator", "{{env.HOME}}/.android-sdk/cmdline-tools/latest/bin"]');
+    log("");
   }
   process.exit(0);
 }
@@ -67,12 +67,13 @@ java              = "temurin-17.0.18+8"
 ANDROID_HOME = "{{env.HOME}}/.android-sdk"
 NDK_HOME = "{{env.HOME}}/.android-sdk/ndk/27.2.12479018"
 JAVA_HOME = "{{env.HOME}}/.local/share/mise/installs/java/temurin-17.0.18+8"
+_.path = ["{{env.HOME}}/.android-sdk/platform-tools", "{{env.HOME}}/.android-sdk/emulator", "{{env.HOME}}/.android-sdk/cmdline-tools/latest/bin"]
 `;
 
 appendFileSync(miseToml, block);
 
-console.log(`✓ Added [tools] and [env] to ${miseToml}`);
-console.log("");
-console.log("Next:");
-console.log("  mise install      # Install tools");
-console.log("  mise run setup    # Install SDKs");
+log(`✓ Added [tools] and [env] to ${miseToml}`);
+log("");
+log("Next:");
+log("  mise install      # Install tools");
+log("  mise run setup    # Install SDKs");

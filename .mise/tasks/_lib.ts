@@ -7,20 +7,25 @@ import { $ } from "bun";
 
 // ── VM profiles ──────────────────────────────────────────────────────────────
 
+export type GuestOS = "windows" | "linux";
 export type BootstrapMode = "full" | "ssh-only" | false;
 
 export type VMProfile = {
+  os: GuestOS;
   box: string;
   sshPort: number;
-  rdpPort: number;
-  winrmPort: number;
+  rdpPort?: number;     // Windows only
+  winrmPort?: number;   // Windows only
   user: string;
   pass: string;
   bootstrap: BootstrapMode;
+  memoryMiB: number;    // RAM in MiB
+  cpuCores: number;     // CPU cores
 };
 
 export const VM_PROFILES: Record<string, VMProfile> = {
-  build: {
+  "windows-build": {
+    os: "windows",
     box: "windows-11",
     sshPort: 2222,
     rdpPort: 3389,
@@ -28,8 +33,11 @@ export const VM_PROFILES: Record<string, VMProfile> = {
     user: "vagrant",
     pass: "vagrant",
     bootstrap: "full",      // SSH + VS Build Tools + WebView2 + mise
+    memoryMiB: 12288,       // 12 GB — VS Build Tools install crashes VM at 8 GB on ARM64
+    cpuCores: 4,
   },
-  test: {
+  "windows-test": {
+    os: "windows",
     box: "windows-11",
     sshPort: 2322,
     rdpPort: 3489,
@@ -37,10 +45,32 @@ export const VM_PROFILES: Record<string, VMProfile> = {
     user: "vagrant",
     pass: "vagrant",
     bootstrap: "ssh-only",  // SSH only — clean Windows for testing
+    memoryMiB: 4096,        // 4 GB — just running the app
+    cpuCores: 2,
+  },
+  "linux-build": {
+    os: "linux",
+    box: "ubuntu-24.04",
+    sshPort: 2422,
+    user: "vagrant",
+    pass: "vagrant",
+    bootstrap: "full",      // build-essential + Rust + mise + Tauri deps
+    memoryMiB: 4096,        // 4 GB — Linux + Rust is lighter
+    cpuCores: 4,
+  },
+  "linux-test": {
+    os: "linux",
+    box: "ubuntu-24.04",
+    sshPort: 2522,
+    user: "vagrant",
+    pass: "vagrant",
+    bootstrap: "ssh-only",  // SSH only — clean Linux for testing
+    memoryMiB: 2048,        // 2 GB — just running the app
+    cpuCores: 2,
   },
 };
 
-export const DEFAULT_VM = "build";
+export const DEFAULT_VM = "windows-build";
 
 export function getProfile(name?: string): VMProfile & { name: string } {
   const vmName = name || DEFAULT_VM;
@@ -185,5 +215,6 @@ export function clearState(vmName: string): void {
 // ── VM Home path helper ─────────────────────────────────────────────────────
 
 export function vmHome(profile: VMProfile): string {
+  if (profile.os === "linux") return `/home/${profile.user}`;
   return `C:\\Users\\${profile.user}`;
 }

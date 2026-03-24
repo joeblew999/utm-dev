@@ -6,43 +6,1218 @@
   <title>Tauri Basic</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #0f0f17;
+      --surface: #1a1a2e;
+      --border: #2a2a3e;
+      --text: #e0e0e0;
+      --muted: #888;
+      --accent: #667eea;
+      --accent2: #764ba2;
+      --success: #4ade80;
+      --warn: #fbbf24;
+    }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #ffffff;
-      color: #111;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
     }
-    .container {
-      text-align: center;
-      padding: 2rem;
+    header {
+      padding: 1.5rem 2rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
-    h1 {
-      font-size: 2rem;
-      margin-bottom: 0.5rem;
-      background: linear-gradient(135deg, #667eea, #764ba2);
+    header h1 {
+      font-size: 1.4rem;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
-    p { color: #aaa; margin-top: 0.5rem; }
-    .badge {
-      display: inline-block;
-      margin-top: 1rem;
-      padding: 0.4rem 1rem;
+    header .badge {
+      padding: 0.3rem 0.8rem;
       border-radius: 999px;
-      background: #2d2d44;
-      font-size: 0.85rem;
-      color: #667eea;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      font-size: 0.75rem;
+      color: var(--accent);
     }
+    .layout {
+      display: flex;
+      height: calc(100vh - 65px);
+    }
+    nav {
+      width: 200px;
+      border-right: 1px solid var(--border);
+      padding: 1rem 0;
+      flex-shrink: 0;
+      overflow-y: auto;
+    }
+    nav button {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 0.6rem 1.2rem;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    nav button:hover { color: var(--text); background: var(--surface); }
+    nav button.active {
+      color: var(--accent);
+      background: var(--surface);
+      border-right: 2px solid var(--accent);
+    }
+    main {
+      flex: 1;
+      padding: 2rem;
+      overflow-y: auto;
+    }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .panel h2 {
+      font-size: 1.2rem;
+      margin-bottom: 0.3rem;
+    }
+    .panel .desc {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-bottom: 1.5rem;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      margin-bottom: 1rem;
+    }
+    .card h3 {
+      font-size: 0.9rem;
+      margin-bottom: 0.8rem;
+      color: var(--accent);
+    }
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 0.8rem;
+    }
+    .info-item {
+      background: var(--bg);
+      padding: 0.8rem;
+      border-radius: 6px;
+    }
+    .info-item .label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .info-item .value { font-size: 1rem; margin-top: 0.2rem; font-weight: 600; }
+    button.btn {
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      margin-right: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    button.btn:hover { border-color: var(--accent); color: var(--accent); }
+    button.btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-color: transparent;
+      color: white;
+    }
+    button.btn-primary:hover { opacity: 0.9; }
+    input[type="text"], textarea {
+      padding: 0.5rem 0.8rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 0.85rem;
+      width: 100%;
+      max-width: 300px;
+    }
+    textarea { max-width: 100%; min-height: 80px; font-family: monospace; }
+    .result {
+      margin-top: 0.8rem;
+      padding: 0.6rem;
+      border-radius: 6px;
+      background: var(--bg);
+      font-family: monospace;
+      font-size: 0.8rem;
+      color: var(--success);
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .result.error { color: #f87171; }
+    .log-area {
+      max-height: 200px;
+      overflow-y: auto;
+      background: var(--bg);
+      border-radius: 6px;
+      padding: 0.6rem;
+      font-family: monospace;
+      font-size: 0.75rem;
+      line-height: 1.6;
+    }
+    .log-area .log-entry { color: var(--muted); }
+    .log-area .log-entry.info { color: var(--accent); }
+    .log-area .log-entry.event { color: var(--warn); }
+    .log-area .log-entry.error { color: #f87171; }
+    .row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+    .mt { margin-top: 0.8rem; }
+    .plugin-tag {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      background: var(--bg);
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-left: 0.5rem;
+    }
+    .feature-list { list-style: none; }
+    .feature-list li {
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .feature-list li:last-child { border-bottom: none; }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      display: inline-block; margin-right: 0.5rem;
+    }
+    .status-dot.on { background: var(--success); }
+    .status-dot.off { background: var(--muted); }
   </style>
 </head>
 <body>
-  <div class="container">
+  <header>
     <h1>Tauri Basic</h1>
-    <p>Built with utm-dev</p>
-    <span class="badge">iOS Simulator</span>
+    <span class="badge" id="platform-badge">loading...</span>
+  </header>
+  <div class="layout">
+    <nav id="nav">
+      <button data-panel="overview" class="active">Overview</button>
+      <button data-panel="system">System Info</button>
+      <button data-panel="dialog">Dialogs</button>
+      <button data-panel="clipboard">Clipboard</button>
+      <button data-panel="notifications">Notifications</button>
+      <button data-panel="store">Key-Value Store</button>
+      <button data-panel="opener">Opener</button>
+      <button data-panel="process">Process</button>
+      <button data-panel="events">Events</button>
+      <button data-panel="commands">IPC Commands</button>
+      <button data-panel="logging">Logging</button>
+      <button data-panel="filesystem">Filesystem</button>
+      <button data-panel="updater">Updater</button>
+      <button data-panel="shortcuts">Global Shortcuts</button>
+      <button data-panel="autostart">Autostart</button>
+      <button data-panel="deeplink">Deep Link</button>
+    </nav>
+    <main>
+      <!-- Overview -->
+      <div class="panel active" id="panel-overview">
+        <h2>Tauri Feature Showcase</h2>
+        <p class="desc">This app demonstrates Tauri 2 plugins and capabilities. Built with utm-dev.</p>
+        <div class="card">
+          <h3>Active Plugins</h3>
+          <ul class="feature-list" id="plugin-list">
+            <li><span><span class="status-dot on"></span>tauri-plugin-shell</span><span class="plugin-tag">execute commands, open URLs</span></li>
+            <li><span><span class="status-dot on"></span>tauri-plugin-os</span><span class="plugin-tag">platform detection</span></li>
+            <li><span><span class="status-dot on"></span>tauri-plugin-dialog</span><span class="plugin-tag">file open/save, alerts</span></li>
+            <li><span><span class="status-dot on"></span>tauri-plugin-store</span><span class="plugin-tag">persistent key-value</span></li>
+            <li><span><span class="status-dot on"></span>tauri-plugin-notification</span><span class="plugin-tag">native OS notifications</span></li>
+            <li><span><span class="status-dot on"></span>tauri-plugin-clipboard-manager</span><span class="plugin-tag">read/write clipboard</span></li>
+            <li><span><span class="status-dot on"></span>tauri-plugin-opener</span><span class="plugin-tag">open files and URLs</span></li>
+            <li><span><span class="status-dot on"></span>tauri-plugin-process</span><span class="plugin-tag">exit, restart</span></li>
+            <li><span><span class="status-dot on"></span>tauri-plugin-log</span><span class="plugin-tag">structured logging</span></li>
+            <li><span><span class="status-dot on"></span>tauri-plugin-fs</span><span class="plugin-tag">sandboxed filesystem</span></li>
+            <li><span><span class="status-dot on"></span>tauri-plugin-updater</span><span class="plugin-tag">auto-update</span></li>
+            <li><span><span class="status-dot on"></span>tauri-plugin-window-state</span><span class="plugin-tag">remember window position</span></li>
+            <li><span><span class="status-dot on"></span>tauri-plugin-single-instance</span><span class="plugin-tag">prevent duplicates (desktop)</span></li>
+            <li><span><span class="status-dot on"></span>tauri-plugin-global-shortcut</span><span class="plugin-tag">system-wide hotkeys (desktop)</span></li>
+            <li><span><span class="status-dot on"></span>tauri-plugin-autostart</span><span class="plugin-tag">launch on login (desktop)</span></li>
+            <li><span><span class="status-dot on"></span>tauri-plugin-deep-link</span><span class="plugin-tag">custom URL protocol</span></li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Core Features</h3>
+          <ul class="feature-list">
+            <li><span><span class="status-dot on"></span>System Tray</span><span class="plugin-tag">icon + menu (desktop)</span></li>
+            <li><span><span class="status-dot on"></span>IPC Commands</span><span class="plugin-tag">Rust &harr; JS</span></li>
+            <li><span><span class="status-dot on"></span>Event System</span><span class="plugin-tag">bidirectional events</span></li>
+            <li><span><span class="status-dot on"></span>Capabilities</span><span class="plugin-tag">fine-grained permissions</span></li>
+            <li><span><span class="status-dot on"></span>CSP Security</span><span class="plugin-tag">content security policy</span></li>
+            <li><span><span class="status-dot on"></span>Window State</span><span class="plugin-tag">remembers size + position</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- System Info -->
+      <div class="panel" id="panel-system">
+        <h2>System Info</h2>
+        <p class="desc">Platform detection via tauri-plugin-os and custom IPC command</p>
+        <div class="card">
+          <h3>From Rust (IPC Command)</h3>
+          <div class="info-grid" id="system-info-grid">
+            <div class="info-item"><div class="label">loading...</div><div class="value">--</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>From tauri-plugin-os</h3>
+          <div class="info-grid" id="os-info-grid">
+            <div class="info-item"><div class="label">loading...</div><div class="value">--</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dialogs -->
+      <div class="panel" id="panel-dialog">
+        <h2>Dialogs</h2>
+        <p class="desc">Native file dialogs and message boxes via tauri-plugin-dialog</p>
+        <div class="card">
+          <h3>File Dialogs</h3>
+          <div class="row">
+            <button class="btn" onclick="openFile()">Open File</button>
+            <button class="btn" onclick="openMultiple()">Open Multiple</button>
+            <button class="btn" onclick="openFolder()">Open Folder</button>
+            <button class="btn" onclick="saveFile()">Save File</button>
+          </div>
+          <div class="result" id="dialog-result">Click a button to try native dialogs</div>
+        </div>
+        <div class="card">
+          <h3>Message Boxes</h3>
+          <div class="row">
+            <button class="btn" onclick="showMessage()">Message</button>
+            <button class="btn" onclick="showAsk()">Ask (Yes/No)</button>
+            <button class="btn" onclick="showConfirm()">Confirm (Ok/Cancel)</button>
+          </div>
+          <div class="result" id="message-result">Click a button to try message boxes</div>
+        </div>
+      </div>
+
+      <!-- Clipboard -->
+      <div class="panel" id="panel-clipboard">
+        <h2>Clipboard</h2>
+        <p class="desc">Read and write the system clipboard via tauri-plugin-clipboard-manager</p>
+        <div class="card">
+          <h3>Write to Clipboard</h3>
+          <div class="row">
+            <input type="text" id="clipboard-input" placeholder="Text to copy..." value="Hello from Tauri!">
+            <button class="btn btn-primary" onclick="clipboardWrite()">Copy</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Read from Clipboard</h3>
+          <button class="btn" onclick="clipboardRead()">Paste / Read</button>
+          <div class="result" id="clipboard-result">Click to read clipboard contents</div>
+        </div>
+      </div>
+
+      <!-- Notifications -->
+      <div class="panel" id="panel-notifications">
+        <h2>Notifications</h2>
+        <p class="desc">Native OS notifications via tauri-plugin-notification</p>
+        <div class="card">
+          <h3>Send Notification</h3>
+          <div style="margin-bottom:0.5rem">
+            <input type="text" id="notif-title" placeholder="Title" value="Tauri Basic" style="margin-bottom:0.5rem">
+          </div>
+          <div style="margin-bottom:0.5rem">
+            <input type="text" id="notif-body" placeholder="Body" value="This is a native notification!">
+          </div>
+          <button class="btn btn-primary" onclick="sendNotification()">Send Notification</button>
+          <div class="result" id="notif-result">Click to send a native notification</div>
+        </div>
+      </div>
+
+      <!-- Store -->
+      <div class="panel" id="panel-store">
+        <h2>Key-Value Store</h2>
+        <p class="desc">Persistent storage via tauri-plugin-store — stores any JSON type, not just strings</p>
+        <div class="card">
+          <h3>Write String</h3>
+          <div class="row">
+            <input type="text" id="store-key" placeholder="Key" value="demo-key" style="max-width:140px">
+            <input type="text" id="store-value" placeholder="Value" value="Hello, persistent world!">
+            <button class="btn btn-primary" onclick="storeSet()">Save</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Write Rich Types</h3>
+          <p style="color:var(--muted);font-size:0.8rem;margin-bottom:0.8rem">
+            Not just localStorage — the store handles objects, arrays, numbers, and booleans natively.
+          </p>
+          <div class="row">
+            <button class="btn btn-primary" onclick="storeSetObject()">Save Object</button>
+            <button class="btn" onclick="storeSetArray()">Save Array</button>
+            <button class="btn" onclick="storeSetNumber()">Save Number</button>
+            <button class="btn" onclick="storeSetBoolean()">Save Boolean</button>
+          </div>
+          <div class="result" id="store-rich-result">Click a button to store a non-string value</div>
+        </div>
+        <div class="card">
+          <h3>Read</h3>
+          <div class="row">
+            <input type="text" id="store-read-key" placeholder="Key" value="demo-key" style="max-width:140px">
+            <button class="btn" onclick="storeGet()">Load</button>
+            <button class="btn" onclick="storeKeys()">List All Keys</button>
+            <button class="btn" onclick="storeClear()">Clear All</button>
+          </div>
+          <div class="result" id="store-result">Stored data persists across app restarts</div>
+        </div>
+      </div>
+
+      <!-- Opener -->
+      <div class="panel" id="panel-opener">
+        <h2>Opener</h2>
+        <p class="desc">Open URLs, files, and reveal in Finder/Explorer via tauri-plugin-opener</p>
+        <div class="card">
+          <h3>Open URL</h3>
+          <div class="row">
+            <input type="text" id="opener-url" placeholder="URL" value="https://v2.tauri.app" style="max-width:400px">
+            <button class="btn btn-primary" onclick="openUrl()">Open in Browser</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Open File with Default App</h3>
+          <div class="row">
+            <button class="btn" onclick="openerOpenPath()">Open a File</button>
+          </div>
+          <div class="result" id="opener-path-result">Pick a file and open it with the system default app</div>
+        </div>
+        <div class="card">
+          <h3>Reveal in Finder / Explorer</h3>
+          <div class="row">
+            <button class="btn btn-primary" onclick="openerRevealFile()">Reveal a File</button>
+            <button class="btn" onclick="openerRevealAppData()">Reveal App Data Dir</button>
+          </div>
+          <div class="result" id="opener-reveal-result">Show a file or folder in the system file manager</div>
+        </div>
+        <div class="card">
+          <h3>Quick Links</h3>
+          <div class="row">
+            <button class="btn" onclick="openLink('https://v2.tauri.app/plugin/')">Tauri Plugins</button>
+            <button class="btn" onclick="openLink('https://github.com/joeblew999/utm-dev')">utm-dev Repo</button>
+            <button class="btn" onclick="openLink('https://v2.tauri.app/develop/')">Tauri Docs</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Process -->
+      <div class="panel" id="panel-process">
+        <h2>Process</h2>
+        <p class="desc">App lifecycle control via tauri-plugin-process</p>
+        <div class="card">
+          <h3>Relaunch App</h3>
+          <p style="color:var(--muted);font-size:0.8rem;margin-bottom:0.8rem">
+            Restarts the entire application — useful for applying settings, post-update, or recovery.
+          </p>
+          <button class="btn btn-primary" onclick="processRelaunch()">Relaunch App</button>
+        </div>
+        <div class="card">
+          <h3>Exit App</h3>
+          <p style="color:var(--muted);font-size:0.8rem;margin-bottom:0.8rem">
+            Exits the application with a status code. Also available from the system tray menu.
+          </p>
+          <div class="row">
+            <button class="btn" onclick="processExit(0)">Exit (code 0)</button>
+            <button class="btn" onclick="processExit(1)">Exit (code 1)</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Events -->
+      <div class="panel" id="panel-events">
+        <h2>Event System</h2>
+        <p class="desc">Bidirectional Rust &harr; JS events (not just IPC commands)</p>
+        <div class="card">
+          <h3>Event Log</h3>
+          <div class="log-area" id="event-log">
+            <div class="log-entry info">Listening for backend events...</div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Emit Event to Backend</h3>
+          <div class="row">
+            <input type="text" id="event-payload" placeholder="Event payload" value="ping from frontend">
+            <button class="btn btn-primary" onclick="emitEvent()">Emit</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- IPC Commands -->
+      <div class="panel" id="panel-commands">
+        <h2>IPC Commands</h2>
+        <p class="desc">Call Rust functions from JavaScript via Tauri's invoke system</p>
+        <div class="card">
+          <h3>Greet Command</h3>
+          <div class="row">
+            <input type="text" id="greet-name" placeholder="Your name" value="World">
+            <button class="btn btn-primary" onclick="callGreet()">Greet</button>
+          </div>
+          <div class="result" id="greet-result">Enter a name and click Greet</div>
+        </div>
+        <div class="card">
+          <h3>System Info Command</h3>
+          <button class="btn" onclick="callSystemInfo()">Get System Info (from Rust)</button>
+          <div class="result" id="cmd-system-result">Click to invoke the Rust command</div>
+        </div>
+      </div>
+
+      <!-- Logging -->
+      <div class="panel" id="panel-logging">
+        <h2>Logging</h2>
+        <p class="desc">Structured logging via tauri-plugin-log (writes to file with rotation)</p>
+        <div class="card">
+          <h3>Send Log Messages</h3>
+          <div class="row">
+            <button class="btn" onclick="sendLog('info', 'Info message from frontend')">Log Info</button>
+            <button class="btn" onclick="sendLog('warn', 'Warning message from frontend')">Log Warn</button>
+            <button class="btn" onclick="sendLog('error', 'Error message from frontend')">Log Error</button>
+            <button class="btn" onclick="sendLog('debug', 'Debug message from frontend')">Log Debug</button>
+          </div>
+          <div class="result" id="log-result">Logs are written to disk with rotation. Check the app's log directory.</div>
+        </div>
+      </div>
+      <!-- Filesystem -->
+      <div class="panel" id="panel-filesystem">
+        <h2>Filesystem</h2>
+        <p class="desc">Sandboxed file read/write via tauri-plugin-fs (respects capabilities)</p>
+        <div class="card">
+          <h3>Write a File</h3>
+          <div style="margin-bottom:0.5rem">
+            <input type="text" id="fs-filename" placeholder="Filename" value="demo.txt">
+          </div>
+          <div style="margin-bottom:0.5rem">
+            <input type="text" id="fs-content" placeholder="Content" value="Hello from Tauri FS plugin!" style="max-width:100%">
+          </div>
+          <button class="btn btn-primary" onclick="fsWrite()">Write to App Data</button>
+          <div class="result" id="fs-write-result">Writes to the app's data directory (sandboxed)</div>
+        </div>
+        <div class="card">
+          <h3>Read a File</h3>
+          <div class="row">
+            <input type="text" id="fs-read-filename" placeholder="Filename" value="demo.txt">
+            <button class="btn" onclick="fsRead()">Read</button>
+            <button class="btn" onclick="fsExists()">Exists?</button>
+            <button class="btn" onclick="fsRemove()">Delete</button>
+          </div>
+          <div class="result" id="fs-read-result">Click Read to load a file from app data</div>
+        </div>
+        <div class="card">
+          <h3>File Metadata (stat)</h3>
+          <div class="row">
+            <input type="text" id="fs-stat-filename" placeholder="Filename" value="demo.txt">
+            <button class="btn" onclick="fsStat()">Get Metadata</button>
+          </div>
+          <div class="result" id="fs-stat-result">Shows file size, dates, and type — write a file first, then stat it</div>
+        </div>
+        <div class="card">
+          <h3>Create Directory</h3>
+          <div class="row">
+            <input type="text" id="fs-mkdir-name" placeholder="Directory name" value="my-folder">
+            <button class="btn btn-primary" onclick="fsMkdir()">Create Dir</button>
+          </div>
+          <div class="result" id="fs-mkdir-result">Creates a directory inside App Data</div>
+        </div>
+        <div class="card">
+          <h3>Rename / Move</h3>
+          <div class="row">
+            <input type="text" id="fs-rename-from" placeholder="From" value="demo.txt" style="max-width:140px">
+            <span style="color:var(--muted)">→</span>
+            <input type="text" id="fs-rename-to" placeholder="To" value="renamed.txt" style="max-width:140px">
+            <button class="btn" onclick="fsRename()">Rename</button>
+          </div>
+          <div class="result" id="fs-rename-result">Renames a file within App Data</div>
+        </div>
+        <div class="card">
+          <h3>List Directory</h3>
+          <button class="btn" onclick="fsList()">List App Data Dir</button>
+          <div class="result" id="fs-list-result">Click to list files in the app data directory</div>
+        </div>
+      </div>
+
+      <!-- Updater -->
+      <div class="panel" id="panel-updater">
+        <h2>Updater</h2>
+        <p class="desc">Auto-update via tauri-plugin-updater (checks for new versions)</p>
+        <div class="card">
+          <h3>Current Version</h3>
+          <div class="info-grid" id="updater-version-grid">
+            <div class="info-item"><div class="label">App Version</div><div class="value" id="updater-version">loading...</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Check for Updates</h3>
+          <p style="color:var(--muted);font-size:0.8rem;margin-bottom:0.8rem">
+            The updater checks a configured endpoint for new versions. In this demo, no endpoint
+            is configured — this shows the API and error handling. In production, point it at
+            GitHub Releases or your own CDN.
+          </p>
+          <button class="btn btn-primary" onclick="checkUpdate()">Check for Update</button>
+          <div class="result" id="updater-result">Click to check (will show "no endpoint" in demo mode)</div>
+        </div>
+      </div>
+
+      <!-- Global Shortcuts -->
+      <div class="panel" id="panel-shortcuts">
+        <h2>Global Shortcuts</h2>
+        <p class="desc">System-wide keyboard shortcuts via tauri-plugin-global-shortcut (desktop only)</p>
+        <div class="card">
+          <h3>Active Shortcut</h3>
+          <p style="color:var(--muted);font-size:0.8rem;margin-bottom:0.8rem">
+            <strong>Cmd/Ctrl+Shift+T</strong> is registered at startup — it shows and focuses this window from anywhere, even when minimized.
+          </p>
+          <div class="result" id="shortcut-status">Checking shortcut registration...</div>
+        </div>
+        <div class="card">
+          <h3>Register Custom Shortcut</h3>
+          <div class="row">
+            <input type="text" id="shortcut-input" placeholder="e.g. CmdOrCtrl+Shift+K" value="CmdOrCtrl+Shift+K" style="max-width:250px">
+            <button class="btn btn-primary" onclick="registerShortcut()">Register</button>
+            <button class="btn" onclick="unregisterShortcut()">Unregister</button>
+          </div>
+          <div class="result" id="shortcut-result">Enter a shortcut combo and register it</div>
+        </div>
+      </div>
+
+      <!-- Autostart -->
+      <div class="panel" id="panel-autostart">
+        <h2>Autostart</h2>
+        <p class="desc">Launch app on login via tauri-plugin-autostart (desktop only)</p>
+        <div class="card">
+          <h3>Autostart Status</h3>
+          <div class="result" id="autostart-status">Checking...</div>
+          <div class="row mt">
+            <button class="btn btn-primary" onclick="enableAutostart()">Enable</button>
+            <button class="btn" onclick="disableAutostart()">Disable</button>
+            <button class="btn" onclick="checkAutostart()">Check Status</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Deep Link -->
+      <div class="panel" id="panel-deeplink">
+        <h2>Deep Link</h2>
+        <p class="desc">Custom URL protocol handling via tauri-plugin-deep-link</p>
+        <div class="card">
+          <h3>How It Works</h3>
+          <p style="color:var(--muted);font-size:0.8rem;margin-bottom:0.8rem">
+            This app registers the <code style="color:var(--accent)">tauri-basic://</code> URL scheme.
+            Opening <code style="color:var(--accent)">tauri-basic://hello/world</code> in a browser will open this app
+            and log the URL below. On desktop, the single-instance plugin focuses the existing window.
+          </p>
+          <p style="color:var(--muted);font-size:0.8rem;margin-bottom:0.8rem">
+            <strong>Note:</strong> The URL scheme is registered when the app is <em>installed</em> (via .dmg/.msi/.deb),
+            not during <code>cargo tauri dev</code>.
+          </p>
+        </div>
+        <div class="card">
+          <h3>Deep Link Log</h3>
+          <div class="log-area" id="deeplink-log">
+            <div class="log-entry info">Listening for deep link events...</div>
+          </div>
+        </div>
+      </div>
+
+    </main>
   </div>
+
+  <script>
+    // Wait for Tauri APIs to be available
+    const { invoke } = window.__TAURI__.core;
+    const { listen, emit } = window.__TAURI__.event;
+
+    // ── Navigation ──────────────────────────────────────────────────────────
+    document.querySelectorAll('nav button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('panel-' + btn.dataset.panel).classList.add('active');
+      });
+    });
+
+    // ── System Info ─────────────────────────────────────────────────────────
+    async function loadSystemInfo() {
+      try {
+        const info = await invoke('get_system_info');
+        const grid = document.getElementById('system-info-grid');
+        grid.innerHTML = `
+          <div class="info-item"><div class="label">OS</div><div class="value">${info.os}</div></div>
+          <div class="info-item"><div class="label">Arch</div><div class="value">${info.arch}</div></div>
+          <div class="info-item"><div class="label">Tauri</div><div class="value">v${info.tauri_version}</div></div>
+          <div class="info-item"><div class="label">App</div><div class="value">v${info.app_version}</div></div>
+          <div class="info-item"><div class="label">Debug</div><div class="value">${info.debug ? 'Yes' : 'No'}</div></div>
+        `;
+        document.getElementById('platform-badge').textContent = `${info.os} / ${info.arch}`;
+      } catch (e) {
+        console.error('Failed to load system info:', e);
+      }
+    }
+
+    async function loadOsInfo() {
+      try {
+        const os = window.__TAURI__.os;
+        const [platform, arch, osType, version, locale, hostname] = await Promise.all([
+          os.platform(), os.arch(), os.type(), os.version(), os.locale(), os.hostname()
+        ]);
+        const grid = document.getElementById('os-info-grid');
+        grid.innerHTML = `
+          <div class="info-item"><div class="label">Platform</div><div class="value">${platform}</div></div>
+          <div class="info-item"><div class="label">Arch</div><div class="value">${arch}</div></div>
+          <div class="info-item"><div class="label">OS Type</div><div class="value">${osType}</div></div>
+          <div class="info-item"><div class="label">Version</div><div class="value">${version}</div></div>
+          <div class="info-item"><div class="label">Locale</div><div class="value">${locale || 'N/A'}</div></div>
+          <div class="info-item"><div class="label">Hostname</div><div class="value">${hostname || 'N/A'}</div></div>
+        `;
+      } catch (e) {
+        document.getElementById('os-info-grid').innerHTML =
+          `<div class="info-item"><div class="label">Error</div><div class="value">${e}</div></div>`;
+      }
+    }
+
+    // ── Dialogs ─────────────────────────────────────────────────────────────
+    async function openFile() {
+      try {
+        const dialog = window.__TAURI__.dialog;
+        const result = await dialog.open({ multiple: false, title: 'Open a file' });
+        show('dialog-result', result ? `Selected: ${result}` : 'Cancelled');
+      } catch (e) { show('dialog-result', e, true); }
+    }
+
+    async function openMultiple() {
+      try {
+        const dialog = window.__TAURI__.dialog;
+        const result = await dialog.open({ multiple: true, title: 'Select multiple files' });
+        show('dialog-result', result ? `Selected ${result.length} files:\n${result.join('\n')}` : 'Cancelled');
+      } catch (e) { show('dialog-result', e, true); }
+    }
+
+    async function openFolder() {
+      try {
+        const dialog = window.__TAURI__.dialog;
+        const result = await dialog.open({ directory: true, title: 'Select a folder' });
+        show('dialog-result', result ? `Folder: ${result}` : 'Cancelled');
+      } catch (e) { show('dialog-result', e, true); }
+    }
+
+    async function saveFile() {
+      try {
+        const dialog = window.__TAURI__.dialog;
+        const result = await dialog.save({
+          title: 'Save file',
+          filters: [{ name: 'Text', extensions: ['txt', 'md'] }]
+        });
+        show('dialog-result', result ? `Save path: ${result}` : 'Cancelled');
+      } catch (e) { show('dialog-result', e, true); }
+    }
+
+    async function showMessage() {
+      try {
+        const dialog = window.__TAURI__.dialog;
+        await dialog.message('This is a native message box!', { title: 'Tauri Basic', kind: 'info' });
+        show('message-result', 'Message shown');
+      } catch (e) { show('message-result', e, true); }
+    }
+
+    async function showAsk() {
+      try {
+        const dialog = window.__TAURI__.dialog;
+        const answer = await dialog.ask('Do you like Tauri?', { title: 'Question', kind: 'info' });
+        show('message-result', `Answer: ${answer ? 'Yes' : 'No'}`);
+      } catch (e) { show('message-result', e, true); }
+    }
+
+    async function showConfirm() {
+      try {
+        const dialog = window.__TAURI__.dialog;
+        const answer = await dialog.confirm('Proceed with this action?', { title: 'Confirm' });
+        show('message-result', `Confirmed: ${answer}`);
+      } catch (e) { show('message-result', e, true); }
+    }
+
+    // ── Clipboard ───────────────────────────────────────────────────────────
+    async function clipboardWrite() {
+      try {
+        const clip = window.__TAURI__.clipboardManager;
+        const text = document.getElementById('clipboard-input').value;
+        await clip.writeText(text);
+        show('clipboard-result', `Copied to clipboard: "${text}"`);
+      } catch (e) { show('clipboard-result', e, true); }
+    }
+
+    async function clipboardRead() {
+      try {
+        const clip = window.__TAURI__.clipboardManager;
+        const text = await clip.readText();
+        show('clipboard-result', `Clipboard contains: "${text}"`);
+      } catch (e) { show('clipboard-result', e, true); }
+    }
+
+    // ── Notifications ───────────────────────────────────────────────────────
+    async function sendNotification() {
+      try {
+        const notif = window.__TAURI__.notification;
+        let granted = await notif.isPermissionGranted();
+        if (!granted) {
+          const perm = await notif.requestPermission();
+          granted = perm === 'granted';
+        }
+        if (granted) {
+          await notif.sendNotification({
+            title: document.getElementById('notif-title').value,
+            body: document.getElementById('notif-body').value,
+          });
+          show('notif-result', 'Notification sent!');
+        } else {
+          show('notif-result', 'Notification permission denied', true);
+        }
+      } catch (e) { show('notif-result', e, true); }
+    }
+
+    // ── Store ───────────────────────────────────────────────────────────────
+    let store = null;
+    async function getStore() {
+      if (!store) {
+        const storePlugin = window.__TAURI__.store;
+        store = await storePlugin.load('settings.json');
+      }
+      return store;
+    }
+
+    async function storeSet() {
+      try {
+        const s = await getStore();
+        const key = document.getElementById('store-key').value;
+        const value = document.getElementById('store-value').value;
+        await s.set(key, value);
+        await s.save();
+        show('store-result', `Saved: "${key}" = "${value}"`);
+      } catch (e) { show('store-result', e, true); }
+    }
+
+    async function storeGet() {
+      try {
+        const s = await getStore();
+        const key = document.getElementById('store-read-key').value;
+        const value = await s.get(key);
+        if (value === null || value === undefined) {
+          show('store-result', `Key "${key}" not found`);
+        } else {
+          const type = typeof value;
+          const display = type === 'object' ? JSON.stringify(value, null, 2) : String(value);
+          show('store-result', `"${key}" (${Array.isArray(value) ? 'array' : type}):\n${display}`);
+        }
+      } catch (e) { show('store-result', e, true); }
+    }
+
+    async function storeKeys() {
+      try {
+        const s = await getStore();
+        const keys = await s.keys();
+        show('store-result', keys.length ? `Keys: ${keys.join(', ')}` : 'Store is empty');
+      } catch (e) { show('store-result', e, true); }
+    }
+
+    async function storeClear() {
+      try {
+        const s = await getStore();
+        await s.clear();
+        await s.save();
+        show('store-result', 'Store cleared');
+      } catch (e) { show('store-result', e, true); }
+    }
+
+    async function storeSetObject() {
+      try {
+        const s = await getStore();
+        const obj = { name: 'Tauri', version: 2, features: ['cross-platform', 'secure', 'fast'] };
+        await s.set('demo-object', obj);
+        await s.save();
+        show('store-rich-result', `Saved object:\n${JSON.stringify(obj, null, 2)}`);
+      } catch (e) { show('store-rich-result', e, true); }
+    }
+
+    async function storeSetArray() {
+      try {
+        const s = await getStore();
+        const arr = ['macOS', 'Windows', 'Linux', 'iOS', 'Android'];
+        await s.set('demo-array', arr);
+        await s.save();
+        show('store-rich-result', `Saved array:\n${JSON.stringify(arr, null, 2)}`);
+      } catch (e) { show('store-rich-result', e, true); }
+    }
+
+    async function storeSetNumber() {
+      try {
+        const s = await getStore();
+        const num = Date.now();
+        await s.set('demo-number', num);
+        await s.save();
+        show('store-rich-result', `Saved number: ${num} (typeof: number, not string)`);
+      } catch (e) { show('store-rich-result', e, true); }
+    }
+
+    async function storeSetBoolean() {
+      try {
+        const s = await getStore();
+        await s.set('demo-boolean', true);
+        await s.save();
+        show('store-rich-result', `Saved boolean: true (typeof: boolean, not "true")`);
+      } catch (e) { show('store-rich-result', e, true); }
+    }
+
+    // ── Opener ──────────────────────────────────────────────────────────────
+    async function openUrl() {
+      try {
+        const opener = window.__TAURI__.opener;
+        const url = document.getElementById('opener-url').value;
+        await opener.openUrl(url);
+      } catch (e) { alert('Failed to open URL: ' + e); }
+    }
+
+    async function openLink(url) {
+      try {
+        const opener = window.__TAURI__.opener;
+        await opener.openUrl(url);
+      } catch (e) { alert('Failed to open: ' + e); }
+    }
+
+    async function openerOpenPath() {
+      try {
+        const dialog = window.__TAURI__.dialog;
+        const path = await dialog.open({ multiple: false, title: 'Pick a file to open' });
+        if (!path) { show('opener-path-result', 'Cancelled'); return; }
+        const opener = window.__TAURI__.opener;
+        await opener.openPath(path);
+        show('opener-path-result', `Opened: ${path}`);
+      } catch (e) { show('opener-path-result', e, true); }
+    }
+
+    async function openerRevealFile() {
+      try {
+        const dialog = window.__TAURI__.dialog;
+        const path = await dialog.open({ multiple: false, title: 'Pick a file to reveal' });
+        if (!path) { show('opener-reveal-result', 'Cancelled'); return; }
+        const opener = window.__TAURI__.opener;
+        await opener.revealItemInDir(path);
+        show('opener-reveal-result', `Revealed in file manager: ${path}`);
+      } catch (e) { show('opener-reveal-result', e, true); }
+    }
+
+    async function openerRevealAppData() {
+      try {
+        const fs = window.__TAURI__.fs;
+        const pathApi = window.__TAURI__.path;
+        const appDataDir = await pathApi.appDataDir();
+        // Ensure the directory exists first
+        await fs.mkdir('', { baseDir: fs.BaseDirectory.AppData, recursive: true }).catch(() => {});
+        const opener = window.__TAURI__.opener;
+        await opener.revealItemInDir(appDataDir);
+        show('opener-reveal-result', `Revealed App Data: ${appDataDir}`);
+      } catch (e) { show('opener-reveal-result', e, true); }
+    }
+
+    // ── Process ────────────────────────────────────────────────────────────
+    async function processRelaunch() {
+      try {
+        const process = window.__TAURI__.process;
+        await process.relaunch();
+      } catch (e) { alert('Failed to relaunch: ' + e); }
+    }
+
+    async function processExit(code) {
+      try {
+        const process = window.__TAURI__.process;
+        await process.exit(code);
+      } catch (e) { alert('Failed to exit: ' + e); }
+    }
+
+    // ── Events ──────────────────────────────────────────────────────────────
+    function addEventLog(msg, type = 'info') {
+      const log = document.getElementById('event-log');
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      log.appendChild(entry);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    async function emitEvent() {
+      const payload = document.getElementById('event-payload').value;
+      await emit('frontend-event', payload);
+      addEventLog(`Emitted: "${payload}"`, 'event');
+    }
+
+    // Listen for backend events
+    listen('backend-event', (event) => {
+      addEventLog(`Backend: ${event.payload}`, 'event');
+    });
+
+    // ── IPC Commands ────────────────────────────────────────────────────────
+    async function callGreet() {
+      try {
+        const name = document.getElementById('greet-name').value;
+        const result = await invoke('greet', { name });
+        show('greet-result', result);
+      } catch (e) { show('greet-result', e, true); }
+    }
+
+    async function callSystemInfo() {
+      try {
+        const info = await invoke('get_system_info');
+        show('cmd-system-result', JSON.stringify(info, null, 2));
+      } catch (e) { show('cmd-system-result', e, true); }
+    }
+
+    // ── Logging ─────────────────────────────────────────────────────────────
+    async function sendLog(level, message) {
+      try {
+        await invoke('log_from_frontend', { level, message });
+        show('log-result', `Sent ${level.toUpperCase()}: "${message}" (check log file)`);
+      } catch (e) { show('log-result', e, true); }
+    }
+
+    // ── Filesystem ────────────────────────────────────────────────────────
+    async function fsWrite() {
+      try {
+        const fs = window.__TAURI__.fs;
+        const name = document.getElementById('fs-filename').value;
+        const content = document.getElementById('fs-content').value;
+        await fs.writeTextFile(name, content, { baseDir: fs.BaseDirectory.AppData });
+        show('fs-write-result', `Written to AppData/${name} (${content.length} chars)`);
+      } catch (e) { show('fs-write-result', e, true); }
+    }
+
+    async function fsRead() {
+      try {
+        const fs = window.__TAURI__.fs;
+        const name = document.getElementById('fs-read-filename').value;
+        const content = await fs.readTextFile(name, { baseDir: fs.BaseDirectory.AppData });
+        show('fs-read-result', `Contents of ${name}:\n${content}`);
+      } catch (e) { show('fs-read-result', e, true); }
+    }
+
+    async function fsExists() {
+      try {
+        const fs = window.__TAURI__.fs;
+        const name = document.getElementById('fs-read-filename').value;
+        const exists = await fs.exists(name, { baseDir: fs.BaseDirectory.AppData });
+        show('fs-read-result', `${name}: ${exists ? 'exists' : 'not found'}`);
+      } catch (e) { show('fs-read-result', e, true); }
+    }
+
+    async function fsRemove() {
+      try {
+        const fs = window.__TAURI__.fs;
+        const name = document.getElementById('fs-read-filename').value;
+        await fs.remove(name, { baseDir: fs.BaseDirectory.AppData });
+        show('fs-read-result', `Deleted ${name}`);
+      } catch (e) { show('fs-read-result', e, true); }
+    }
+
+    async function fsStat() {
+      try {
+        const fs = window.__TAURI__.fs;
+        const name = document.getElementById('fs-stat-filename').value;
+        const meta = await fs.stat(name, { baseDir: fs.BaseDirectory.AppData });
+        const fmt = (d) => d ? new Date(d).toLocaleString() : 'N/A';
+        const lines = [
+          `File: ${name}`,
+          `Size: ${meta.size} bytes`,
+          `Type: ${meta.isFile ? 'file' : meta.isDirectory ? 'directory' : 'symlink'}`,
+          `Created:  ${fmt(meta.createdAt ?? meta.birthtime)}`,
+          `Modified: ${fmt(meta.modifiedAt ?? meta.mtime)}`,
+          `Accessed: ${fmt(meta.accessedAt ?? meta.atime)}`,
+        ];
+        show('fs-stat-result', lines.join('\n'));
+      } catch (e) { show('fs-stat-result', e, true); }
+    }
+
+    async function fsMkdir() {
+      try {
+        const fs = window.__TAURI__.fs;
+        const name = document.getElementById('fs-mkdir-name').value;
+        await fs.mkdir(name, { baseDir: fs.BaseDirectory.AppData, recursive: true });
+        show('fs-mkdir-result', `Created directory: AppData/${name}`);
+      } catch (e) { show('fs-mkdir-result', e, true); }
+    }
+
+    async function fsRename() {
+      try {
+        const fs = window.__TAURI__.fs;
+        const from = document.getElementById('fs-rename-from').value;
+        const to = document.getElementById('fs-rename-to').value;
+        await fs.rename(from, to, { oldPathBaseDir: fs.BaseDirectory.AppData, newPathBaseDir: fs.BaseDirectory.AppData });
+        show('fs-rename-result', `Renamed: ${from} → ${to}`);
+      } catch (e) { show('fs-rename-result', e, true); }
+    }
+
+    async function fsList() {
+      try {
+        const fs = window.__TAURI__.fs;
+        // Ensure dir exists
+        await fs.mkdir('', { baseDir: fs.BaseDirectory.AppData, recursive: true }).catch(() => {});
+        const entries = await fs.readDir('', { baseDir: fs.BaseDirectory.AppData });
+        if (entries.length === 0) {
+          show('fs-list-result', 'App data directory is empty');
+        } else {
+          const list = entries.map(e => `${e.isDirectory ? '[dir] ' : ''}${e.name}`).join('\n');
+          show('fs-list-result', `${entries.length} entries:\n${list}`);
+        }
+      } catch (e) { show('fs-list-result', e, true); }
+    }
+
+    // ── Updater ──────────────────────────────────────────────────────────
+    async function loadVersion() {
+      try {
+        const info = await invoke('get_system_info');
+        document.getElementById('updater-version').textContent = `v${info.app_version}`;
+      } catch {}
+    }
+
+    async function checkUpdate() {
+      try {
+        const updater = window.__TAURI__.updater;
+        show('updater-result', 'Checking for updates...');
+        const update = await updater.check();
+        if (update) {
+          show('updater-result', `Update available: v${update.version}\n${update.body || '(no release notes)'}`);
+        } else {
+          show('updater-result', 'You are on the latest version');
+        }
+      } catch (e) {
+        const msg = String(e);
+        if (msg.includes('endpoint') || msg.includes('url') || msg.includes('network')) {
+          show('updater-result', 'No update endpoint configured (expected in demo mode).\n\nIn production, configure endpoints in tauri.conf.json:\n"updater": { "endpoints": ["https://your-cdn.com/updates/{{target}}/{{current_version}}"] }');
+        } else {
+          show('updater-result', e, true);
+        }
+      }
+    }
+
+    // ── Global Shortcuts ──────────────────────────────────────────────────
+    async function checkShortcutStatus() {
+      try {
+        const gs = window.__TAURI__.globalShortcut;
+        if (!gs) { show('shortcut-status', 'Global shortcuts not available (mobile?)'); return; }
+        const registered = await gs.isRegistered('CmdOrCtrl+Shift+T');
+        show('shortcut-status', registered
+          ? 'CmdOrCtrl+Shift+T is registered — try it from any app!'
+          : 'CmdOrCtrl+Shift+T is not registered');
+      } catch (e) { show('shortcut-status', e, true); }
+    }
+
+    async function registerShortcut() {
+      try {
+        const gs = window.__TAURI__.globalShortcut;
+        const combo = document.getElementById('shortcut-input').value;
+        await gs.register(combo, (event) => {
+          if (event.state === 'Pressed') {
+            show('shortcut-result', `Shortcut ${combo} triggered at ${new Date().toLocaleTimeString()}`);
+          }
+        });
+        show('shortcut-result', `Registered: ${combo}`);
+      } catch (e) { show('shortcut-result', e, true); }
+    }
+
+    async function unregisterShortcut() {
+      try {
+        const gs = window.__TAURI__.globalShortcut;
+        const combo = document.getElementById('shortcut-input').value;
+        await gs.unregister(combo);
+        show('shortcut-result', `Unregistered: ${combo}`);
+      } catch (e) { show('shortcut-result', e, true); }
+    }
+
+    // ── Autostart ────────────────────────────────────────────────────────
+    async function checkAutostart() {
+      try {
+        const autostart = window.__TAURI__.autostart;
+        if (!autostart) { show('autostart-status', 'Autostart not available (mobile?)'); return; }
+        const enabled = await autostart.isEnabled();
+        show('autostart-status', enabled
+          ? 'Autostart is ENABLED — app will launch on login'
+          : 'Autostart is DISABLED');
+      } catch (e) { show('autostart-status', e, true); }
+    }
+
+    async function enableAutostart() {
+      try {
+        const autostart = window.__TAURI__.autostart;
+        await autostart.enable();
+        show('autostart-status', 'Autostart ENABLED — app will launch on login');
+      } catch (e) { show('autostart-status', e, true); }
+    }
+
+    async function disableAutostart() {
+      try {
+        const autostart = window.__TAURI__.autostart;
+        await autostart.disable();
+        show('autostart-status', 'Autostart DISABLED');
+      } catch (e) { show('autostart-status', e, true); }
+    }
+
+    // ── Deep Link ────────────────────────────────────────────────────────
+    function addDeepLinkLog(msg) {
+      const log = document.getElementById('deeplink-log');
+      const entry = document.createElement('div');
+      entry.className = 'log-entry event';
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      log.appendChild(entry);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    async function initDeepLink() {
+      try {
+        // Listen for deep link events forwarded from Rust backend
+        listen('deep-link-received', (event) => {
+          const urls = event.payload;
+          if (Array.isArray(urls)) {
+            urls.forEach(url => addDeepLinkLog(`Received: ${url}`));
+          }
+          // Also show in the Events tab
+          addEventLog(`Deep link: ${JSON.stringify(urls)}`, 'event');
+        });
+
+        // Also try the JS plugin API directly (works on mobile)
+        const dl = window.__TAURI__.deepLink;
+        if (!dl) return;
+        const current = await dl.getCurrent();
+        if (current && current.length > 0) {
+          addDeepLinkLog(`App opened via: ${current.join(', ')}`);
+        }
+        await dl.onOpenUrl((urls) => {
+          urls.forEach(url => addDeepLinkLog(`Received: ${url}`));
+        });
+      } catch (e) {
+        // Deep link may not be available on all platforms
+      }
+    }
+
+    // ── Helpers ─────────────────────────────────────────────────────────────
+    function show(id, msg, isError = false) {
+      const el = document.getElementById(id);
+      el.textContent = typeof msg === 'string' ? msg : JSON.stringify(msg, null, 2);
+      el.className = isError ? 'result error' : 'result';
+    }
+
+    // ── Init ────────────────────────────────────────────────────────────────
+    loadSystemInfo();
+    loadOsInfo();
+    loadVersion();
+    checkShortcutStatus();
+    checkAutostart();
+    initDeepLink();
+  </script>
 </body>
 </html>

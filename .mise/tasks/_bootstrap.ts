@@ -1,10 +1,10 @@
 // Internal — called by setup.ts via `bun _bootstrap.ts`, not a user-facing task.
 
 // Bootstraps a Windows VM via WinRM (the only thing available on a fresh box).
-// - "full" (build VM): OpenSSH + VS Build Tools + WebView2 + mise
-// - "ssh-only" (test VM): just OpenSSH — clean Windows for testing
+// - "full" (windows-build VM): OpenSSH + VS Build Tools + WebView2 + mise
+// - "ssh-only" (windows-test VM): just OpenSSH — clean Windows for testing
 // Idempotent — safe to run multiple times.
-// Usage: vm:bootstrap [build|test]  (default: build)
+// Usage: vm:bootstrap [windows-build|windows-test]  (default: windows-build)
 
 import { parseVMArg, getProfile, info, ok, die, log, timestamp } from "./_lib.ts";
 import { WinRM } from "./_winrm.ts";
@@ -15,6 +15,7 @@ log(`── ${timestamp()} ──`, LOG);
 const { vmName } = parseVMArg();
 const profile = getProfile(vmName);
 
+if (!profile.winrmPort) die(`${vmName} VM has no WinRM port — bootstrap requires WinRM`);
 const winrm = new WinRM("127.0.0.1", profile.winrmPort, profile.user, profile.pass);
 
 // ── Check WinRM is reachable ──────────────────────────────────────────────
@@ -93,16 +94,40 @@ if (profile.bootstrap === "ssh-only") {
 
 // ── Full mode: dev tools ────────────────────────────────────────────────
 
-// Step 2: VS Build Tools (needed for Rust/MSVC on Windows)
-await wingetInstall("Microsoft.VisualStudio.2022.BuildTools", "VS Build Tools 2022", 600);
+// Step 2: VS Build Tools + C++ workload (needed for Rust/MSVC on Windows)
+// Download bootstrapper directly and run with --wait. Don't use winget --override (doesn't work)
+// or setup.exe modify (exit 87 on ARM64). Direct bootstrapper is the only reliable method.
+if (await check("VCTools", `& "C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\vswhere.exe" -products * -latest -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath 2>$null`)) {
+  // Already installed with C++ workload
+} else {
+  info("Downloading VS Build Tools bootstrapper...", LOG);
+  await winrm.runPS(`
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+Invoke-WebRequest -Uri "https://aka.ms/vs/17/release/vs_buildtools.exe" -OutFile "C:\\vs_buildtools.exe" -UseBasicParsing
+`);
 
-info("Installing C++ workload for MSVC...", LOG);
-await winrm.runElevated(`$vs = & "C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\vswhere.exe" -latest -property installationPath 2>$null
-if (-not $vs) { $vs = "C:\\Program Files\\Microsoft Visual Studio\\2022\\BuildTools" }
-$installer = "C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\vs_installer.exe"
-if (Test-Path $installer) {
-    Start-Process -FilePath $installer -ArgumentList "modify","--installPath",$vs,"--add","Microsoft.VisualStudio.Workload.VCTools","--includeRecommended","--quiet","--norestart" -Wait -NoNewWindow
-}`, 600);
+  info("Installing VS Build Tools + C++ workload (10-15 min on ARM64)...", LOG);
+  await winrm.runElevated(`
+$p = Start-Process -FilePath "C:\\vs_buildtools.exe" -ArgumentList @(
+    "--add", "Microsoft.VisualStudio.Workload.VCTools"
+    "--includeRecommended"
+    "--quiet"
+    "--norestart"
+    "--wait"
+) -Wait -NoNewWindow -PassThru
+$p.ExitCode | Out-File "C:\\vs-exit.txt"
+`, 1200);
+
+  // Verify
+  const verify = await winrm.runPS(
+    `& "C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\vswhere.exe" -products * -latest -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath 2>$null`,
+  );
+  if (verify.stdout.trim()) {
+    ok(`VCTools: ${verify.stdout.trim()}`, LOG);
+  } else {
+    log("  ⚠ VCTools not verified — check via RDP or re-run bootstrap.", LOG);
+  }
+}
 
 // Step 3: WebView2 Runtime (needed by Tauri)
 await wingetInstall("Microsoft.EdgeWebView2Runtime", "WebView2 Runtime", 120);

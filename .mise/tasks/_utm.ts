@@ -3,7 +3,7 @@
 
 import { $ } from "bun";
 import { existsSync, writeFileSync, mkdirSync, statSync } from "fs";
-import { VMProfile, UTMCTL, saveState, info, ok, die, log } from "./_lib.ts";
+import { VMProfile, UTMCTL, saveState, info, ok, die, log, ensureSshpass } from "./_lib.ts";
 
 // ── UTM app lifecycle ────────────────────────────────────────────────────────
 
@@ -83,7 +83,8 @@ export async function importBox(
     ok("Box cached (skipping download)", logFile);
   } else {
     await $`rm -f ${boxCacheDir}/${profile.box}_*.box`.nothrow();
-    info("Downloading box (~6 GB) — this takes a while...", logFile);
+    const isWindows = profile.os === "windows";
+    info(`Downloading box (${isWindows ? "~6 GB" : "~1-2 GB"}) — this takes a while...`, logFile);
     const downloadApi = `https://api.cloud.hashicorp.com/vagrant/2022-09-30/registry/utm/box/${profile.box}/version/${boxVersion}/provider/utm/architecture/${boxArch}/download`;
     const downloadRes = await fetch(downloadApi);
     if (!downloadRes.ok) die("Cannot fetch download URL");
@@ -93,7 +94,8 @@ export async function importBox(
 
     await $`curl -fL --progress-bar -o ${boxFile}.partial ${boxUrl}`;
     const fileSize = statSync(`${boxFile}.partial`).size;
-    if (fileSize < 1_000_000_000) {
+    const minSize = isWindows ? 1_000_000_000 : 100_000_000; // Windows ~6GB, Linux ~500MB+
+    if (fileSize < minSize) {
       await $`rm -f ${boxFile}.partial`;
       die(`Download too small (${fileSize} bytes)`);
     }
@@ -195,16 +197,54 @@ on run argv
 end run
 `;
 
+  // Build port-forward rules: always SSH, add RDP+WinRM for Windows
+  const rules: string[] = [
+    `--index`, emulatedIndex, `TcPp,,22,127.0.0.1,${profile.sshPort}`,
+  ];
+  if (profile.os === "windows" && profile.rdpPort && profile.winrmPort) {
+    rules.push(`--index`, emulatedIndex, `TcPp,,3389,127.0.0.1,${profile.rdpPort}`);
+    rules.push(`--index`, emulatedIndex, `TcPp,,5985,127.0.0.1,${profile.winrmPort}`);
+  }
+
   const tmpScript = `/tmp/utm-port-forward-${Date.now()}.scpt`;
   writeFileSync(tmpScript, script);
   try {
-    const r = await $`osascript ${tmpScript} ${vmUuid} --index ${emulatedIndex} ${"TcPp,,22,127.0.0.1," + profile.sshPort} --index ${emulatedIndex} ${"TcPp,,3389,127.0.0.1," + profile.rdpPort} --index ${emulatedIndex} ${"TcPp,,5985,127.0.0.1," + profile.winrmPort}`.quiet().nothrow();
+    const r = await $`osascript ${tmpScript} ${vmUuid} ${rules}`.quiet().nothrow();
     if (r.exitCode !== 0) die("Failed to configure port forwards");
   } finally {
     await $`rm -f ${tmpScript}`.nothrow();
   }
 
-  ok(`Network: SSH:${profile.sshPort} RDP:${profile.rdpPort} WinRM:${profile.winrmPort}`, logFile);
+  const ports = [`SSH:${profile.sshPort}`];
+  if (profile.rdpPort) ports.push(`RDP:${profile.rdpPort}`);
+  if (profile.winrmPort) ports.push(`WinRM:${profile.winrmPort}`);
+  ok(`Network: ${ports.join(" ")}`, logFile);
+}
+
+// ── VM resource configuration ────────────────────────────────────────────────
+
+/** Set VM memory and CPU cores via AppleScript. Must be called while VM is stopped. */
+export async function configureResources(
+  vmUuid: string,
+  memoryMiB = 8192,
+  cpuCores = 4,
+  logFile?: string,
+): Promise<void> {
+  info(`Setting VM resources: ${memoryMiB} MiB RAM, ${cpuCores} CPU cores...`, logFile);
+  const r = await $`osascript -e ${`
+    tell application "UTM"
+      set vm to virtual machine id "${vmUuid}"
+      set cfg to configuration of vm
+      set memory of cfg to ${memoryMiB}
+      set cpu cores of cfg to ${cpuCores}
+      update configuration of vm with cfg
+    end tell
+  `}`.quiet().nothrow();
+  if (r.exitCode !== 0) {
+    log(`  ⚠ Could not set VM resources (non-fatal)`, logFile);
+  } else {
+    ok(`Resources: ${memoryMiB} MiB RAM, ${cpuCores} cores`, logFile);
+  }
 }
 
 // ── VM lifecycle ─────────────────────────────────────────────────────────────
@@ -243,8 +283,15 @@ export async function stopVm(displayName: string, logFile?: string): Promise<voi
   await Bun.sleep(5000);
 }
 
-/** Wait for Windows to boot (WinRM responding). */
-export async function waitForBoot(winrmPort: number, timeoutSec = 300, logFile?: string): Promise<void> {
+/** Wait for VM to boot. Windows: probe WinRM. Linux: probe SSH. */
+export async function waitForBoot(profile: VMProfile, timeoutSec = 300, logFile?: string): Promise<void> {
+  if (profile.os === "linux") {
+    return waitForSsh(profile, timeoutSec, logFile);
+  }
+  return waitForWinrm(profile.winrmPort!, timeoutSec, logFile);
+}
+
+async function waitForWinrm(winrmPort: number, timeoutSec: number, logFile?: string): Promise<void> {
   info(`Waiting for Windows to boot (up to ${Math.round(timeoutSec / 60)} min)...`, logFile);
   let elapsed = 0;
   while (elapsed < timeoutSec) {
@@ -258,4 +305,22 @@ export async function waitForBoot(winrmPort: number, timeoutSec = 300, logFile?:
     if (elapsed % 30 === 0) log(`  still booting... (${elapsed}s)`, logFile);
   }
   die(`Timeout waiting for Windows (${timeoutSec}s)`);
+}
+
+async function waitForSsh(profile: VMProfile, timeoutSec: number, logFile?: string): Promise<void> {
+  info(`Waiting for Linux to boot (up to ${Math.round(timeoutSec / 60)} min)...`, logFile);
+  await ensureSshpass();
+  let elapsed = 0;
+  while (elapsed < timeoutSec) {
+    const r = await $`sshpass -p ${profile.pass} ssh -o ConnectTimeout=2 -o StrictHostKeyChecking=no -p ${profile.sshPort} ${profile.user}@127.0.0.1 "echo ok"`
+      .quiet().nothrow();
+    if (r.stdout.toString().includes("ok")) {
+      ok(`Linux ready (${elapsed}s)`, logFile);
+      return;
+    }
+    await Bun.sleep(5000);
+    elapsed += 5;
+    if (elapsed % 30 === 0) log(`  still booting... (${elapsed}s)`, logFile);
+  }
+  die(`Timeout waiting for Linux SSH (${timeoutSec}s)`);
 }

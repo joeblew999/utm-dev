@@ -14,5 +14,8 @@ bun.lock
 # Local data
 .data/
 
+# MCP config (machine-specific paths)
+.mcp.json
+
 # Claude Code
 .claude/

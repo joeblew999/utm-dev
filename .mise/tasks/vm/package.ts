@@ -1,7 +1,8 @@
 #!/usr/bin/env bun
 
-//MISE description="Export a VM as a reusable Vagrant box: vm:package [build|test]"
+//MISE description="Export a VM as a Vagrant box"
 //MISE alias="vm-package"
+//MISE hide=true
 
 import { $ } from "bun";
 import { mkdirSync, writeFileSync, existsSync } from "fs";
@@ -49,7 +50,8 @@ info(`VM bundle: ${utmBundle} (${bundleSize})`, LOG);
 
 const boxOutputDir = join(PROJECT_DIR, ".build", "boxes");
 mkdirSync(boxOutputDir, { recursive: true });
-const boxFile = join(boxOutputDir, `windows-11-${vmName}_arm64.box`);
+const profile = (await import("../_lib.ts")).getProfile(vmName);
+const boxFile = join(boxOutputDir, `${profile.box}-${vmName}_arm64.box`);
 
 const tmpdir = await $`mktemp -d`.quiet();
 const tmpdirPath = tmpdir.stdout.toString().trim();
@@ -75,5 +77,5 @@ ok(`Box created: ${boxFile} (${boxSize})`, LOG);
 log("", LOG);
 log("To publish to Vagrant Cloud:", LOG);
 log("  1. Create an account at https://app.vagrantup.com", LOG);
-log(`  2. Create a box: joeblew999/windows-11-${vmName}`, LOG);
-log(`  3. Upload: vagrant cloud publish joeblew999/windows-11-${vmName} 1.0.0 utm ${boxFile}`, LOG);
+log(`  2. Create a box: joeblew999/${profile.box}-${vmName}`, LOG);
+log(`  3. Upload: vagrant cloud publish joeblew999/${profile.box}-${vmName} 1.0.0 utm ${boxFile}`, LOG);

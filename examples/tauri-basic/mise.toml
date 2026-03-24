@@ -1,38 +1,130 @@
 # mise.toml — tauri-basic example
 #
-# Getting started:
-#   mise run init             Add tools + env (one time)
-#   mise install              Install tools
-#   mise run setup            Install Tauri dev prereqs
-#   mise run dev              macOS desktop dev mode
-#   mise run ios              iOS simulator
-#   mise run android          Android emulator
-#   mise run vm:build         Build Windows .msi/.exe in the VM
+# Quick start:
+#   mise run setup              Install Mac + mobile dev tools
+#   mise run mac:dev            macOS desktop (hot reload)
+#   mise run ios:sim            iOS simulator
+#   mise run android:sim        Android emulator
+#   mise run windows:build      Windows .msi/.exe (VM auto-starts)
+#   mise run linux:build        Linux .deb/.AppImage (VM auto-starts)
+#   mise run all:build          Build every platform at once
+#   mise run clean:project      Wipe build artifacts
 
-# Pull in utm-dev tasks (init, setup, doctor, vm:up/down/sync/exec/build/delete/bootstrap/package)
+# Pull in utm-dev tasks — swap these two lines to toggle local vs remote:
 [task_config]
-includes = ["git::https://github.com/joeblew999/utm-dev.git//.mise/tasks?ref=main"]
+includes = ["../../.mise/tasks"]                                                     # local (dev)
+#includes = ["git::https://github.com/joeblew999/utm-dev.git//.mise/tasks?ref=main"] # remote (consumers)
 
-# ── App tasks ────────────────────────────────────────────────────────────────
+# ── macOS ────────────────────────────────────────────────────────────────────
 
-[tasks.dev]
-description = "Run macOS desktop app in dev mode"
+[tasks."mac:dev"]
+description = "Run macOS desktop app (hot reload)"
 run = "cargo tauri dev"
 
-[tasks.build]
-description = "Build macOS desktop bundle (.app/.dmg)"
+[tasks."mac:build"]
+description = "Build macOS .app and .dmg"
 run = "cargo tauri build"
 
-[tasks.ios]
-description = "Run on iOS simulator (initialises on first run)"
+# ── iOS ──────────────────────────────────────────────────────────────────────
+
+[tasks."ios:sim"]
+description = "Run on iOS simulator (no signing required)"
 run = """
 cargo tauri ios init 2>/dev/null || true
-cargo tauri ios dev
+cargo tauri ios dev "iPhone 16 Pro"
 """
 
-[tasks.android]
-description = "Run on Android emulator (initialises on first run)"
+[tasks."ios:xcode"]
+description = "Open in Xcode (for physical device or debugging)"
+run = """
+cargo tauri ios init 2>/dev/null || true
+cargo tauri ios dev --open
+"""
+
+[tasks."ios:build"]
+description = "Build iOS release IPA (requires signing)"
+run = """
+cargo tauri ios init 2>/dev/null || true
+cargo tauri ios build
+"""
+
+# ── Android ──────────────────────────────────────────────────────────────────
+
+[tasks."android:sim"]
+description = "Run on Android emulator"
 run = """
 cargo tauri android init 2>/dev/null || true
+$ANDROID_HOME/emulator/emulator -avd utm-dev -no-snapshot-load &
+adb wait-for-device
 cargo tauri android dev
 """
+
+[tasks."android:studio"]
+description = "Open in Android Studio (for physical device or debugging)"
+run = """
+cargo tauri android init 2>/dev/null || true
+cargo tauri android dev --open
+"""
+
+[tasks."android:build"]
+description = "Build Android release APK and AAB"
+run = """
+cargo tauri android init 2>/dev/null || true
+cargo tauri android build
+"""
+
+# ── Windows (via utm-dev VM) ─────────────────────────────────────────────────
+
+[tasks."windows:build"]
+description = "Build Windows .msi/.exe in the VM"
+run = "mise run vm:build windows-build"
+
+# ── Linux (via utm-dev VM) ────────────────────────────────────────────────────
+
+[tasks."linux:build"]
+description = "Build Linux .deb/.AppImage in the VM"
+run = "mise run vm:build linux-build"
+
+# ── Build all platforms ─────────────────────────────────────────────────────
+
+[tasks."all:build"]
+description = "Build for every platform (macOS, iOS, Android, Windows, Linux)"
+depends = ["mac:build", "ios:build", "android:build", "windows:build", "linux:build"]
+
+# ── Build (called by vm:build inside the VM) ────────────────────────────────
+
+[tasks.build]
+description = "Build Tauri app (used inside VMs by vm:build)"
+run = "cargo tauri build"
+
+# ── Utilities ──────────────────────────────────────────────────────────────
+
+[tasks.icon]
+description = "Generate all platform icons from app-icon.png"
+run = "cargo tauri icon"
+
+[tasks."clean:project"]
+description = "Remove this project's build artifacts (target/, gen/, node_modules/)"
+run = """
+rm -rf .build
+rm -rf src-tauri/target
+rm -rf src-tauri/gen
+rm -rf node_modules
+echo "Cleaned .build/, src-tauri/target/, src-tauri/gen/, node_modules/"
+"""
+
+# ── Tools + env (normally added by `mise run init`) ──────────────────────────
+
+[tools]
+"cargo:tauri-cli"       = {version = "2",      os = ["macos", "windows"]}
+"cargo:tauri-webdriver" = "latest"
+bun               = "latest"
+xcodegen          = {version = "latest", os = ["macos"]}
+ruby              = {version = "3.3",    os = ["macos"]}
+java              = "temurin-17.0.18+8"
+
+[env]
+ANDROID_HOME = "{{env.HOME}}/.android-sdk"
+NDK_HOME = "{{env.HOME}}/.android-sdk/ndk/27.2.12479018"
+JAVA_HOME = "{{env.HOME}}/.local/share/mise/installs/java/temurin-17.0.18+8"
+_.path = ["{{env.HOME}}/.android-sdk/platform-tools", "{{env.HOME}}/.android-sdk/emulator", "{{env.HOME}}/.android-sdk/cmdline-tools/latest/bin"]

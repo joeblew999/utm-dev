@@ -7,17 +7,42 @@
     "frontendDist": "../ui"
   },
   "app": {
+    "withGlobalTauri": true,
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; connect-src ipc: http://ipc.localhost"
     },
     "windows": [
       {
         "label": "main",
         "title": "Tauri Basic",
-        "width": 800,
-        "height": 600
+        "width": 900,
+        "height": 700,
+        "minWidth": 600,
+        "minHeight": 400,
+        "center": true
       }
-    ]
+    ],
+    "trayIcon": {
+      "iconPath": "icons/32x32.png",
+      "tooltip": "Tauri Basic"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDExMzVGQUQ1QzZGQzBBRjAKUldUd0N2ekcxZm8xRWFUbWlqMkNFUUNtMW1jM0JGTjhZYnhFNjd6MDBBTFFmMWJkOEVxZUJvNEoK",
+      "endpoints": []
+    },
+    "deep-link": {
+      "desktop": {
+        "schemes": ["tauri-basic"]
+      },
+      "mobile": [
+        {
+          "scheme": ["tauri-basic"],
+          "appLink": false
+        }
+      ]
+    }
   },
   "bundle": {
     "active": true,

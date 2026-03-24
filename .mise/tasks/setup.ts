@@ -1,25 +1,21 @@
 #!/usr/bin/env bun
 
-//MISE description="Install all prerequisites for Tauri development"
+//MISE description="Install Mac + mobile dev tools (Rust, Android SDK, iOS)"
 //MISE alias="s"
 
 // Stages:
 //   1. Host tools   — Rust, Xcode check
-//   2. Mobile SDKs  — Android SDK, NDK, platform-tools, build-tools, JDK
+//   2. Mobile SDKs  — Android SDK, NDK, platform-tools, build-tools, emulator, JDK
 //   3. Rust targets — Android cross-compilation targets
 //   4. iOS deps     — CocoaPods
-//   5. UTM          — install app, sshpass
-//   6. Build VM     — download box, import, configure network, bootstrap
-//   7. Test VM      — download box, import, configure network, ssh-only bootstrap
 //
+// Windows VM setup is handled lazily by vm:up on first run.
 // cargo-tauri and bun are managed by mise [tools] — not installed here.
 // Every step is idempotent. Run it 100 times, nothing breaks.
 
 import { $ } from "bun";
 import { existsSync, mkdirSync } from "fs";
-import { dirname, join } from "path";
-import { VM_PROFILES, hasState, loadState, info, ok, die, log, timestamp } from "./_lib.ts";
-import { ensureUtm, importBox, configureNetwork, stopVm, startVm, waitForBoot } from "./_utm.ts";
+import { info, ok, die, log, timestamp } from "./_lib.ts";
 
 const LOG = "setup.log";
 
@@ -35,6 +31,8 @@ const BUILD_TOOLS_VERSION = "35.0.0";
 const PLATFORM_VERSION = "android-35";
 const CMDLINE_TOOLS_URL =
   "https://dl.google.com/android/repository/commandlinetools-mac-14742923_latest.zip";
+const SYSTEM_IMAGE = `system-images;${PLATFORM_VERSION};google_apis;arm64-v8a`;
+const AVD_NAME = "utm-dev";
 const ANDROID_HOME = process.env.ANDROID_HOME ?? `${process.env.HOME}/.android-sdk`;
 
 log("═══ utm-dev setup ═══", LOG);
@@ -102,13 +100,14 @@ const sdkEnv = {
   ...process.env,
   ANDROID_HOME,
   JAVA_HOME,
-  PATH: `${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${process.env.PATH}`,
+  PATH: `${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/emulator:${process.env.PATH}`,
 };
 
 // Accept licenses
 info("Accepting Android SDK licenses...", LOG);
-await $`yes 2>/dev/null | ${sdkmanager} --licenses --sdk_root=${ANDROID_HOME} > /dev/null 2>&1 || true`
+await $`sh -c ${"yes 2>/dev/null | " + sdkmanager + " --licenses --sdk_root=" + ANDROID_HOME + " >/dev/null 2>&1 || true"}`
   .env(sdkEnv)
+  .quiet()
   .nothrow();
 
 // Platform
@@ -146,6 +145,36 @@ if (existsSync(`${ANDROID_HOME}/ndk/${NDK_VERSION}/source.properties`)) {
   info(`Installing Android NDK ${NDK_VERSION}...`, LOG);
   await $`${sdkmanager} --sdk_root=${ANDROID_HOME} ndk;${NDK_VERSION}`.env(sdkEnv);
   ok("Android NDK installed", LOG);
+}
+
+// Emulator
+if (existsSync(`${ANDROID_HOME}/emulator/emulator`)) {
+  ok("Android emulator", LOG);
+} else {
+  info("Installing Android emulator...", LOG);
+  await $`${sdkmanager} --sdk_root=${ANDROID_HOME} emulator`.env(sdkEnv);
+  ok("Android emulator installed", LOG);
+}
+
+// System image (ARM64 for Apple Silicon)
+const imageDir = `${ANDROID_HOME}/system-images/${PLATFORM_VERSION}/google_apis/arm64-v8a`;
+if (existsSync(imageDir)) {
+  ok(`System image ${SYSTEM_IMAGE}`, LOG);
+} else {
+  info(`Installing system image (ARM64)... this takes a while`, LOG);
+  await $`${sdkmanager} --sdk_root=${ANDROID_HOME} ${SYSTEM_IMAGE}`.env(sdkEnv);
+  ok("System image installed", LOG);
+}
+
+// AVD
+const avdmanager = `${ANDROID_HOME}/cmdline-tools/latest/bin/avdmanager`;
+const avdList = (await $`${avdmanager} list avd -c`.env(sdkEnv).quiet().nothrow()).stdout.toString();
+if (avdList.includes(AVD_NAME)) {
+  ok(`AVD "${AVD_NAME}"`, LOG);
+} else {
+  info(`Creating AVD "${AVD_NAME}"...`, LOG);
+  await $`${avdmanager} create avd -n ${AVD_NAME} -k ${SYSTEM_IMAGE} --device pixel_6 --force`.env(sdkEnv);
+  ok(`AVD "${AVD_NAME}" created`, LOG);
 }
 
 log("", LOG);
@@ -187,64 +216,9 @@ if (await cmdExists("pod")) {
   ok("CocoaPods installed", LOG);
 }
 
-log("", LOG);
-
-// ── Stage 5: UTM + sshpass ────────────────────────────────────────────────
-
-log("── Stage 5: UTM ──", LOG);
-
-await ensureUtm(LOG);
-
-if ((await $`command -v sshpass`.quiet().nothrow()).exitCode === 0) {
-  ok("sshpass", LOG);
-} else {
-  info("Installing sshpass...", LOG);
-  await $`HOMEBREW_NO_AUTO_UPDATE=1 brew install hudochenkov/sshpass/sshpass < /dev/null 2>/dev/null`.nothrow();
-  ok("sshpass installed", LOG);
-}
+// ── Done ─────────────────────────────────────────────────────────────────
 
 log("", LOG);
-
-// ── Stage 6 & 7: VMs ────────────────────────────────────────────────────
-
-for (const [vmName, profile] of Object.entries(VM_PROFILES)) {
-  log(`── Stage: ${vmName} VM ──`, LOG);
-
-  // Check if already set up
-  if (hasState(vmName)) {
-    const { VM_DISPLAY_NAME } = loadState(vmName);
-    ok(`${vmName} VM already set up (${VM_DISPLAY_NAME})`, LOG);
-  } else {
-    // Import box
-    const { uuid, displayName } = await importBox(profile, vmName, LOG);
-
-    // Configure network (VM must be stopped)
-    await stopVm(displayName, LOG);
-    await configureNetwork(uuid, profile, LOG);
-  }
-
-  // Bootstrap (start VM, run bootstrap, stop)
-  const { VM_DISPLAY_NAME } = loadState(vmName);
-  if (profile.bootstrap) {
-    await startVm(VM_DISPLAY_NAME, LOG);
-    await waitForBoot(profile.winrmPort, 300, LOG);
-
-    const taskDir = dirname(new URL(import.meta.url).pathname);
-    const bootstrapPath = join(taskDir, "_bootstrap.ts");
-    if (existsSync(bootstrapPath)) {
-      await $`bun ${bootstrapPath} ${vmName}`;
-    }
-
-    // Stop after bootstrap — vm:up will start it when needed
-    await stopVm(VM_DISPLAY_NAME, LOG);
-  }
-
-  ok(`${vmName} VM ready`, LOG);
-  log("", LOG);
-}
-
-// ── Summary ───────────────────────────────────────────────────────────────
-
 log("═══ Setup complete ═══", LOG);
 log("", LOG);
 log("Environment:", LOG);
@@ -253,6 +227,9 @@ log(`  NDK_HOME=${ANDROID_HOME}/ndk/${NDK_VERSION}`, LOG);
 log(`  JAVA_HOME=${JAVA_HOME}`, LOG);
 log("", LOG);
 log("Next:", LOG);
-log("  mise run vm up        # start build VM", LOG);
-log("  mise run vm up test   # start test VM", LOG);
-log("  mise run doctor       # check everything", LOG);
+log("  mise run mac:dev            # macOS desktop dev mode", LOG);
+log("  mise run ios:sim            # iOS simulator", LOG);
+log("  mise run android:sim        # Android emulator", LOG);
+log("  mise run windows:build      # Windows .msi/.exe (VM auto-starts)", LOG);
+log("  mise run linux:build        # Linux .deb/.AppImage (VM auto-starts)", LOG);
+log("  mise run doctor             # check everything", LOG);

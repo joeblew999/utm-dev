@@ -1,7 +1,8 @@
 #!/usr/bin/env bun
 
-//MISE description="Stop a Windows VM: vm:down [build|test]"
+//MISE description="Stop a VM"
 //MISE alias="vm-down"
+//MISE hide=true
 
 import { $ } from "bun";
 import {

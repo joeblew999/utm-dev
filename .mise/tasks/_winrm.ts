@@ -183,20 +183,29 @@ Register-ScheduledTask -TaskName "BootstrapStep" -Action $action -Principal $pri
 Start-ScheduledTask -TaskName "BootstrapStep"
 `);
 
-    for (let elapsed = 0; elapsed < timeout; elapsed += 5) {
-      await Bun.sleep(5000);
-      const r = await this.runPS(
-        '(Get-ScheduledTask -TaskName "BootstrapStep" -ErrorAction SilentlyContinue).State',
-      );
-      if (r.stdout.trim() !== "Running") break;
+    for (let elapsed = 0; elapsed < timeout; elapsed += 10) {
+      await Bun.sleep(10000);
+      try {
+        const r = await this.runPS(
+          '(Get-ScheduledTask -TaskName "BootstrapStep" -ErrorAction SilentlyContinue).State',
+        );
+        if (r.stdout.trim() !== "Running") break;
+      } catch {
+        // WinRM may drop during heavy I/O (e.g. VS Build Tools install).
+        // Keep polling — the task is still running inside the VM.
+      }
     }
 
-    await this.runPS(
-      'Unregister-ScheduledTask -TaskName "BootstrapStep" -Confirm:$false -ErrorAction SilentlyContinue',
-    );
-    await this.runPS(
-      'Remove-Item "C:\\bootstrap-step.ps1" -Force -ErrorAction SilentlyContinue',
-    );
+    try {
+      await this.runPS(
+        'Unregister-ScheduledTask -TaskName "BootstrapStep" -Confirm:$false -ErrorAction SilentlyContinue',
+      );
+      await this.runPS(
+        'Remove-Item "C:\\bootstrap-step.ps1" -Force -ErrorAction SilentlyContinue',
+      );
+    } catch {
+      // Best-effort cleanup — WinRM may still be recovering
+    }
     return true;
   }
 
