@@ -8,14 +8,18 @@
 //   2. Mobile SDKs  — Android SDK, NDK, platform-tools, build-tools, JDK
 //   3. Rust targets — Android cross-compilation targets
 //   4. iOS deps     — CocoaPods
+//   5. UTM          — install app, sshpass
+//   6. Build VM     — download box, import, configure network, bootstrap
+//   7. Test VM      — download box, import, configure network, ssh-only bootstrap
 //
 // cargo-tauri and bun are managed by mise [tools] — not installed here.
-// sshpass is auto-installed by vm:* tasks on first use.
 // Every step is idempotent. Run it 100 times, nothing breaks.
 
 import { $ } from "bun";
 import { existsSync, mkdirSync } from "fs";
-import { info, ok, die, log, timestamp } from "./_lib.ts";
+import { dirname, join } from "path";
+import { VM_PROFILES, hasState, loadState, info, ok, die, log, timestamp } from "./_lib.ts";
+import { ensureUtm, importBox, configureNetwork, stopVm, startVm, waitForBoot } from "./_utm.ts";
 
 const LOG = "setup.log";
 
@@ -185,11 +189,70 @@ if (await cmdExists("pod")) {
 
 log("", LOG);
 
+// ── Stage 5: UTM + sshpass ────────────────────────────────────────────────
+
+log("── Stage 5: UTM ──", LOG);
+
+await ensureUtm(LOG);
+
+if ((await $`command -v sshpass`.quiet().nothrow()).exitCode === 0) {
+  ok("sshpass", LOG);
+} else {
+  info("Installing sshpass...", LOG);
+  await $`HOMEBREW_NO_AUTO_UPDATE=1 brew install hudochenkov/sshpass/sshpass < /dev/null 2>/dev/null`.nothrow();
+  ok("sshpass installed", LOG);
+}
+
+log("", LOG);
+
+// ── Stage 6 & 7: VMs ────────────────────────────────────────────────────
+
+for (const [vmName, profile] of Object.entries(VM_PROFILES)) {
+  log(`── Stage: ${vmName} VM ──`, LOG);
+
+  // Check if already set up
+  if (hasState(vmName)) {
+    const { VM_DISPLAY_NAME } = loadState(vmName);
+    ok(`${vmName} VM already set up (${VM_DISPLAY_NAME})`, LOG);
+  } else {
+    // Import box
+    const { uuid, displayName } = await importBox(profile, vmName, LOG);
+
+    // Configure network (VM must be stopped)
+    await stopVm(displayName, LOG);
+    await configureNetwork(uuid, profile, LOG);
+  }
+
+  // Bootstrap (start VM, run bootstrap, stop)
+  const { VM_DISPLAY_NAME } = loadState(vmName);
+  if (profile.bootstrap) {
+    await startVm(VM_DISPLAY_NAME, LOG);
+    await waitForBoot(profile.winrmPort, 300, LOG);
+
+    const taskDir = dirname(new URL(import.meta.url).pathname);
+    const bootstrapPath = join(taskDir, "_bootstrap.ts");
+    if (existsSync(bootstrapPath)) {
+      await $`bun ${bootstrapPath} ${vmName}`;
+    }
+
+    // Stop after bootstrap — vm:up will start it when needed
+    await stopVm(VM_DISPLAY_NAME, LOG);
+  }
+
+  ok(`${vmName} VM ready`, LOG);
+  log("", LOG);
+}
+
 // ── Summary ───────────────────────────────────────────────────────────────
 
 log("═══ Setup complete ═══", LOG);
 log("", LOG);
-log("Environment variables (set in mise.toml):", LOG);
+log("Environment:", LOG);
 log(`  ANDROID_HOME=${ANDROID_HOME}`, LOG);
 log(`  NDK_HOME=${ANDROID_HOME}/ndk/${NDK_VERSION}`, LOG);
 log(`  JAVA_HOME=${JAVA_HOME}`, LOG);
+log("", LOG);
+log("Next:", LOG);
+log("  mise run vm up        # start build VM", LOG);
+log("  mise run vm up test   # start test VM", LOG);
+log("  mise run doctor       # check everything", LOG);

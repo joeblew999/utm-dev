@@ -1,7 +1,4 @@
-#!/usr/bin/env bun
-
-//MISE description="Bootstrap Windows VM: SSH + dev tools (build) or SSH only (test)"
-//MISE alias="vm-bootstrap"
+// Internal — called by setup.ts via `bun _bootstrap.ts`, not a user-facing task.
 
 // Bootstraps a Windows VM via WinRM (the only thing available on a fresh box).
 // - "full" (build VM): OpenSSH + VS Build Tools + WebView2 + mise
@@ -9,8 +6,8 @@
 // Idempotent — safe to run multiple times.
 // Usage: vm:bootstrap [build|test]  (default: build)
 
-import { parseVMArg, getProfile, info, ok, die, log, timestamp } from "../_lib.ts";
-import { WinRM } from "../_winrm.ts";
+import { parseVMArg, getProfile, info, ok, die, log, timestamp } from "./_lib.ts";
+import { WinRM } from "./_winrm.ts";
 
 const LOG = "vm-bootstrap.log";
 log(`── ${timestamp()} ──`, LOG);

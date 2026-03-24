@@ -1,8 +1,7 @@
 #!/usr/bin/env bun
 
-//MISE description="Build Tauri Windows app: sync code to VM, build, pull artifacts back"
+//MISE description="Build Tauri Windows app: sync code, build in VM, pull artifacts back"
 //MISE alias="vm-build"
-//MISE depends=["vm:sync"]
 
 import { $ } from "bun";
 import { mkdirSync } from "fs";
@@ -10,7 +9,7 @@ import { join } from "path";
 import {
   PROJECT_DIR, PROJECT_NAME,
   getProfile, vmHome,
-  ensureSshpass, ssh, scp, info, ok, die, log, timestamp,
+  ensureSshpass, checkSsh, ssh, scp, info, ok, die, log, timestamp,
 } from "../_lib.ts";
 
 const LOG = "vm-build.log";
@@ -23,20 +22,37 @@ const vmProjectDir = `${home}\\${PROJECT_NAME}`;
 const artifactsDir = join(PROJECT_DIR, ".build", "windows");
 
 await ensureSshpass();
+await checkSsh(profile);
 
-// ── Build inside VM ───────────────────────────────────────────────────────
+// ── Sync code to VM ─────────────────────────────────────────────────────
+
+info(`Syncing ${PROJECT_NAME} to build VM...`, LOG);
+const tmptar = `/tmp/vm-build-${Date.now()}.tar.gz`;
+try {
+  await $`tar -czf ${tmptar} --exclude=target --exclude=node_modules --exclude=.git --exclude=.mise/logs --exclude=.mise/state --exclude=.build --exclude=.gradle -C ${PROJECT_DIR} .`;
+  await scp(profile, tmptar, `${profile.user}@127.0.0.1:sync.tar.gz`);
+  await ssh(
+    profile,
+    `if not exist "${vmProjectDir}" mkdir "${vmProjectDir}" && cd "${vmProjectDir}" && tar -xzf "%USERPROFILE%\\sync.tar.gz" && del "%USERPROFILE%\\sync.tar.gz"`,
+  );
+  ok("Code synced", LOG);
+} finally {
+  await $`rm -f ${tmptar}`.nothrow();
+}
+
+// ── Build inside VM ─────────────────────────────────────────────────────
 
 info("Installing tools inside VM (mise install)...", LOG);
 const install = await ssh(profile, `cd "${vmProjectDir}" && mise trust && mise install`);
 if (install.exitCode !== 0) die("mise install failed inside VM");
 ok("Tools installed", LOG);
 
-info("Building Tauri Windows app inside VM (this takes a while on first run)...", LOG);
+info("Building Tauri Windows app (this takes a while on first run)...", LOG);
 const build = await ssh(profile, `cd "${vmProjectDir}" && mise run build`);
 if (build.exitCode !== 0) die("Build failed inside VM");
 ok("Build complete", LOG);
 
-// ── Pull artifacts back ───────────────────────────────────────────────────
+// ── Pull artifacts back ─────────────────────────────────────────────────
 
 info("Pulling artifacts...", LOG);
 mkdirSync(artifactsDir, { recursive: true });

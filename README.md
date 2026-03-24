@@ -9,7 +9,7 @@ Building [Tauri](https://tauri.app/) apps for macOS + iOS + Android + Windows fr
 ## Stack
 
 - **[mise](https://mise.jdx.dev)** — task runner, tool management, orchestration
-- **[Bun](https://bun.sh)** — all task scripts are TypeScript (cross-platform)
+- **[Bun](https://bun.sh)** — all task scripts are TypeScript
 - **[Tauri](https://tauri.app/)** — the apps you're building
 
 ## Add to your project
@@ -26,21 +26,19 @@ Then:
 ```bash
 mise run init      # Adds tools + env to your mise.toml (one time)
 mise install       # Install tools (Rust, Bun, cargo-tauri, etc.)
-mise run setup     # Install SDKs + targets (idempotent)
-mise run vm:up     # Build VM + SSH + dev tools (idempotent)
-mise run vm:up test # Clean Windows for testing (idempotent)
+mise run setup     # Install EVERYTHING: SDKs, UTM, both VMs (idempotent)
 ```
 
-Everything is idempotent. Run any command as many times as you want.
+One command. `setup` installs Mac tools, Android SDK, iOS deps, UTM, and both Windows VMs. Run it as many times as you want.
 
 ## Two VMs
 
 | VM | Purpose | Ports |
 |---|---|---|
-| **build** (default) | VS Build Tools, Rust, mise — for compiling | SSH:2222 RDP:3389 WinRM:5985 |
-| **test** | Clean Windows — for testing installers/WebView2 | SSH:2322 RDP:3489 WinRM:6985 |
+| **build** | VS Build Tools, Rust, mise — for compiling | SSH:2222 RDP:3389 WinRM:5985 |
+| **test** | Clean Windows + SSH — for testing installers | SSH:2322 RDP:3489 WinRM:6985 |
 
-Both run simultaneously. Most commands default to `build` if you don't specify.
+Both set up by `mise run setup`. Start them with `mise run vm:up`.
 
 ## Build for every platform
 
@@ -51,20 +49,17 @@ cargo tauri android build                      # Android — .apk + .aab
 mise run vm:build                              # Windows — .msi + .exe
 ```
 
-macOS, iOS, and Android build natively on your Mac. Windows builds inside the build VM — code is synced automatically, artifacts are pulled back to `.build/windows/`.
-
 ## All commands
 
 | Command | What it does |
 |---|---|
 | `mise run init` | Add tools + env to your mise.toml |
-| `mise run setup` | Install Rust, Android SDK/NDK, CocoaPods, targets |
-| `mise run doctor` | Check what's installed/missing (both VMs) |
-| `mise run vm:up [build\|test]` | Bring up a VM (default: build) |
+| `mise run setup` | Install everything: Mac tools, SDKs, UTM, both VMs |
+| `mise run doctor` | Check what's installed/missing |
+| `mise run vm:up [build\|test]` | Start a VM (default: build) |
+| `mise run vm:down [build\|test]` | Stop a VM |
 | `mise run vm:build` | Sync + build in build VM, pull .msi/.exe back |
 | `mise run vm:exec [build\|test] '<cmd>'` | Run a command inside a VM |
-| `mise run vm:sync [build\|test]` | Sync project files to a VM |
-| `mise run vm:down [build\|test]` | Stop a VM |
 | `mise run vm:package [build\|test]` | Export a VM as reusable Vagrant box |
 | `mise run vm:delete build\|test\|utm\|all` | Delete VMs/UTM (keeps cached box) |
 
@@ -77,4 +72,4 @@ macOS, iOS, and Android build natively on your Mac. Windows builds inside the bu
 
 ## Examples
 
-See [`examples/tauri-basic/`](examples/tauri-basic/) — a working Tauri app you can build for all 4 platforms.
+See [`examples/tauri-basic/`](examples/tauri-basic/) for a working Tauri app with per-platform build tasks.
