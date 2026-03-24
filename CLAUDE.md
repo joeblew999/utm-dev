@@ -78,6 +78,9 @@ The Windows VM box (~6 GB) is cached at `~/.cache/utm-dev/`. **Never delete this
 - UTM is sandboxed — prefs must write to container plist, not defaults domain
 - SSH is bootstrapped via WinRM (scheduled task as SYSTEM to bypass UAC)
 - Rust + cargo-tauri installed in VM by vm:bootstrap
+- WebView2 Runtime installed in VM by vm:bootstrap (Tauri uses native OS webview)
+- Give VM 8GB+ RAM — Rust compilation + WebView2 are memory-hungry
+- The VM is for **testing**, not just building — catches WebView2 quirks, system tray issues, etc.
 
 ## Windows build pipeline
 
