@@ -1,13 +1,18 @@
 #!/usr/bin/env bun
 
-//MISE description="Install Mac + mobile dev tools (Rust, Android SDK, iOS)"
+//MISE description="Install dev tools (platform-aware: macOS gets mobile SDKs, Linux gets Tauri deps)"
 //MISE alias="s"
 
-// Stages:
-//   1. Host tools   — Rust, Xcode check
-//   2. Mobile SDKs  — Android SDK, NDK, platform-tools, build-tools, emulator, JDK
-//   3. Rust targets — Android cross-compilation targets
-//   4. iOS deps     — CocoaPods
+// Platform-aware setup:
+//   macOS:
+//     1. Host tools   — Rust, Xcode check
+//     2. Mobile SDKs  — Android SDK, NDK, platform-tools, build-tools, emulator, JDK
+//     3. Rust targets — Android cross-compilation targets
+//     4. iOS deps     — CocoaPods
+//   Linux:
+//     1. System deps  — build-essential, pkg-config, curl, git
+//     2. Tauri deps   — WebKitGTK, GTK, libsoup, etc.
+//     3. Rust         — via rustup
 //
 // Windows VM setup is handled lazily by vm:up on first run.
 // cargo-tauri and bun are managed by mise [tools] — not installed here.
@@ -35,8 +40,82 @@ const SYSTEM_IMAGE = `system-images;${PLATFORM_VERSION};google_apis;arm64-v8a`;
 const AVD_NAME = "utm-dev";
 const ANDROID_HOME = process.env.ANDROID_HOME ?? `${process.env.HOME}/.android-sdk`;
 
+const IS_LINUX = process.platform === "linux";
+const IS_MACOS = process.platform === "darwin";
+
 log("═══ utm-dev setup ═══", LOG);
+log(`  Platform: ${IS_LINUX ? "Linux" : IS_MACOS ? "macOS" : process.platform}`, LOG);
 log("", LOG);
+
+// ── Linux setup path ────────────────────────────────────────────────────
+
+if (IS_LINUX) {
+  // On Linux, mise handles Rust, bun, cargo-tauri (via [tools]).
+  // We only need apt for system C libraries that Tauri links against.
+  // These cannot be installed by mise — they're OS-level deps.
+
+  log("── Stage 1: System C libraries (apt) ──", LOG);
+  log("  (Rust, bun, cargo-tauri are managed by mise [tools])", LOG);
+  log("", LOG);
+
+  // Build essentials + Tauri system deps
+  // https://v2.tauri.app/start/prerequisites/#linux
+  const systemDeps = [
+    // build toolchain
+    "build-essential", "curl", "git", "pkg-config",
+    // Tauri: WebKitGTK + GTK
+    "libwebkit2gtk-4.1-dev", "libgtk-3-dev",
+    "libjavascriptcoregtk-4.1-dev", "libsoup-3.0-dev",
+    // Tauri: system libs
+    "libayatana-appindicator3-dev", "librsvg2-dev",
+    "libssl-dev", "libxdo-dev",
+    // Tauri: build helpers
+    "patchelf", "wget", "file",
+  ];
+
+  // Check a representative package to see if we need to install
+  const hasWebKit = (await $`dpkg -s libwebkit2gtk-4.1-dev 2>/dev/null`.quiet().nothrow()).exitCode === 0;
+  if (hasWebKit) {
+    ok("Tauri system deps already installed", LOG);
+  } else {
+    info("Installing system dependencies (requires sudo)...", LOG);
+    await $`sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq`;
+    await $`sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq ${systemDeps.join(" ")}`;
+    ok("System deps installed", LOG);
+  }
+
+  // Verify mise-managed tools
+  log("", LOG);
+  log("── Stage 2: Verify mise-managed tools ──", LOG);
+
+  info("Running mise install (ensures Rust, bun, cargo-tauri are present)...", LOG);
+  const miseInstall = await $`mise install`.quiet().nothrow();
+  if (miseInstall.exitCode === 0) {
+    ok("mise tools installed", LOG);
+  } else {
+    log("  ⚠ mise install had issues — run `mise install` manually to debug", LOG);
+  }
+
+  if (await cmdExists("cargo")) {
+    const ver = (await $`cargo --version`.quiet()).stdout.toString().trim().split(" ")[1];
+    ok(`Rust ${ver} (mise-managed)`, LOG);
+  }
+  if (await cmdExists("bun")) {
+    const ver = (await $`bun --version`.quiet()).stdout.toString().trim();
+    ok(`bun ${ver} (mise-managed)`, LOG);
+  }
+
+  log("", LOG);
+  log("═══ Setup complete (Linux) ═══", LOG);
+  log("", LOG);
+  log("Next:", LOG);
+  log("  cargo tauri dev             # Run desktop app (hot reload)", LOG);
+  log("  cargo tauri build           # Build .deb / .AppImage", LOG);
+  log("  mise run doctor             # Check everything", LOG);
+  process.exit(0);
+}
+
+// ── macOS setup path ────────────────────────────────────────────────────
 
 // ── Stage 1: Host tools ───────────────────────────────────────────────────
 

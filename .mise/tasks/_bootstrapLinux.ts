@@ -1,8 +1,9 @@
 // Internal — called by vm/up.ts for Linux VMs, not a user-facing task.
 
 // Bootstraps a Linux VM via SSH (already available on Vagrant boxes).
-// - "full" (linux-build VM): build-essential + Rust + mise + Tauri Linux deps
-// - "ssh-only" (linux-test VM): verify SSH works, done
+// - "full" (linux-build, linux-dev): build-essential + Rust + mise + Tauri Linux deps
+// - "ssh-only" (linux-test): verify SSH works, done
+// Works on both Ubuntu (apt) and Debian (apt) boxes.
 // Idempotent — safe to run multiple times.
 
 import { parseVMArg, getProfile, ensureSshpass, ssh, info, ok, die, log, timestamp } from "./_lib.ts";
@@ -91,7 +92,25 @@ if (!(await check("mise", "~/.local/bin/mise --version 2>/dev/null || mise --ver
   await run("Installing mise", 'curl https://mise.run | sh');
 }
 
+// Step 5: Desktop-specific extras (linux-dev only — box ships with GNOME)
+if (vmName === "linux-dev") {
+  if (!(await check("xdg-utils", "dpkg -s xdg-utils 2>/dev/null | grep -oP 'ok installed'"))) {
+    await run("Installing desktop extras", "sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq xdg-utils fonts-noto-color-emoji");
+  }
+  // Verify GNOME desktop is present (debian-12 box ships with it)
+  if (await check("GNOME desktop", "dpkg -s gnome-session 2>/dev/null | grep -oP 'ok installed'")) {
+    ok("Desktop environment verified", LOG);
+  } else {
+    log("  ⚠ GNOME desktop not found — the debian-12 box should include it", LOG);
+  }
+}
+
 log("", LOG);
 ok(`${vmName} VM bootstrap complete`, LOG);
 log(`  SSH: sshpass -p ${profile.pass} ssh -p ${profile.sshPort} ${profile.user}@127.0.0.1`, LOG);
-log("  Next: mise run vm:exec linux-build 'cd <project> && mise install'", LOG);
+if (vmName === "linux-dev") {
+  log("  Desktop: open UTM to see the GNOME desktop", LOG);
+  log("  Next: open a terminal in the VM and run: mise run setup", LOG);
+} else {
+  log("  Next: mise run vm:exec linux-build 'cd <project> && mise install'", LOG);
+}

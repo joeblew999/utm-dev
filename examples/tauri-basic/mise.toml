@@ -81,6 +81,10 @@ run = "mise run vm:build windows-build"
 
 # ── Linux (via utm-dev VM) ────────────────────────────────────────────────────
 
+[tasks."linux:dev"]
+description = "Start Linux desktop VM for dev (Debian 12 + GNOME)"
+run = "mise run vm:up linux-dev"
+
 [tasks."linux:build"]
 description = "Build Linux .deb/.AppImage in the VM"
 run = "mise run vm:build linux-build"
@@ -116,7 +120,7 @@ echo "Cleaned .build/, src-tauri/target/, src-tauri/gen/, node_modules/"
 # ── Tools + env (normally added by `mise run init`) ──────────────────────────
 
 [tools]
-"cargo:tauri-cli"       = {version = "2",      os = ["macos", "windows"]}
+"cargo:tauri-cli"       = "2"
 "cargo:tauri-webdriver" = "latest"
 bun               = "latest"
 xcodegen          = {version = "latest", os = ["macos"]}

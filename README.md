@@ -2,9 +2,20 @@
 
 Help devs not go crazy.
 
-Build [Tauri](https://tauri.app/) apps for **all 5 platforms from a single Mac**. utm-dev handles Rust, Android SDK, NDK, CocoaPods, Xcode, Windows VMs, and Linux VMs — so you don't have to.
+Build [Tauri](https://tauri.app/) apps for **all 5 platforms** — macOS, iOS, Android, Windows, Linux — without thinking about where code runs.
 
-Your Mac does macOS + iOS + Android natively. utm-dev adds Windows 11 and Ubuntu ARM VMs via [UTM](https://mac.getutm.app/) for the rest.
+**You just say what you want. utm-dev figures out the rest.**
+
+```bash
+mise run mac:dev          # runs natively on your Mac
+mise run ios:sim          # runs natively on your Mac
+mise run android:sim      # runs natively on your Mac
+mise run windows:build    # runs in a Windows VM (auto-created)
+mise run linux:build      # runs in a Linux VM (auto-created)
+mise run linux:dev        # opens a Linux desktop VM for dev/testing
+```
+
+You never manage VMs, install cross-compilers, or SSH into anything. If the target platform needs a VM, it starts one. If it doesn't, it runs locally. Same commands whether you're on macOS or inside the Linux VM.
 
 ## Quick start
 
@@ -21,7 +32,7 @@ mise activate zsh >> ~/.zshrc   # restart terminal after
 # 3. Set up everything
 mise run init      # add tools + env to your mise.toml
 mise install       # install tools (Rust, Bun, cargo-tauri, etc.)
-mise run setup     # install Mac + mobile dev tools
+mise run setup     # install platform deps (macOS: Xcode/Android, Linux: system libs)
 mise run doctor    # check what's installed
 ```
 
@@ -30,22 +41,25 @@ That's it. You're ready to build.
 ## Build for every platform
 
 ```bash
-# macOS
+# macOS (runs natively)
 mise run mac:dev              # desktop dev mode (hot reload)
 mise run mac:build            # .app + .dmg
 
-# iOS
+# iOS (runs natively)
 mise run ios:sim              # simulator (no signing required)
 mise run ios:xcode            # open in Xcode
 mise run ios:build            # release IPA (requires signing)
 
-# Android
+# Android (runs natively)
 mise run android:sim          # emulator
 mise run android:studio       # open in Android Studio
 mise run android:build        # .apk + .aab
 
-# Windows & Linux (VMs auto-start on first run)
+# Windows (auto-starts VM on first run)
 mise run windows:build        # .msi + .exe
+
+# Linux (auto-starts VM on first run)
+mise run linux:dev            # open Linux desktop VM (Debian 12 + GNOME)
 mise run linux:build          # .deb + .AppImage
 
 # Everything at once
@@ -53,6 +67,8 @@ mise run all:build
 ```
 
 Build artifacts land in `.build/windows/` and `.build/linux/`.
+
+> **Works from Linux too.** Inside the Linux VM (or on any native Linux box), `mise run setup` installs system deps, and `cargo tauri dev` / `cargo tauri build` just work. Same `mise.toml`, same tasks.
 
 ## Utilities
 
@@ -69,12 +85,16 @@ mise run mcp                      # set up MCP servers for AI-assisted dev
 
 ## Prerequisites
 
-- macOS on Apple Silicon
+**macOS (full platform support):**
+- Apple Silicon Mac
 - [mise](https://mise.jdx.dev) — `curl https://mise.run | sh`
-- [Homebrew](https://brew.sh)
-- Xcode (from App Store)
+- [Homebrew](https://brew.sh), Xcode (from App Store)
 - **8 GB+ RAM** recommended (VMs need headroom)
 - **~6 GB disk** for the box cache (`~/.cache/utm-dev/`)
+
+**Linux (native desktop/server builds):**
+- [mise](https://mise.jdx.dev) — `curl https://mise.run | sh`
+- `mise run setup` installs everything else (apt system libs)
 
 Add these to your `.gitignore`:
 
@@ -103,27 +123,29 @@ See [`examples/tauri-basic/`](examples/tauri-basic/) for a working Tauri app wit
 
 ### What installs what
 
-| Tool | Installed by | Location |
-|---|---|---|
-| Bun, cargo-tauri, xcodegen, ruby, Java | **mise** | `~/.local/share/mise/installs/` |
-| Rust | **rustup** | `~/.rustup/` + `~/.cargo/` |
-| Android SDK, NDK, emulator | **sdkmanager** | `~/.android-sdk/` |
-| CocoaPods | **gem** | system Ruby gems |
-| Xcode | **App Store** | `/Applications/Xcode.app` |
-| UTM | **Homebrew cask** | `/Applications/UTM.app` |
+**mise handles everything it can** — Rust, Bun, cargo-tauri, Java, xcodegen, ruby. `mise run setup` only installs what mise _can't_: OS-level packages and SDKs.
 
-`mise run setup` installs the non-mise tools. `mise install` installs the mise-managed tools.
+| Tool | Installed by | macOS | Linux |
+|---|---|---|---|
+| Bun, cargo-tauri, xcodegen, ruby, Java | **mise** `[tools]` | yes | yes (skips macOS-only) |
+| Rust | **mise** or **rustup** | yes | yes |
+| WebKitGTK, GTK, system libs | **apt** | — | `mise run setup` |
+| Android SDK, NDK, emulator | **sdkmanager** | `mise run setup` | — |
+| CocoaPods | **gem** | `mise run setup` | — |
+| Xcode | **App Store** | manual | — |
+| UTM | **Homebrew cask** | auto on first VM | — |
 
-### Four VMs
+### Five VMs
 
-| VM | Purpose | Ports |
-|---|---|---|
-| **windows-build** | VS Build Tools, Rust, mise — for compiling | SSH:2222 RDP:3389 WinRM:5985 |
-| **windows-test** | Clean Windows + SSH — for testing installers | SSH:2322 RDP:3489 WinRM:6985 |
-| **linux-build** | build-essential, Rust, mise, Tauri deps — for compiling | SSH:2422 |
-| **linux-test** | Clean Ubuntu + SSH — for testing packages | SSH:2522 |
+| VM | Box | Purpose | Ports |
+|---|---|---|---|
+| **windows-build** | windows-11 | VS Build Tools, Rust, mise — compiling | SSH:2222 RDP:3389 WinRM:5985 |
+| **windows-test** | windows-11 | Clean Windows + SSH — testing installers | SSH:2322 RDP:3489 WinRM:6985 |
+| **linux-dev** | debian-12 (GNOME) | Full desktop — dev experience validation | SSH:2622 |
+| **linux-build** | ubuntu-24.04 | Headless — compiling | SSH:2422 |
+| **linux-test** | ubuntu-24.04 | Clean Ubuntu + SSH — testing packages | SSH:2522 |
 
-VMs are created on-demand — `windows:build` and `linux:build` handle everything automatically.
+VMs are created on-demand — `windows:build`, `linux:build`, and `linux:dev` handle everything automatically.
 
 **Credentials:** `vagrant` / `vagrant` for all VMs.
 
@@ -142,13 +164,13 @@ Most devs never need these — the `platform:target` tasks call them automatical
 | `mise run vm:package [profile]` | Export a VM as a Vagrant box |
 | `mise run vm:delete <profile>` | Delete a VM, `utm` (all + app), or `all` |
 
-Profiles: `windows-build`, `windows-test`, `linux-build`, `linux-test`
+Profiles: `windows-build`, `windows-test`, `linux-dev`, `linux-build`, `linux-test`
 
 ### Deleting VMs
 
 ```bash
 mise run vm:delete windows-build  # removes VM + state, keeps box cache
-mise run vm:delete utm            # all 4 VMs + uninstall UTM
+mise run vm:delete utm            # all 5 VMs + uninstall UTM
 mise run vm:delete all            # everything (box cache always preserved)
 ```
 
@@ -179,6 +201,7 @@ Configures two MCP servers:
 ```bash
 sshpass -p vagrant ssh -p 2222 vagrant@127.0.0.1   # windows-build
 sshpass -p vagrant ssh -p 2322 vagrant@127.0.0.1   # windows-test
+sshpass -p vagrant ssh -p 2622 vagrant@127.0.0.1   # linux-dev
 sshpass -p vagrant ssh -p 2422 vagrant@127.0.0.1   # linux-build
 sshpass -p vagrant ssh -p 2522 vagrant@127.0.0.1   # linux-test
 ```

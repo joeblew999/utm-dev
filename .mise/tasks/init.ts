@@ -33,7 +33,7 @@ if (hasTools || hasEnv) {
   log("");
   if (hasTools) {
     log("  # In your [tools] section:");
-    log('  "cargo:tauri-cli" = {version = "2",      os = ["macos", "windows"]}');
+    log('  "cargo:tauri-cli" = "2"');
     log('  bun               = "latest"');
     log('  xcodegen          = {version = "latest", os = ["macos"]}');
     log('  ruby              = {version = "3.3",    os = ["macos"]}');
@@ -56,7 +56,7 @@ const block = `
 
 # utm-dev tools — added by mise run init
 [tools]
-"cargo:tauri-cli" = {version = "2",      os = ["macos", "windows"]}
+"cargo:tauri-cli" = "2"
 bun               = "latest"
 xcodegen          = {version = "latest", os = ["macos"]}
 ruby              = {version = "3.3",    os = ["macos"]}

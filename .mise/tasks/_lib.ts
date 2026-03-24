@@ -68,6 +68,16 @@ export const VM_PROFILES: Record<string, VMProfile> = {
     memoryMiB: 2048,        // 2 GB — just running the app
     cpuCores: 2,
   },
+  "linux-dev": {
+    os: "linux",
+    box: "debian-12",        // Debian 12 with GNOME desktop
+    sshPort: 2622,
+    user: "vagrant",
+    pass: "vagrant",
+    bootstrap: "full",       // build-essential + Rust + mise + Tauri deps + desktop verified
+    memoryMiB: 6144,         // 6 GB — GNOME desktop + Rust compilation
+    cpuCores: 4,
+  },
 };
 
 export const DEFAULT_VM = "windows-build";

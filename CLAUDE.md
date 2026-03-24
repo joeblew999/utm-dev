@@ -49,6 +49,7 @@ android:sim       Run on Android emulator
 android:studio    Open in Android Studio (for physical device or debugging)
 android:build     Build Android release APK and AAB
 windows:build     Build Windows .msi/.exe in the VM
+linux:dev         Start Linux desktop VM for dev (Debian 12 + GNOME)
 linux:build       Build Linux .deb/.AppImage in the VM
 icon              Generate all platform icons from app-icon.png
 ```
@@ -57,7 +58,7 @@ icon              Generate all platform icons from app-icon.png
 
 ```bash
 mise run init                                       # Add tools + env to project's mise.toml
-mise run setup                                      # Install Mac + mobile dev tools
+mise run setup                                      # Install dev tools (platform-aware: macOS or Linux)
 mise run doctor                                     # Check what's installed/missing
 mise run screenshot                                 # Take screenshots via WebDriver (runs screenshots/take.ts if present)
 mise run clean:disk                                 # Free system-wide disk space
@@ -69,17 +70,17 @@ mise run mcp                                        # Set up MCP servers (.mcp.j
 Hidden (use `mise tasks --hidden` to see):
 
 ```bash
-mise run vm:up [windows-build|windows-test|linux-build|linux-test]   # Start a VM (imports + bootstraps on first run)
-mise run vm:down [windows-build|windows-test|linux-build|linux-test]  # Stop a VM
-mise run vm:exec [windows-build|windows-test|linux-build|linux-test] <cmd>  # Run a command via SSH
-mise run vm:build [windows-build|linux-build]                        # Build app in a VM
-mise run vm:package [windows-build|windows-test|linux-build|linux-test]  # Export VM as Vagrant box
-mise run vm:delete windows-build|windows-test|linux-build|linux-test|utm|all
+mise run vm:up [windows-build|windows-test|linux-build|linux-test|linux-dev]   # Start a VM
+mise run vm:down [windows-build|windows-test|linux-build|linux-test|linux-dev]  # Stop a VM
+mise run vm:exec [windows-build|windows-test|linux-build|linux-test|linux-dev] <cmd>  # Run via SSH
+mise run vm:build [windows-build|linux-build]                                   # Build app in a VM
+mise run vm:package [windows-build|windows-test|linux-build|linux-test|linux-dev]  # Export as box
+mise run vm:delete windows-build|windows-test|linux-build|linux-test|linux-dev|utm|all
 ```
 
 ## Key design decisions
 
-- **`setup` is Mac/mobile only** — Rust, Android SDK, iOS deps. Fast, no Windows/Linux tax.
+- **`setup` is platform-aware** — macOS: Xcode, Android SDK, iOS deps. Linux: apt system deps only (Rust/bun via mise).
 - **`vm:up` is lazy** — first run downloads box, imports, configures network, bootstraps. After that, just starts.
 - **`vm:build` auto-starts** — if SSH isn't reachable, calls `vm:up` automatically. Fully idempotent cascade.
 - **`vm:*` tasks are hidden** — plumbing, not porcelain. Devs use `platform:target` tasks.
@@ -96,12 +97,13 @@ mise run vm:delete windows-build|windows-test|linux-build|linux-test|utm|all
 | **windows-build** | VS Build Tools, Rust, mise | 2222 | 3389 | 5985 | full |
 | **windows-test** | Clean Windows + SSH only | 2322 | 3489 | 6985 | ssh-only |
 
-### Linux (ARM64 — utm/ubuntu-24.04)
+### Linux (ARM64)
 
-| Profile | Purpose | SSH | Bootstrap |
-|---|---|---|---|
-| **linux-build** | build-essential, Rust, mise, Tauri deps | 2422 | full |
-| **linux-test** | Clean Ubuntu + SSH only | 2522 | ssh-only |
+| Profile | Box | Purpose | SSH | Bootstrap |
+|---|---|---|---|---|
+| **linux-dev** | debian-12 (GNOME) | Full desktop dev experience | 2622 | full |
+| **linux-build** | ubuntu-24.04 | Headless builds | 2422 | full |
+| **linux-test** | ubuntu-24.04 | Clean machine testing | 2522 | ssh-only |
 
 Profiles in `_lib.ts`. State per-VM at `.mise/state/vm-{name}.env`.
 
