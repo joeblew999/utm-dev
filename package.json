@@ -1,0 +1,8 @@
+{
+  "name": "utm-dev",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "bun-types": "latest"
+  }
+}

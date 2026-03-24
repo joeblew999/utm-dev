@@ -1,12 +1,12 @@
-# mise.toml — utm-dev development
+# mise.toml — utm-dev
 #
-# This is the root config for developing utm-dev itself.
+# Dogfoods the same pattern consumers use.
 # Tasks live in .mise/tasks/ and are picked up automatically.
-#
-# For using utm-dev in YOUR project, see README.md.
+# [tools] and [env] are what `mise run init` adds to consumer projects.
 
 [tools]
 "cargo:tauri-cli" = {version = "2",      os = ["macos", "windows"]}
+bun               = "latest"
 xcodegen          = {version = "latest", os = ["macos"]}
 ruby              = {version = "3.3",    os = ["macos"]}
 java              = "temurin-17.0.18+8"

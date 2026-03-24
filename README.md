@@ -6,6 +6,12 @@ Building [Tauri](https://tauri.app/) apps for macOS + iOS + Android + Windows fr
 
 **Your Mac does 3 out of 4 platforms natively.** utm-dev sets up a Windows 11 ARM VM via [UTM](https://mac.getutm.app/) for the 4th.
 
+## Stack
+
+- **[mise](https://mise.jdx.dev)** — task runner, tool management, orchestration
+- **[Bun](https://bun.sh)** — all task scripts are TypeScript (cross-platform)
+- **[Tauri](https://tauri.app/)** — the apps you're building
+
 ## Add to your project
 
 Add this to your `mise.toml`:
@@ -19,7 +25,7 @@ Then:
 
 ```bash
 mise run init      # Adds tools + env to your mise.toml (one time)
-mise install       # Install tools
+mise install       # Install tools (Rust, Bun, cargo-tauri, etc.)
 mise run setup     # Install SDKs + targets (idempotent)
 mise run vm:up     # Windows VM + SSH + Rust (idempotent)
 ```
@@ -43,11 +49,13 @@ macOS, iOS, and Android build natively on your Mac. Windows builds inside the VM
 |---|---|
 | `mise run init` | Add tools + env to your mise.toml |
 | `mise run setup` | Install Rust, Android SDK/NDK, CocoaPods, targets |
+| `mise run doctor` | Check what's installed and what's missing |
 | `mise run vm:up` | Install UTM + Windows VM + bootstrap SSH + Rust |
 | `mise run vm:build` | Sync code to VM, build, pull .msi/.exe back |
 | `mise run vm:exec '<cmd>'` | Run any command inside Windows |
 | `mise run vm:sync` | Sync project files to VM |
 | `mise run vm:down` | Stop the VM |
+| `mise run vm:package` | Export VM as reusable Vagrant box |
 | `mise run vm:delete vm` | Delete VM (keeps UTM + cached box) |
 | `mise run vm:delete all` | Nuclear option (still keeps cached 6 GB download) |
 

@@ -1,13 +1,18 @@
-# Build artifacts
-examples/*/.bin/
-examples/*/.build/
+# Dependencies
+node_modules/
+bun.lock
 
-# Mise runtime state and logs (machine-specific)
+# Build artifacts
+.build/
+
+# Mise runtime state, logs, and remote include cache
 .mise/state/
 .mise/logs/
+.mise/tasks/*-[0-9a-f]*
+.mise/tasks/**/*-[0-9a-f]*
 
 # Local data
 .data/
 
-# Claude Code local session settings
+# Claude Code
 .claude/
