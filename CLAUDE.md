@@ -69,24 +69,33 @@ mise run vm:delete all      # Delete VM + UTM + app data (keeps box cache)
 
 The Windows VM box (~6 GB) is cached at `~/.cache/utm-dev/`. **Never delete this** — re-downloading takes forever.
 
+## Two VMs
+
+| Profile | Purpose | SSH | RDP | WinRM | Bootstrap |
+|---|---|---|---|---|---|
+| **build** | VS Build Tools, Rust, mise — compiling | 2222 | 3389 | 5985 | yes |
+| **test** | Clean Windows — testing installers/WebView2 | 2322 | 3489 | 6985 | no (SSH only) |
+
+Profiles defined in `_lib.ts` as `VM_PROFILES`. State stored per-VM at `.mise/state/vm-{name}.env`.
+
+Most commands default to `build` if no VM name given. Both VMs can run simultaneously (different ports).
+
 ## UTM VM details
 
-- Box: `windows-11` from Vagrant Cloud (utm/windows-11)
+- Box: `windows-11` from Vagrant Cloud (utm/windows-11) — same base for both VMs
 - Credentials: vagrant / vagrant
-- Ports: SSH localhost:2222, RDP localhost:3389, WinRM localhost:5985
-- Network: shared (internet) + emulated (port forwards)
+- Network: shared (internet) + emulated (port forwards per profile)
 - UTM is sandboxed — prefs must write to container plist, not defaults domain
 - SSH is bootstrapped via WinRM (scheduled task as SYSTEM to bypass UAC)
-- Rust + cargo-tauri installed in VM by vm:bootstrap
-- WebView2 Runtime installed in VM by vm:bootstrap (Tauri uses native OS webview)
-- Give VM 8GB+ RAM — Rust compilation + WebView2 are memory-hungry
-- The VM is for **testing**, not just building — catches WebView2 quirks, system tray issues, etc.
+- Build VM: Rust + cargo-tauri + VS Build Tools + WebView2 installed by vm:bootstrap
+- Test VM: clean Windows, SSH only — for testing installers and WebView2 quirks
+- Give VMs 8GB+ RAM — Rust compilation + WebView2 are memory-hungry
 
 ## Windows build pipeline
 
-1. `vm:sync` — tar project, scp to VM, extract (skipped if sources unchanged)
+1. `vm:sync` — tar project, scp to build VM, extract (skipped if sources unchanged)
 2. `vm:build` — depends on vm:sync, then `cargo tauri build` in VM, pull .msi/.exe back to `.build/windows/`
-3. `vm:exec` — run ad-hoc commands via sshpass over SSH
+3. `vm:exec` — run ad-hoc commands via sshpass over SSH (specify VM: `vm:exec test 'dir'`)
 
 ## Remote task include (how other devs use this)
 

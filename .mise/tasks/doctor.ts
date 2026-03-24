@@ -3,11 +3,9 @@
 //MISE description="Check what's installed and what's missing"
 //MISE alias="d"
 
-// Quick health check — shows what's working and what needs fixing.
-
 import { $ } from "bun";
 import { existsSync } from "fs";
-import { SSH_PORT, WINRM_PORT, VM_USER, VM_PASS, UTMCTL } from "./_lib.ts";
+import { UTMCTL, VM_PROFILES, hasState, loadState } from "./_lib.ts";
 
 async function check(name: string, testCmd: string, verCmd: string): Promise<void> {
   const test = await $`sh -c ${testCmd}`.quiet().nothrow();
@@ -56,52 +54,49 @@ await check(
 );
 console.log("");
 
-console.log("── Windows VM ──");
-await check(
-  "UTM",
-  `test -x ${UTMCTL}`,
-  `${UTMCTL} version 2>/dev/null || echo installed`
-);
+console.log("── Windows VMs ──");
+await check("UTM", `test -x ${UTMCTL}`, `${UTMCTL} version 2>/dev/null || echo installed`);
 
-// Check VM status
-const utmExists = await $`test -x ${UTMCTL}`.quiet().nothrow();
-if (utmExists.exitCode === 0) {
+const sshpassAvail = (await $`command -v sshpass`.quiet().nothrow()).exitCode === 0;
+
+for (const [vmName, profile] of Object.entries(VM_PROFILES)) {
+  if (!hasState(vmName)) {
+    console.log(`  ✗ ${vmName} VM (not created)`);
+    continue;
+  }
+
+  const { VM_UUID, VM_DISPLAY_NAME } = loadState(vmName);
   const list = await $`${UTMCTL} list`.quiet().nothrow();
-  const vmLine = (list.stdout?.toString() ?? "")
-    .split("\n")
-    .filter((l) => l.trim() && !l.startsWith("UUID"))
-    .find((l) => l.trim());
-  if (vmLine) {
-    const status = vmLine.trim().split(/\s+/)[1];
-    console.log(`  ✓ VM (${status})`);
-  } else {
-    console.log("  ✗ VM (not imported)");
-  }
-} else {
-  console.log("  ✗ VM (UTM not installed)");
-}
+  const vmLine = list.stdout.toString().split("\n").find((l) => l.includes(VM_UUID));
 
-// Check SSH
-const sshpassCheck = await $`command -v sshpass`.quiet().nothrow();
-if (sshpassCheck.exitCode === 0) {
-  const sshTest = await $`sshpass -p ${VM_PASS} ssh -o ConnectTimeout=2 -o StrictHostKeyChecking=no -p ${SSH_PORT} ${VM_USER}@127.0.0.1 "echo ok"`
-    .quiet()
-    .nothrow();
-  if (sshTest.stdout.toString().includes("ok")) {
-    console.log(`  ✓ SSH (port ${SSH_PORT})`);
-  } else {
-    console.log("  ✗ SSH (not reachable — VM stopped or not bootstrapped)");
+  if (!vmLine) {
+    console.log(`  ✗ ${vmName} VM (state exists but VM not in UTM)`);
+    continue;
   }
-} else {
-  console.log("  ✗ SSH (sshpass not installed)");
-}
 
-// Check WinRM
-try {
-  await fetch(`http://127.0.0.1:${WINRM_PORT}/wsman`, { signal: AbortSignal.timeout(2000) });
-  console.log(`  ✓ WinRM (port ${WINRM_PORT})`);
-} catch {
-  console.log("  ✗ WinRM (not reachable)");
+  const status = vmLine.split(/\s+/)[1];
+  console.log(`  ✓ ${vmName} VM (${status}) — ${VM_DISPLAY_NAME}`);
+
+  // Check SSH
+  if (sshpassAvail && status === "started") {
+    const sshTest = await $`sshpass -p ${profile.pass} ssh -o ConnectTimeout=2 -o StrictHostKeyChecking=no -p ${profile.sshPort} ${profile.user}@127.0.0.1 "echo ok"`
+      .quiet().nothrow();
+    if (sshTest.stdout.toString().includes("ok")) {
+      console.log(`    SSH: port ${profile.sshPort}`);
+    } else {
+      console.log(`    SSH: not reachable (port ${profile.sshPort})`);
+    }
+  }
+
+  // Check WinRM
+  if (status === "started") {
+    try {
+      await fetch(`http://127.0.0.1:${profile.winrmPort}/wsman`, { signal: AbortSignal.timeout(2000) });
+      console.log(`    WinRM: port ${profile.winrmPort}`);
+    } catch {
+      console.log(`    WinRM: not reachable (port ${profile.winrmPort})`);
+    }
+  }
 }
 
 console.log("");

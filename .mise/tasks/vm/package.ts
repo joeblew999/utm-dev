@@ -1,27 +1,22 @@
 #!/usr/bin/env bun
 
-//MISE description="Export current VM as a reusable Vagrant box"
+//MISE description="Export a VM as a reusable Vagrant box: vm:package [build|test]"
 //MISE alias="vm-package"
-
-// Packages the current (bootstrapped) VM into a .box file that can be
-// uploaded to Vagrant Cloud. Other devs get a pre-baked box with SSH,
-// VS Build Tools, WebView2, and mise already installed.
-//
-// Usage:
-//   mise run vm:up          # ensure VM exists and is bootstrapped
-//   mise run vm:package     # export to .build/boxes/
 
 import { $ } from "bun";
 import { mkdirSync, writeFileSync, existsSync } from "fs";
 import { join } from "path";
 import {
-  PROJECT_DIR, UTMCTL, loadState, info, ok, die, log, timestamp,
+  PROJECT_DIR, UTMCTL,
+  parseVMArg, loadState,
+  info, ok, die, log, timestamp,
 } from "../_lib.ts";
 
 const LOG = "vm-package.log";
 log(`── ${timestamp()} ──`, LOG);
 
-const { VM_UUID, VM_DISPLAY_NAME } = loadState();
+const { vmName } = parseVMArg();
+const { VM_UUID, VM_DISPLAY_NAME } = loadState(vmName);
 
 // ── Stop VM if running ────────────────────────────────────────────────────
 
@@ -31,7 +26,7 @@ const vmLine = (list.stdout?.toString() ?? "")
   .find((l) => l.includes(VM_UUID));
 
 if (vmLine && vmLine.includes("started")) {
-  info("Stopping VM before export...", LOG);
+  info(`Stopping ${vmName} VM before export...`, LOG);
   await $`${UTMCTL} stop ${VM_DISPLAY_NAME}`.quiet().nothrow();
   await Bun.sleep(8000);
 }
@@ -54,7 +49,7 @@ info(`VM bundle: ${utmBundle} (${bundleSize})`, LOG);
 
 const boxOutputDir = join(PROJECT_DIR, ".build", "boxes");
 mkdirSync(boxOutputDir, { recursive: true });
-const boxFile = join(boxOutputDir, "windows-11-dev_arm64.box");
+const boxFile = join(boxOutputDir, `windows-11-${vmName}_arm64.box`);
 
 const tmpdir = await $`mktemp -d`.quiet();
 const tmpdirPath = tmpdir.stdout.toString().trim();
@@ -80,7 +75,5 @@ ok(`Box created: ${boxFile} (${boxSize})`, LOG);
 log("", LOG);
 log("To publish to Vagrant Cloud:", LOG);
 log("  1. Create an account at https://app.vagrantup.com", LOG);
-log("  2. Create a box: joeblew999/windows-11-dev", LOG);
-log(`  3. Upload: vagrant cloud publish joeblew999/windows-11-dev 1.0.0 utm ${boxFile}`, LOG);
-log("", LOG);
-log("Then update vm:up BOX_NAME to use your published box.", LOG);
+log(`  2. Create a box: joeblew999/windows-11-${vmName}`, LOG);
+log(`  3. Upload: vagrant cloud publish joeblew999/windows-11-${vmName} 1.0.0 utm ${boxFile}`, LOG);

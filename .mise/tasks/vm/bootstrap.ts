@@ -3,25 +3,29 @@
 //MISE description="Bootstrap Windows VM: SSH, mise, VS Build Tools, WebView2"
 //MISE alias="vm-bootstrap"
 
-// Bootstraps the Windows VM via WinRM (the only thing available on a fresh box).
+// Bootstraps a Windows VM via WinRM (the only thing available on a fresh box).
 // Installs: OpenSSH Server, VS Build Tools, WebView2, mise (which handles Rust + cargo-tauri).
 // Idempotent — safe to run multiple times.
+// Usage: vm:bootstrap [build|test]  (default: build)
 
-import { WINRM_PORT, VM_USER, VM_PASS, info, ok, die, log, timestamp } from "../_lib.ts";
+import { parseVMArg, getProfile, info, ok, die, log, timestamp } from "../_lib.ts";
 import { WinRM } from "../_winrm.ts";
 
 const LOG = "vm-bootstrap.log";
 log(`── ${timestamp()} ──`, LOG);
 
-const winrm = new WinRM("127.0.0.1", WINRM_PORT, VM_USER, VM_PASS);
+const { vmName } = parseVMArg();
+const profile = getProfile(vmName);
+
+const winrm = new WinRM("127.0.0.1", profile.winrmPort, profile.user, profile.pass);
 
 // ── Check WinRM is reachable ──────────────────────────────────────────────
 
 if (!(await winrm.ping())) {
-  die(`WinRM not reachable on port ${WINRM_PORT} — is the VM running?`);
+  die(`WinRM not reachable on port ${profile.winrmPort} — is the ${vmName} VM running?`);
 }
 
-info("Bootstrapping Windows VM via WinRM...", LOG);
+info(`Bootstrapping ${vmName} VM via WinRM...`, LOG);
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 

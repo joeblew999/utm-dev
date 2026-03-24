@@ -27,10 +27,20 @@ Then:
 mise run init      # Adds tools + env to your mise.toml (one time)
 mise install       # Install tools (Rust, Bun, cargo-tauri, etc.)
 mise run setup     # Install SDKs + targets (idempotent)
-mise run vm:up     # Windows VM + SSH + Rust (idempotent)
+mise run vm:up     # Build VM + SSH + dev tools (idempotent)
+mise run vm:up test # Clean Windows for testing (idempotent)
 ```
 
 Everything is idempotent. Run any command as many times as you want.
+
+## Two VMs
+
+| VM | Purpose | Ports |
+|---|---|---|
+| **build** (default) | VS Build Tools, Rust, mise — for compiling | SSH:2222 RDP:3389 WinRM:5985 |
+| **test** | Clean Windows — for testing installers/WebView2 | SSH:2322 RDP:3489 WinRM:6985 |
+
+Both run simultaneously. Most commands default to `build` if you don't specify.
 
 ## Build for every platform
 
@@ -41,7 +51,7 @@ cargo tauri android build                      # Android — .apk + .aab
 mise run vm:build                              # Windows — .msi + .exe
 ```
 
-macOS, iOS, and Android build natively on your Mac. Windows builds inside the VM — code is synced automatically, artifacts are pulled back to `.build/windows/`.
+macOS, iOS, and Android build natively on your Mac. Windows builds inside the build VM — code is synced automatically, artifacts are pulled back to `.build/windows/`.
 
 ## All commands
 
@@ -49,16 +59,14 @@ macOS, iOS, and Android build natively on your Mac. Windows builds inside the VM
 |---|---|
 | `mise run init` | Add tools + env to your mise.toml |
 | `mise run setup` | Install Rust, Android SDK/NDK, CocoaPods, targets |
-| `mise run doctor` | Check what's installed and what's missing |
-| `mise run vm:up` | Install UTM + Windows VM + bootstrap SSH + Rust |
-| `mise run vm:bootstrap` | Bootstrap SSH + dev tools in VM (called by vm:up) |
-| `mise run vm:build` | Sync code to VM, build, pull .msi/.exe back |
-| `mise run vm:exec '<cmd>'` | Run any command inside Windows |
-| `mise run vm:sync` | Sync project files to VM |
-| `mise run vm:down` | Stop the VM |
-| `mise run vm:package` | Export VM as reusable Vagrant box |
-| `mise run vm:delete vm` | Delete VM (keeps UTM + cached box) |
-| `mise run vm:delete all` | Nuclear option (still keeps cached 6 GB download) |
+| `mise run doctor` | Check what's installed/missing (both VMs) |
+| `mise run vm:up [build\|test]` | Bring up a VM (default: build) |
+| `mise run vm:build` | Sync + build in build VM, pull .msi/.exe back |
+| `mise run vm:exec [build\|test] '<cmd>'` | Run a command inside a VM |
+| `mise run vm:sync [build\|test]` | Sync project files to a VM |
+| `mise run vm:down [build\|test]` | Stop a VM |
+| `mise run vm:package [build\|test]` | Export a VM as reusable Vagrant box |
+| `mise run vm:delete build\|test\|utm\|all` | Delete VMs/UTM (keeps cached box) |
 
 ## Prerequisites
 

@@ -1,12 +1,14 @@
 #!/usr/bin/env bun
 
-//MISE description="Delete VM and/or UTM: vm:delete vm | utm | all"
+//MISE description="Delete VM and/or UTM: vm:delete build|test|utm|all"
 
 import { $ } from "bun";
-import { existsSync, unlinkSync, rmSync, readdirSync } from "fs";
+import { rmSync, readdirSync } from "fs";
 import { join } from "path";
 import {
-  PROJECT_DIR, LOGDIR, STATEFILE, UTMCTL, info, ok, die, log, timestamp,
+  UTMCTL, VM_PROFILES,
+  loadState, clearState, hasState,
+  info, ok, log, timestamp,
 } from "../_lib.ts";
 
 const LOG = "vm-delete.log";
@@ -14,37 +16,81 @@ log(`── ${timestamp()} ──`, LOG);
 
 const arg = process.argv[2];
 if (!arg) {
-  console.log("Usage: mise vm:delete vm|utm|all");
+  console.log("Usage: mise vm:delete build|test|utm|all");
   process.exit(1);
 }
 
-async function deleteVm() {
-  const utmExists = await $`test -x ${UTMCTL}`.quiet().nothrow();
-  if (utmExists.exitCode !== 0) {
-    ok("UTM not installed, no VM", LOG);
+async function ensureUtmRunning() {
+  const check = await $`${UTMCTL} list`.quiet().nothrow();
+  if (check.exitCode === 0) return;
+  await $`open -g /Applications/UTM.app`.nothrow();
+  for (let i = 0; i < 15; i++) {
+    const r = await $`${UTMCTL} list`.quiet().nothrow();
+    if (r.exitCode === 0) return;
+    await Bun.sleep(1000);
+  }
+}
+
+async function deleteVmByName(vmName: string) {
+  if (!hasState(vmName)) {
+    ok(`No ${vmName} VM`, LOG);
     return;
   }
 
-  // Ensure UTM is running so utmctl works
-  const listCheck = await $`${UTMCTL} list`.quiet().nothrow();
-  if (listCheck.exitCode !== 0) {
-    await $`open -g /Applications/UTM.app`.nothrow();
-    for (let i = 0; i < 15; i++) {
-      const r = await $`${UTMCTL} list`.quiet().nothrow();
-      if (r.exitCode === 0) break;
-      await Bun.sleep(1000);
-    }
+  const utmExists = await $`test -x ${UTMCTL}`.quiet().nothrow();
+  if (utmExists.exitCode !== 0) {
+    ok("UTM not installed, no VM", LOG);
+    clearState(vmName);
+    return;
   }
 
+  await ensureUtmRunning();
+
+  const { VM_UUID, VM_DISPLAY_NAME } = loadState(vmName);
+
+  const list = await $`${UTMCTL} list`.quiet().nothrow();
+  const vmLine = (list.stdout?.toString() ?? "")
+    .split("\n")
+    .find((l) => l.includes(VM_UUID));
+
+  if (!vmLine) {
+    ok(`${vmName} VM not in UTM (already removed)`, LOG);
+    clearState(vmName);
+    return;
+  }
+
+  const status = vmLine.split(/\s+/)[1];
+  if (status === "started") {
+    info(`Stopping '${VM_DISPLAY_NAME}'...`, LOG);
+    await $`${UTMCTL} stop ${VM_DISPLAY_NAME}`.quiet().nothrow();
+    await Bun.sleep(5000);
+  }
+
+  info(`Deleting '${VM_DISPLAY_NAME}' (${vmName})...`, LOG);
+  const del = await $`${UTMCTL} delete ${VM_DISPLAY_NAME}`.quiet().nothrow();
+  if (del.exitCode !== 0) {
+    await $`osascript -e 'tell application "UTM" to delete virtual machine id "${VM_UUID}"'`
+      .quiet()
+      .nothrow();
+  }
+  ok(`Deleted '${VM_DISPLAY_NAME}'`, LOG);
+  clearState(vmName);
+}
+
+async function deleteAllVms() {
+  for (const vmName of Object.keys(VM_PROFILES)) {
+    await deleteVmByName(vmName);
+  }
+
+  // Also clean up any VMs not tracked by state files
+  const utmExists = await $`test -x ${UTMCTL}`.quiet().nothrow();
+  if (utmExists.exitCode !== 0) return;
+
+  await ensureUtmRunning();
   const list = await $`${UTMCTL} list`.quiet().nothrow();
   const lines = (list.stdout?.toString() ?? "")
     .split("\n")
     .filter((l) => l.trim() && !l.startsWith("UUID"));
-
-  if (lines.length === 0) {
-    ok("No VMs", LOG);
-    return;
-  }
 
   for (const line of lines) {
     const parts = line.trim().split(/\s+/);
@@ -58,18 +104,10 @@ async function deleteVm() {
       await $`${UTMCTL} stop ${name}`.quiet().nothrow();
       await Bun.sleep(5000);
     }
-
     info(`Deleting '${name}'...`, LOG);
-    const del = await $`${UTMCTL} delete ${name}`.quiet().nothrow();
-    if (del.exitCode !== 0) {
-      await $`osascript -e 'tell application "UTM" to delete virtual machine id "${uuid}"'`
-        .quiet()
-        .nothrow();
-    }
+    await $`${UTMCTL} delete ${name}`.quiet().nothrow();
     ok(`Deleted '${name}'`, LOG);
   }
-
-  if (existsSync(STATEFILE)) unlinkSync(STATEFILE);
 }
 
 async function deleteUtm() {
@@ -90,7 +128,6 @@ function cleanData() {
   info("Cleaning UTM app data (preserving box cache)...", LOG);
   const home = process.env.HOME!;
   rmSync(join(home, "Library/Containers/com.utmapp.UTM"), { recursive: true, force: true });
-  // Clean Group Containers matching UTM
   try {
     const groupDir = join(home, "Library/Group Containers");
     for (const d of readdirSync(groupDir)) {
@@ -99,26 +136,29 @@ function cleanData() {
       }
     }
   } catch {}
-  if (existsSync(STATEFILE)) unlinkSync(STATEFILE);
+  for (const vmName of Object.keys(VM_PROFILES)) {
+    clearState(vmName);
+  }
   ok("App data cleaned (box cache kept at ~/.cache/utm-dev/)", LOG);
 }
 
 switch (arg) {
-  case "vm":
-    await deleteVm();
+  case "build":
+  case "test":
+    await deleteVmByName(arg);
     break;
   case "utm":
-    await deleteVm();
+    await deleteAllVms();
     await deleteUtm();
     break;
   case "all":
-    await deleteVm();
+    await deleteAllVms();
     await deleteUtm();
     cleanData();
     break;
   default:
-    console.log("Usage: mise vm:delete vm|utm|all");
+    console.log("Usage: mise vm:delete build|test|utm|all");
     process.exit(1);
 }
 
-log("Rebuild: mise vm:up", LOG);
+log("Rebuild: mise vm:up [build|test]", LOG);

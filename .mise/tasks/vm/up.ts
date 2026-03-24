@@ -1,38 +1,41 @@
 #!/usr/bin/env bun
 
-//MISE description="Install UTM + download Windows VM + start + wait"
+//MISE description="Install UTM + download Windows VM + start + wait: vm:up [build|test]"
 //MISE alias="vm-up"
 
 // Fully unattended — works from nothing, no prompts, no GUI interaction.
 // Works both locally and when pulled as a remote mise task include.
 
 import { $ } from "bun";
-import { existsSync, readFileSync, writeFileSync, mkdirSync, statSync } from "fs";
+import { existsSync, writeFileSync, mkdirSync, statSync } from "fs";
 import { join, dirname } from "path";
 import {
-  PROJECT_DIR, LOGDIR, STATEFILE, UTMCTL,
-  SSH_PORT, RDP_PORT, WINRM_PORT, VM_USER, VM_PASS,
+  UTMCTL, STATE_DIR,
+  parseVMArg, getProfile, saveState, hasState,
   info, ok, die, log, timestamp,
 } from "../_lib.ts";
 
 const LOG = "vm-up.log";
-mkdirSync(dirname(STATEFILE), { recursive: true });
+mkdirSync(STATE_DIR, { recursive: true });
 log(`── ${timestamp()} ──`, LOG);
 
-const BOX_NAME = "windows-11";
+const { vmName } = parseVMArg();
+const profile = getProfile(vmName);
 
 let VM_UUID = "";
 let VM_DISPLAY_NAME = "";
 
-// Load existing state
-if (existsSync(STATEFILE)) {
-  const content = readFileSync(STATEFILE, "utf-8");
-  VM_UUID = content.match(/VM_UUID="([^"]*)"/)?.[1] ?? "";
-  VM_DISPLAY_NAME = content.match(/VM_DISPLAY_NAME="([^"]*)"/)?.[1] ?? "";
+// Load existing state for this VM
+if (hasState(vmName)) {
+  try {
+    const state = await import("../_lib.ts").then((m) => m.loadState(vmName));
+    VM_UUID = state.VM_UUID;
+    VM_DISPLAY_NAME = state.VM_DISPLAY_NAME;
+  } catch {}
 }
 
-function saveState() {
-  writeFileSync(STATEFILE, `VM_UUID="${VM_UUID}"\nVM_DISPLAY_NAME="${VM_DISPLAY_NAME}"\n`);
+function save() {
+  saveState(vmName, VM_UUID, VM_DISPLAY_NAME);
 }
 
 async function waitForUtmctl(maxSeconds = 30): Promise<boolean> {
@@ -59,43 +62,39 @@ function parseVmLine(line: string): { uuid: string; status: string; name: string
   };
 }
 
-// ── 0. Kill any existing UTM to start clean ───────────────────────────────
+info(`Bringing up ${vmName} VM...`, LOG);
 
-await $`osascript -e 'tell application "UTM" to quit'`.quiet().nothrow();
-await $`killall UTM`.quiet().nothrow();
-await Bun.sleep(1000);
+// ── 0. Ensure UTM is running (don't kill — other VMs may be active) ──────
 
-// ── 1. Install UTM ────────────────────────────────────────────────────────
-
-if (existsSync(UTMCTL)) {
-  ok("UTM installed");
-} else {
-  info("Installing UTM via brew...", LOG);
-  await $`HOMEBREW_NO_AUTO_UPDATE=1 brew install --cask utm < /dev/null`;
-  if (!existsSync(UTMCTL)) die("UTM install failed");
-  ok("UTM installed", LOG);
-}
-
-// Suppress What's New dialog before first launch
-const plistPath = "/Applications/UTM.app/Contents/Info.plist";
-if (existsSync(plistPath)) {
-  const verResult = await $`/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" ${plistPath}`.quiet().nothrow();
-  const utmVersion = verResult.stdout.toString().trim();
-  if (utmVersion) {
-    const containerPrefs = `${process.env.HOME}/Library/Containers/com.utmapp.UTM/Data/Library/Preferences`;
-    mkdirSync(containerPrefs, { recursive: true });
-    await $`defaults write ${containerPrefs}/com.utmapp.UTM ReleaseNotesLastVersion -string ${utmVersion}`;
-    ok(`Suppressed What's New dialog (v${utmVersion})`, LOG);
+const utmRunning = await $`${UTMCTL} list`.quiet().nothrow();
+if (utmRunning.exitCode !== 0) {
+  // UTM not running — start it
+  if (!existsSync(UTMCTL)) {
+    info("Installing UTM via brew...", LOG);
+    await $`HOMEBREW_NO_AUTO_UPDATE=1 brew install --cask utm < /dev/null`;
+    if (!existsSync(UTMCTL)) die("UTM install failed");
+    ok("UTM installed", LOG);
   }
-}
 
-// Launch UTM in background
-await $`open -g /Applications/UTM.app`;
-info("Waiting for UTM...", LOG);
-if (!(await waitForUtmctl(30))) die("UTM did not become ready after 30s");
+  // Suppress What's New dialog
+  const plistPath = "/Applications/UTM.app/Contents/Info.plist";
+  if (existsSync(plistPath)) {
+    const verResult = await $`/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" ${plistPath}`.quiet().nothrow();
+    const utmVersion = verResult.stdout.toString().trim();
+    if (utmVersion) {
+      const containerPrefs = `${process.env.HOME}/Library/Containers/com.utmapp.UTM/Data/Library/Preferences`;
+      mkdirSync(containerPrefs, { recursive: true });
+      await $`defaults write ${containerPrefs}/com.utmapp.UTM ReleaseNotesLastVersion -string ${utmVersion}`;
+    }
+  }
+
+  await $`open -g /Applications/UTM.app`;
+  info("Waiting for UTM...", LOG);
+  if (!(await waitForUtmctl(30))) die("UTM did not become ready after 30s");
+}
 ok("UTM ready", LOG);
 
-// ── 2. Find or download + import VM ───────────────────────────────────────
+// ── 1. Find or download + import VM ──────────────────────────────────────
 
 let vmExists = false;
 
@@ -104,31 +103,18 @@ if (VM_UUID) {
   const list = await $`${UTMCTL} list`.quiet().nothrow();
   if (list.stdout.toString().includes(VM_UUID)) {
     vmExists = true;
-    ok(`VM exists (${VM_DISPLAY_NAME || "unknown"})`, LOG);
+    ok(`${vmName} VM exists (${VM_DISPLAY_NAME || "unknown"})`, LOG);
   }
 }
 
-// Check by scanning
-if (!vmExists) {
-  const vmLine = await getFirstVm();
-  if (vmLine) {
-    const parsed = parseVmLine(vmLine);
-    VM_UUID = parsed.uuid;
-    VM_DISPLAY_NAME = parsed.name;
-    vmExists = true;
-    saveState();
-    ok(`VM exists (${VM_DISPLAY_NAME})`, LOG);
-  }
-}
-
-// Download and import
+// Download and import if not found
 if (!vmExists) {
   const boxCacheDir = `${process.env.HOME}/.cache/utm-dev`;
   const boxArch = "arm64";
   mkdirSync(boxCacheDir, { recursive: true });
 
   info("Fetching box version...", LOG);
-  const versionsApi = `https://api.cloud.hashicorp.com/vagrant/2022-09-30/registry/utm/box/${BOX_NAME}/versions`;
+  const versionsApi = `https://api.cloud.hashicorp.com/vagrant/2022-09-30/registry/utm/box/${profile.box}/versions`;
   const versionsRes = await fetch(versionsApi);
   if (!versionsRes.ok) die("Cannot reach Vagrant API");
   const versionsJson = await versionsRes.text();
@@ -136,16 +122,15 @@ if (!vmExists) {
   if (!boxVersion) die("Cannot parse box version");
   info(`Latest box version: ${boxVersion}`, LOG);
 
-  const boxFile = `${boxCacheDir}/${BOX_NAME}_${boxVersion}_${boxArch}.box`;
+  const boxFile = `${boxCacheDir}/${profile.box}_${boxVersion}_${boxArch}.box`;
 
   if (existsSync(boxFile)) {
     ok("Box cached (skipping download)", LOG);
   } else {
-    // Clean old boxes
-    await $`rm -f ${boxCacheDir}/${BOX_NAME}_*.box`.nothrow();
+    await $`rm -f ${boxCacheDir}/${profile.box}_*.box`.nothrow();
 
     info("Downloading box (~6 GB) — this takes a while...", LOG);
-    const downloadApi = `https://api.cloud.hashicorp.com/vagrant/2022-09-30/registry/utm/box/${BOX_NAME}/version/${boxVersion}/provider/utm/architecture/${boxArch}/download`;
+    const downloadApi = `https://api.cloud.hashicorp.com/vagrant/2022-09-30/registry/utm/box/${profile.box}/version/${boxVersion}/provider/utm/architecture/${boxArch}/download`;
     const downloadRes = await fetch(downloadApi);
     if (!downloadRes.ok) die("Cannot fetch download URL");
     const downloadJson = await downloadRes.text();
@@ -193,12 +178,11 @@ if (!vmExists) {
   const parsed = parseVmLine(vmLine);
   VM_UUID = parsed.uuid;
   VM_DISPLAY_NAME = parsed.name;
-  saveState();
-  ok(`VM imported (${VM_DISPLAY_NAME})`, LOG);
+  save();
+  ok(`${vmName} VM imported (${VM_DISPLAY_NAME})`, LOG);
 }
 
-// ── 3. Configure network ──────────────────────────────────────────────────
-// Uses AppleScript to read config, set port forwards on emulated NIC, write back.
+// ── 2. Configure network ────────────────────────────────────────────────
 
 const vmStatusLine = await $`${UTMCTL} list`.quiet().nothrow();
 const currentStatus = vmStatusLine.stdout.toString().split("\n")
@@ -230,7 +214,6 @@ if (emulatedIndex === "-1" || !emulatedIndex) die("No emulated network interface
 
 info(`Configuring port forwards on NIC index ${emulatedIndex}...`, LOG);
 
-// Inline AppleScript — based on vagrant_utm's approach: read config, mutate, write back.
 const portForwardScript = `
 on run argv
   set vmID to item 1 of argv
@@ -266,19 +249,18 @@ on run argv
 end run
 `;
 
-// Write AppleScript to temp file — heredoc via Bun.$ is unreliable for multiline scripts
 const tmpScript = `/tmp/utm-port-forward-${Date.now()}.scpt`;
 writeFileSync(tmpScript, portForwardScript);
 try {
-  const pfResult = await $`osascript ${tmpScript} ${VM_UUID} --index ${emulatedIndex} ${"TcPp,,22,127.0.0.1," + SSH_PORT} --index ${emulatedIndex} ${"TcPp,,3389,127.0.0.1," + RDP_PORT} --index ${emulatedIndex} ${"TcPp,,5985,127.0.0.1," + WINRM_PORT}`.quiet().nothrow();
+  const pfResult = await $`osascript ${tmpScript} ${VM_UUID} --index ${emulatedIndex} ${"TcPp,,22,127.0.0.1," + profile.sshPort} --index ${emulatedIndex} ${"TcPp,,3389,127.0.0.1," + profile.rdpPort} --index ${emulatedIndex} ${"TcPp,,5985,127.0.0.1," + profile.winrmPort}`.quiet().nothrow();
   if (pfResult.exitCode !== 0) die("Failed to configure port forwards");
 } finally {
   await $`rm -f ${tmpScript}`.nothrow();
 }
 
-ok(`Network: SSH:${SSH_PORT} RDP:${RDP_PORT} WinRM:${WINRM_PORT}`, LOG);
+ok(`Network: SSH:${profile.sshPort} RDP:${profile.rdpPort} WinRM:${profile.winrmPort}`, LOG);
 
-// ── 4. Start VM ───────────────────────────────────────────────────────────
+// ── 3. Start VM ─────────────────────────────────────────────────────────
 
 info("Starting VM...", LOG);
 let started = false;
@@ -294,14 +276,14 @@ for (let attempt = 1; attempt <= 3; attempt++) {
 }
 if (!started) die("Failed to start VM after 3 attempts");
 
-// ── 5. Wait for Windows boot ──────────────────────────────────────────────
+// ── 4. Wait for Windows boot ────────────────────────────────────────────
 
 info("Waiting for Windows to boot (up to 5 min)...", LOG);
 const timeout = 300;
 let elapsed = 0;
 while (elapsed < timeout) {
   try {
-    await fetch(`http://127.0.0.1:${WINRM_PORT}/wsman`, {
+    await fetch(`http://127.0.0.1:${profile.winrmPort}/wsman`, {
       signal: AbortSignal.timeout(2000),
     });
     ok(`Windows ready (${elapsed}s)`, LOG);
@@ -313,17 +295,19 @@ while (elapsed < timeout) {
 }
 if (elapsed >= timeout) die(`Timeout waiting for Windows (${timeout}s)`);
 
-// ── 6. Bootstrap SSH + Rust ───────────────────────────────────────────────
+// ── 5. Bootstrap (if profile requires it) ───────────────────────────────
 
-const taskDir = dirname(new URL(import.meta.url).pathname);
-const bootstrapPath = join(taskDir, "bootstrap.ts");
-if (existsSync(bootstrapPath)) {
-  await $`bun ${bootstrapPath}`;
-} else {
-  info("Skipping bootstrap (task not found — run mise run vm:bootstrap manually)", LOG);
+if (profile.bootstrap) {
+  const taskDir = dirname(new URL(import.meta.url).pathname);
+  const bootstrapPath = join(taskDir, "bootstrap.ts");
+  if (existsSync(bootstrapPath)) {
+    await $`bun ${bootstrapPath} ${vmName}`;
+  } else {
+    info("Skipping bootstrap (task not found)", LOG);
+  }
 }
 
 log("", LOG);
-ok("Done", LOG);
-log(`  RDP: localhost:${RDP_PORT} (${VM_USER}/${VM_PASS})`, LOG);
-log(`  SSH: sshpass -p ${VM_PASS} ssh -p ${SSH_PORT} ${VM_USER}@127.0.0.1`, LOG);
+ok(`${vmName} VM ready`, LOG);
+log(`  RDP: localhost:${profile.rdpPort} (${profile.user}/${profile.pass})`, LOG);
+log(`  SSH: sshpass -p ${profile.pass} ssh -p ${profile.sshPort} ${profile.user}@127.0.0.1`, LOG);
