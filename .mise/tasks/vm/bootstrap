@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -eu
 
-#MISE description="Bootstrap Windows VM: enable SSH, install Rust + cargo-tauri"
+#MISE description="Bootstrap Windows VM: SSH, mise, VS Build Tools, WebView2"
 #MISE alias="vm-bootstrap"
 
 # Bootstraps the Windows VM via WinRM (the only thing available on a fresh box).
-# Installs OpenSSH Server, enables password auth, installs Rust + cargo-tauri.
+# Installs: OpenSSH Server, VS Build Tools, WebView2, mise (which handles Rust + cargo-tauri).
 # Idempotent — safe to run multiple times.
-# Requires: python3, pywinrm (pip3 install pywinrm)
+# Requires: python3, pywinrm (auto-installed)
 
 PROJECT_DIR="$(pwd)"
 LOGDIR="${PROJECT_DIR}/.mise/logs"
@@ -27,7 +27,7 @@ ok()   { echo "✓ $*"; }
 # ── Check WinRM is reachable ─────────────────────────────────────────────────
 
 curl -s --connect-timeout 3 "http://127.0.0.1:${WINRM_PORT}/wsman" >/dev/null 2>&1 \
-  || die "WinRM not reachable on port ${WINRM_PORT} — is the VM running? (mise run vm:up)"
+  || die "WinRM not reachable on port ${WINRM_PORT} — is the VM running?"
 
 # ── Ensure pywinrm is installed ──────────────────────────────────────────────
 
@@ -37,41 +37,25 @@ if ! python3 -c "import winrm" 2>/dev/null; then
   ok "pywinrm installed"
 fi
 
-# ── Check if already bootstrapped (SSH works) ────────────────────────────────
-
-if command -v sshpass >/dev/null 2>&1; then
-  if sshpass -p "${VM_PASS}" ssh -o ConnectTimeout=3 -o StrictHostKeyChecking=no -p ${SSH_PORT} ${VM_USER}@127.0.0.1 "echo ok" 2>/dev/null | grep -q ok; then
-    ok "SSH already working"
-    # Check if Rust is installed
-    if sshpass -p "${VM_PASS}" ssh -o StrictHostKeyChecking=no -p ${SSH_PORT} ${VM_USER}@127.0.0.1 "cargo --version" 2>/dev/null | grep -q cargo; then
-      ok "Rust already installed"
-      ok "Bootstrap complete (already done)"
-      exit 0
-    fi
-  fi
-fi
-
-# ── Install and configure OpenSSH via WinRM ──────────────────────────────────
+# ── Run bootstrap via WinRM ──────────────────────────────────────────────────
 
 info "Bootstrapping Windows VM via WinRM..."
 
 python3 << 'PYEOF'
-import winrm, sys, time
+import winrm, sys, time, warnings
+warnings.filterwarnings("ignore")
 
 s = winrm.Session('http://127.0.0.1:5985/wsman', auth=('vagrant', 'vagrant'), transport='basic',
                    read_timeout_sec=600, operation_timeout_sec=540)
 
-def run_elevated(ps_code, desc, timeout=60):
+def run_elevated(ps_code, desc, timeout=120):
     """Run PowerShell as SYSTEM via scheduled task (bypasses UAC)."""
     print(f"→ {desc}")
-    # Write script to file
     r = s.run_ps(f'@\'\n{ps_code}\n\'@ | Set-Content "C:\\bootstrap-step.ps1" -Force')
     if r.status_code != 0:
-        err = r.std_err.decode().strip()
-        print(f"  ERR writing script: {err[:200]}")
+        print(f"  ERR writing script: {r.std_err.decode().strip()[:200]}")
         return False
 
-    # Run as SYSTEM
     r = s.run_ps('''
 $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -File C:\\bootstrap-step.ps1"
 $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -RunLevel Highest
@@ -79,7 +63,6 @@ Register-ScheduledTask -TaskName "BootstrapStep" -Action $action -Principal $pri
 Start-ScheduledTask -TaskName "BootstrapStep"
 ''')
 
-    # Wait for completion
     for i in range(timeout // 5):
         time.sleep(5)
         r = s.run_ps('(Get-ScheduledTask -TaskName "BootstrapStep" -ErrorAction SilentlyContinue).State')
@@ -89,7 +72,6 @@ Start-ScheduledTask -TaskName "BootstrapStep"
         if (i * 5) % 30 == 0 and i > 0:
             print(f"  still running... ({i*5}s)")
 
-    # Cleanup
     s.run_ps('Unregister-ScheduledTask -TaskName "BootstrapStep" -Confirm:$false -ErrorAction SilentlyContinue')
     s.run_ps('Remove-Item "C:\\bootstrap-step.ps1" -Force -ErrorAction SilentlyContinue')
     return True
@@ -102,17 +84,27 @@ def check(desc, ps_check):
         return True
     return False
 
-# ── Step 1: Install OpenSSH Server ───────────────────────────────────────────
+def winget_install(pkg_id, desc, timeout=300):
+    """Install a package via winget as SYSTEM."""
+    if check(desc, f'winget list --id {pkg_id} --accept-source-agreements 2>$null | Select-String "{pkg_id}"'):
+        return True
+    run_elevated(
+        f'winget install --id {pkg_id} --accept-source-agreements --accept-package-agreements --silent',
+        f"Installing {desc} via winget...",
+        timeout=timeout
+    )
+    return True
 
-if not check("OpenSSH Server", 'Get-Service sshd -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Status'):
+# ── Step 1: OpenSSH Server ───────────────────────────────────────────────────
+
+if not check("OpenSSH", 'Get-Service sshd -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Status'):
     run_elevated(
         'Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0',
-        "Installing OpenSSH Server (downloading from Windows Update)...",
+        "Installing OpenSSH Server...",
         timeout=300
     )
 
-# ── Step 2: Configure sshd for password auth ────────────────────────────────
-
+# Configure sshd for password auth
 run_elevated(r'''
 $configPath = "C:\ProgramData\ssh\sshd_config"
 $content = Get-Content $configPath
@@ -132,53 +124,58 @@ $newContent | Set-Content $configPath -Force
 Start-Service sshd -ErrorAction SilentlyContinue
 Set-Service -Name sshd -StartupType Automatic
 Restart-Service sshd
-''', "Configuring SSH for password auth + auto-start")
+''', "Configuring SSH...")
 
-# Verify SSH
 r = s.run_ps('Get-Service sshd | Select-Object -ExpandProperty Status')
 status = r.std_out.decode().strip()
-if status == "Running":
-    print(f"✓ sshd: {status}")
-else:
-    print(f"✗ sshd not running: {status}")
+if status != "Running":
+    print(f"✗ sshd: {status}")
     sys.exit(1)
+print(f"✓ sshd: {status}")
 
-# ── Step 3: Install Rust ────────────────────────────────────────────────────
+# ── Step 2: VS Build Tools (needed for Rust/MSVC on Windows) ────────────────
 
-r = s.run_cmd('where cargo')
+winget_install(
+    "Microsoft.VisualStudio.2022.BuildTools",
+    "VS Build Tools 2022",
+    timeout=600
+)
+
+# Install the C++ workload (needed by Rust)
+run_elevated(r'''
+$vs = & "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath 2>$null
+if (-not $vs) { $vs = "C:\Program Files\Microsoft Visual Studio\2022\BuildTools" }
+$installer = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe"
+if (Test-Path $installer) {
+    Start-Process -FilePath $installer -ArgumentList "modify","--installPath",$vs,"--add","Microsoft.VisualStudio.Workload.VCTools","--includeRecommended","--quiet","--norestart" -Wait -NoNewWindow
+}
+''', "Installing C++ workload for MSVC...", timeout=600)
+
+# ── Step 3: WebView2 Runtime (needed by Tauri) ─────────────────────────────
+
+winget_install(
+    "Microsoft.EdgeWebView2Runtime",
+    "WebView2 Runtime",
+    timeout=120
+)
+
+# ── Step 4: mise (handles Rust + cargo-tauri) ──────────────────────────────
+
+r = s.run_cmd('where mise')
 if r.status_code == 0:
-    r2 = s.run_cmd('cargo --version')
-    print(f"✓ Rust: {r2.std_out.decode().strip()}")
+    r2 = s.run_cmd('mise --version')
+    print(f"✓ mise: {r2.std_out.decode().strip()}")
 else:
-    # Install Rust via rustup (as vagrant user, not SYSTEM)
-    print("→ Installing Rust (this takes a few minutes)...")
-    r = s.run_ps('Invoke-WebRequest -Uri "https://win.rustup.rs/aarch64" -OutFile "$env:TEMP\\rustup-init.exe"')
-    if r.status_code != 0:
-        print(f"  ERR downloading rustup: {r.std_err.decode().strip()[:200]}")
-        sys.exit(1)
-
-    r = s.run_cmd(f'%TEMP%\\rustup-init.exe -y --default-toolchain stable')
-    out = r.std_out.decode().strip()
-    err = r.std_err.decode().strip()
-    if "installed" in out.lower() or "unchanged" in out.lower() or r.status_code == 0:
-        print("✓ Rust installed")
-    else:
-        print(f"  out: {out[:200]}")
-        if err: print(f"  err: {err[:200]}")
-
-# ── Step 4: Install cargo-tauri ─────────────────────────────────────────────
-
-r = s.run_cmd('%USERPROFILE%\\.cargo\\bin\\cargo.exe tauri --version')
-if r.status_code == 0:
-    print(f"✓ cargo-tauri: {r.std_out.decode().strip()}")
-else:
-    print("→ Installing cargo-tauri (this takes a few minutes)...")
-    r = s.run_cmd('%USERPROFILE%\\.cargo\\bin\\cargo.exe install tauri-cli')
+    print("→ Installing mise...")
+    r = s.run_ps('winget install --id jdx.mise --accept-source-agreements --accept-package-agreements --silent')
     if r.status_code == 0:
-        print("✓ cargo-tauri installed")
+        print("✓ mise installed")
     else:
-        print(f"  ERR: {r.std_err.decode().strip()[:300]}")
+        # Fallback: install via PowerShell
+        r = s.run_ps('Invoke-Expression (Invoke-WebRequest -Uri "https://mise.run" -UseBasicParsing).Content')
+        print(f"  mise install: exit {r.status_code}")
 
 print()
 print("✓ Bootstrap complete")
+print("  Next: mise run vm:sync && mise run vm:exec 'cd project && mise install'")
 PYEOF

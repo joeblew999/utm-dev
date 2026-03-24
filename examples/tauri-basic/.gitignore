@@ -7,3 +7,6 @@ src-tauri/icons/
 # Node
 node_modules/
 dist/
+
+# Windows build artifacts (pulled from VM by mise run vm:build)
+.build/

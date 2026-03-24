@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+set -eu
+
+#MISE description="Check what's installed and what's missing"
+#MISE alias="d"
+
+# Quick health check — shows what's working and what needs fixing.
+
+SSH_PORT=2222
+VM_USER="vagrant"
+VM_PASS="vagrant"
+
+check() {
+  local name="$1"
+  local cmd="$2"
+  if eval "$cmd" >/dev/null 2>&1; then
+    local ver
+    ver=$(eval "$3" 2>/dev/null | head -1) || ver=""
+    echo "  ✓ ${name}${ver:+ ($ver)}"
+  else
+    echo "  ✗ ${name}"
+  fi
+}
+
+echo "═══ utm-dev doctor ═══"
+echo ""
+
+echo "── Mac tools ──"
+check "mise"         "command -v mise"       "mise --version"
+check "Rust"         "command -v cargo"      "cargo --version | awk '{print \$2}'"
+check "cargo-tauri"  "cargo tauri --version" "cargo tauri --version | awk '{print \$2}'"
+check "Xcode"        "xcode-select -p"       "xcode-select -p"
+check "Homebrew"     "command -v brew"       "brew --version | head -1"
+check "sshpass"      "command -v sshpass"    "echo installed"
+check "pywinrm"      "python3 -c 'import winrm'" "echo installed"
+echo ""
+
+echo "── iOS ──"
+check "CocoaPods"    "command -v pod"        "pod --version"
+check "xcodegen"     "command -v xcodegen"   "xcodegen --version 2>&1 | head -1"
+check "Simulator"    "xcrun simctl list devices booted 2>/dev/null | grep -q Booted" "xcrun simctl list devices booted 2>/dev/null | grep Booted | head -1 | sed 's/.*(//' | sed 's/).*//' "
+echo ""
+
+echo "── Android ──"
+check "ANDROID_HOME" "test -d \"${ANDROID_HOME:-/nonexistent}\""  "echo ${ANDROID_HOME:-not set}"
+check "NDK"          "test -f \"${NDK_HOME:-/nonexistent}/source.properties\"" "echo ${NDK_HOME:-not set}"
+check "Java"         "command -v java"       "java -version 2>&1 | head -1"
+check "sdkmanager"   "test -x \"${ANDROID_HOME:-/nonexistent}/cmdline-tools/latest/bin/sdkmanager\"" "echo installed"
+echo ""
+
+echo "── Windows VM ──"
+check "UTM"          "test -x /Applications/UTM.app/Contents/MacOS/utmctl" "/Applications/UTM.app/Contents/MacOS/utmctl version 2>/dev/null || echo installed"
+
+# Check VM status
+if [ -x /Applications/UTM.app/Contents/MacOS/utmctl ]; then
+  VM_STATUS=$(/Applications/UTM.app/Contents/MacOS/utmctl list 2>/dev/null | awk 'NR>1 && NF>0 {print $2; exit}')
+  if [ -n "${VM_STATUS}" ]; then
+    echo "  ✓ VM (${VM_STATUS})"
+  else
+    echo "  ✗ VM (not imported)"
+  fi
+else
+  echo "  ✗ VM (UTM not installed)"
+fi
+
+# Check SSH
+if command -v sshpass >/dev/null 2>&1; then
+  if sshpass -p "${VM_PASS}" ssh -o ConnectTimeout=2 -o StrictHostKeyChecking=no -p ${SSH_PORT} ${VM_USER}@127.0.0.1 "echo ok" 2>/dev/null | grep -q ok; then
+    echo "  ✓ SSH (port ${SSH_PORT})"
+  else
+    echo "  ✗ SSH (not reachable — VM stopped or not bootstrapped)"
+  fi
+else
+  echo "  ✗ SSH (sshpass not installed)"
+fi
+
+# Check WinRM
+if curl -s --connect-timeout 2 "http://127.0.0.1:5985/wsman" >/dev/null 2>&1; then
+  echo "  ✓ WinRM (port 5985)"
+else
+  echo "  ✗ WinRM (not reachable)"
+fi
+
+echo ""
+
+# Box cache
+if [ -d "${HOME}/.cache/utm-dev" ]; then
+  BOX_SIZE=$(du -sh "${HOME}/.cache/utm-dev" 2>/dev/null | awk '{print $1}')
+  echo "── Cache ──"
+  echo "  ✓ Box cache (${BOX_SIZE} at ~/.cache/utm-dev/)"
+else
+  echo "── Cache ──"
+  echo "  ✗ No box cache (first vm:up will download ~6 GB)"
+fi
+
+echo ""

@@ -173,6 +173,28 @@ fi
 
 echo ""
 
+# ── Stage 5: Windows VM deps (on Mac side) ───────────────────────────────────
+
+echo "── Stage 5: Windows VM deps ──"
+
+if command -v sshpass &>/dev/null; then
+  echo "✓ sshpass"
+else
+  echo "→ Installing sshpass..."
+  HOMEBREW_NO_AUTO_UPDATE=1 brew install hudochenkov/sshpass/sshpass </dev/null 2>/dev/null || true
+  echo "✓ sshpass installed"
+fi
+
+if python3 -c "import winrm" 2>/dev/null; then
+  echo "✓ pywinrm"
+else
+  echo "→ Installing pywinrm..."
+  pip3 install --quiet pywinrm 2>/dev/null || pip3 install --quiet --user pywinrm 2>/dev/null || true
+  echo "✓ pywinrm installed"
+fi
+
+echo ""
+
 # ── Summary ───────────────────────────────────────────────────────────────────
 
 echo "═══ Setup complete ═══"

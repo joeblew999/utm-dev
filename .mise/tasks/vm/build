@@ -55,8 +55,13 @@ ok "Code synced to ${VM_PROJECT_DIR}"
 
 # ── Step 2: Build inside VM ──────────────────────────────────────────────────
 
+info "Installing tools inside VM (mise install)..."
+${SSH_CMD} "cd \"${VM_PROJECT_DIR}\" && mise trust && mise install" \
+  || die "mise install failed inside VM"
+ok "Tools installed"
+
 info "Building Tauri Windows app inside VM (this takes a while on first run)..."
-${SSH_CMD} "cd \"${VM_PROJECT_DIR}\" && set PATH=%USERPROFILE%\\.cargo\\bin;%PATH% && cargo tauri build" \
+${SSH_CMD} "cd \"${VM_PROJECT_DIR}\" && mise run build" \
   || die "Build failed inside VM"
 ok "Build complete"
 

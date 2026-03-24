@@ -9,24 +9,9 @@
 #   mise run android          Android emulator
 #   mise run vm:build         Build Windows .msi/.exe in the VM
 
-# Pull in utm-dev tasks (init, setup, vm:up, vm:down, vm:exec, vm:delete)
+# Pull in utm-dev tasks (init, setup, vm:up, vm:down, vm:exec, vm:delete, doctor)
 [task_config]
 includes = ["git::https://github.com/joeblew999/utm-dev.git//.mise/tasks?ref=main"]
-
-# ── Added by: mise run init ──────────────────────────────────────────────────
-
-# utm-dev tools — added by mise run init
-[tools]
-"cargo:tauri-cli" = {version = "2",      os = ["macos", "windows"]}
-xcodegen          = {version = "latest", os = ["macos"]}
-ruby              = {version = "3.3",    os = ["macos"]}
-java              = "temurin-17.0.18+8"
-
-# utm-dev env — Android SDK paths (installed by mise run setup)
-[env]
-ANDROID_HOME = "{{env.HOME}}/.android-sdk"
-NDK_HOME = "{{env.HOME}}/.android-sdk/ndk/27.2.12479018"
-JAVA_HOME = "{{env.HOME}}/.local/share/mise/installs/java/temurin-17.0.18+8"
 
 # ── App tasks ────────────────────────────────────────────────────────────────
 
@@ -39,8 +24,24 @@ description = "Build macOS desktop bundle (.app/.dmg)"
 run = "cargo tauri build"
 
 [tasks.ios]
-description = "Run on iOS simulator (initialises on first run)"
+description = "Run on iOS simulator (boots sim + initialises on first run)"
 run = """
+#!/usr/bin/env bash
+set -eu
+# Boot a simulator if none running
+if ! xcrun simctl list devices booted 2>/dev/null | grep -q Booted; then
+  echo "→ Booting iOS simulator..."
+  DEVICE=$(xcrun simctl list devices available -j | python3 -c "
+import json,sys
+data = json.load(sys.stdin)
+for runtime, devices in data['devices'].items():
+  if 'iOS' in runtime:
+    for d in devices:
+      if d['isAvailable'] and 'iPhone' in d['name']:
+        print(d['udid']); sys.exit(0)
+" 2>/dev/null)
+  [ -n "${DEVICE}" ] && xcrun simctl boot "${DEVICE}" 2>/dev/null || true
+fi
 cargo tauri ios init 2>/dev/null || true
 cargo tauri ios dev
 """
@@ -48,6 +49,8 @@ cargo tauri ios dev
 [tasks.android]
 description = "Run on Android emulator (initialises on first run)"
 run = """
+#!/usr/bin/env bash
+set -eu
 cargo tauri android init 2>/dev/null || true
 cargo tauri android dev
 """
