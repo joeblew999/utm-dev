@@ -118,7 +118,7 @@ if (IS_MACOS) {
 
     // Check SSH
     if (sshpassAvail && status === "started") {
-      const sshTest = await $`sshpass -p ${profile.pass} ssh -o ConnectTimeout=2 -o StrictHostKeyChecking=no -p ${profile.sshPort} ${profile.user}@127.0.0.1 "echo ok"`
+      const sshTest = await $`sshpass -p ${profile.pass} ssh -o ConnectTimeout=2 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p ${profile.sshPort} ${profile.user}@127.0.0.1 "echo ok"`
         .quiet().nothrow();
       if (sshTest.stdout.toString().includes("ok")) {
         log(`    SSH: port ${profile.sshPort}`);

@@ -52,10 +52,17 @@ function parseVmLine(line: string): { uuid: string; status: string; name: string
   return { uuid: parts[0] ?? "", status: parts[1] ?? "", name: parts.slice(2).join(" ").trim() };
 }
 
-async function getFirstVm(): Promise<string> {
+/** List all VM UUIDs currently in UTM. */
+async function listVmUuids(): Promise<Set<string>> {
   const r = await $`${UTMCTL} list`.quiet().nothrow();
   const lines = (r.stdout?.toString() ?? "").split("\n").filter((l) => l.trim() && !l.startsWith("UUID"));
-  return lines[0]?.trim() ?? "";
+  return new Set(lines.map((l) => l.split(/\s+/)[0]).filter(Boolean));
+}
+
+/** Find a VM line by UUID. */
+async function getVmLineByUuid(uuid: string): Promise<string> {
+  const r = await $`${UTMCTL} list`.quiet().nothrow();
+  return (r.stdout?.toString() ?? "").split("\n").find((l) => l.includes(uuid))?.trim() ?? "";
 }
 
 /** Download box from Vagrant Cloud, import into UTM. Returns { uuid, displayName }. */
@@ -112,22 +119,32 @@ export async function importBox(
     die("No .utm folder in box");
   }
 
+  // Snapshot existing VMs so we can find the new one after import
+  const beforeUuids = await listVmUuids();
+
   info("Importing VM into UTM...", logFile);
   const importResult = await $`osascript -e ${"tell application \"UTM\" to import new virtual machine from POSIX file \"" + utmFolder + "\""}`
     .quiet().nothrow();
   await $`rm -rf ${tmpdir}`;
   if (importResult.exitCode !== 0) die("Import failed");
 
-  // Wait for import to register
+  // Wait for the new VM to appear (UUID not in the before-snapshot)
   info("Waiting for import...", logFile);
-  let vmLine = "";
+  let newUuid = "";
   for (let i = 0; i < 15; i++) {
-    vmLine = await getFirstVm();
-    if (vmLine) break;
+    const afterUuids = await listVmUuids();
+    for (const uuid of afterUuids) {
+      if (!beforeUuids.has(uuid)) {
+        newUuid = uuid;
+        break;
+      }
+    }
+    if (newUuid) break;
     await Bun.sleep(2000);
   }
-  if (!vmLine) die("Import failed — no VM found after 30s");
+  if (!newUuid) die("Import failed — no new VM found after 30s");
 
+  const vmLine = await getVmLineByUuid(newUuid);
   const parsed = parseVmLine(vmLine);
   saveState(vmName, parsed.uuid, parsed.name);
   ok(`${vmName} VM imported (${parsed.name})`, logFile);
@@ -312,7 +329,7 @@ async function waitForSsh(profile: VMProfile, timeoutSec: number, logFile?: stri
   await ensureSshpass();
   let elapsed = 0;
   while (elapsed < timeoutSec) {
-    const r = await $`sshpass -p ${profile.pass} ssh -o ConnectTimeout=2 -o StrictHostKeyChecking=no -p ${profile.sshPort} ${profile.user}@127.0.0.1 "echo ok"`
+    const r = await $`sshpass -p ${profile.pass} ssh -o ConnectTimeout=2 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p ${profile.sshPort} ${profile.user}@127.0.0.1 "echo ok"`
       .quiet().nothrow();
     if (r.stdout.toString().includes("ok")) {
       ok(`Linux ready (${elapsed}s)`, logFile);

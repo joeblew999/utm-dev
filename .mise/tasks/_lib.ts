@@ -154,7 +154,7 @@ export async function ssh(
   cmd: string,
   opts: { quiet?: boolean } = {},
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
-  const result = await $`sshpass -p ${profile.pass} ssh -o StrictHostKeyChecking=no -p ${profile.sshPort} ${profile.user}@127.0.0.1 ${cmd}`
+  const result = await $`sshpass -p ${profile.pass} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p ${profile.sshPort} ${profile.user}@127.0.0.1 ${cmd}`
     .quiet()
     .nothrow();
   if (!opts.quiet) {
@@ -173,7 +173,7 @@ export async function scp(
   src: string,
   dst: string,
 ): Promise<void> {
-  await $`sshpass -p ${profile.pass} scp -o StrictHostKeyChecking=no -P ${profile.sshPort} ${src} ${dst}`;
+  await $`sshpass -p ${profile.pass} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -P ${profile.sshPort} ${src} ${dst}`;
 }
 
 export async function checkSsh(profile: VMProfile): Promise<void> {

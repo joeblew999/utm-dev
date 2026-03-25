@@ -47,7 +47,8 @@ if (!hasState(vmName)) {
   // Bootstrap (start VM, run bootstrap, stop, then start again below)
   if (profile.bootstrap) {
     await startVm(displayName, LOG);
-    await waitForBoot(profile, 300, LOG);
+    const bootTimeout = profile.os === "linux" ? 600 : 300; // Linux VMs boot slower
+    await waitForBoot(profile, bootTimeout, LOG);
 
     const taskDir = dirname(new URL(import.meta.url).pathname);
     const bootstrapScript = profile.os === "linux" ? "_bootstrapLinux.ts" : "_bootstrap.ts";
@@ -66,7 +67,8 @@ if (!hasState(vmName)) {
 
 const { VM_DISPLAY_NAME } = loadState(vmName);
 await startVm(VM_DISPLAY_NAME, LOG);
-await waitForBoot(profile, 300, LOG);
+const normalBootTimeout = profile.os === "linux" ? 600 : 300;
+await waitForBoot(profile, normalBootTimeout, LOG);
 
 log("", LOG);
 ok(`${vmName} VM ready`, LOG);
